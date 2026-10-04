@@ -1,4 +1,5 @@
 const paths: Record<string, string> = {
+  today: 'M5 12l4 4 10-10M4 20h16',
   programme: 'M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11',
   progress: 'M4 19V5M4 19h16M8 15l3-4 3 2 4-6',
   book: 'M5 5h14v14H5zM5 9h14M9 3v4M15 3v4',
