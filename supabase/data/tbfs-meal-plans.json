@@ -1,0 +1,76 @@
+{
+  "_about": "Reference data scraped (facts only: plan numbers, dates, dish names, links, rough costs) from the ten newest free weekly meal plans listed at https://tastesbetterfromscratch.com/category/meal-plan on 2026-10-04. The site shows no download counts, so 'top 10' means the 10 newest plans (215 to 206). The recipes in the app are original rewrites built from this repo's food list; no recipe text, photos or PDFs from the source site are copied. Costs are the source's rough USD estimates.",
+  "source": { "name": "Tastes Better From Scratch", "category_url": "https://tastesbetterfromscratch.com/category/meal-plan", "author": "Lauren Allen" },
+  "plans": [
+    { "number": 215, "posted": "2026-07-19", "url": "https://tastesbetterfromscratch.com/meal-plan-215/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2026/07/TBFS-Meal-Plan-215.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Carne Asada Tacos", "url": "https://tastesbetterfromscratch.com/carne-asada-tacos/", "cost_usd": 24 },
+        { "day": "Tuesday", "dish": "General Tso's Chicken", "url": "https://tastesbetterfromscratch.com/general-tsos-chicken-slow-cooker-stove-top/", "cost_usd": 15 },
+        { "day": "Wednesday", "dish": "Creamy Tortellini Soup", "url": "https://tastesbetterfromscratch.com/creamy-tomato-and-spinach-tortellini-soup/", "cost_usd": 13 },
+        { "day": "Thursday", "dish": "Ham Fried Rice", "url": "https://tastesbetterfromscratch.com/ham-fried-rice/", "cost_usd": 9 },
+        { "day": "Friday", "dish": "Honey Mustard Chicken", "url": "https://tastesbetterfromscratch.com/honey-mustard-chicken/", "cost_usd": 12 } ] },
+    { "number": 214, "posted": "2026-05-18", "url": "https://tastesbetterfromscratch.com/meal-plan-214/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2026/05/Meal-Plan-214_Tastes-Better-From-Scratch.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Tostadas", "url": "https://tastesbetterfromscratch.com/tostada/", "cost_usd": 16 },
+        { "day": "Tuesday", "dish": "Tortellini Pasta Salad", "url": "https://tastesbetterfromscratch.com/southwest-tortellini-pasta-salad/", "cost_usd": 14 },
+        { "day": "Wednesday", "dish": "Cajun Chicken & Sausage Kebabs", "url": "https://tastesbetterfromscratch.com/cajun-chicken-sausage-kebabs/", "cost_usd": 15 },
+        { "day": "Thursday", "dish": "Meatballs Arrabiatta", "url": "https://tastesbetterfromscratch.com/meatballs-arrabbiata/", "cost_usd": 27 },
+        { "day": "Friday", "dish": "Smash Burger", "url": "https://tastesbetterfromscratch.com/smash-burgers/", "cost_usd": 15 } ] },
+    { "number": 213, "posted": "2026-04-12", "url": "https://tastesbetterfromscratch.com/meal-plan-213/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2026/04/Meal-Plan-213_Tastes-Better-From-Scratch.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Walking Tacos", "url": "https://tastesbetterfromscratch.com/fritos-taco-salad/", "cost_usd": 15 },
+        { "day": "Tuesday", "dish": "Creamy Chicken & Gnocchi", "url": "https://tastesbetterfromscratch.com/creamy-chicken-and-gnocchi/", "cost_usd": 14 },
+        { "day": "Wednesday", "dish": "Veggie Wrap", "url": "https://tastesbetterfromscratch.com/hummus-edamame-veggie-wrap/", "cost_usd": 10 },
+        { "day": "Thursday", "dish": "Red Curry", "url": "https://tastesbetterfromscratch.com/red-curry-2/", "cost_usd": 25 },
+        { "day": "Friday", "dish": "Kung Pao Chicken", "url": "https://tastesbetterfromscratch.com/restaurant-style-kung-pao-chicken/", "cost_usd": 12 } ] },
+    { "number": 212, "posted": "2026-02-15", "url": "https://tastesbetterfromscratch.com/meal-plan-212/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2026/02/Meal-Plan-212_TBFS.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Nourish Bowls", "url": "https://tastesbetterfromscratch.com/nourish-bowls/", "cost_usd": 23 },
+        { "day": "Tuesday", "dish": "Mushroom Tacos", "url": "https://tastesbetterfromscratch.com/mushroom-tacos/", "cost_usd": 7 },
+        { "day": "Wednesday", "dish": "Sloppy Joes", "url": "https://tastesbetterfromscratch.com/super-sloppy-joes/", "cost_usd": 10 },
+        { "day": "Thursday", "dish": "Dumpling Soup", "url": "https://tastesbetterfromscratch.com/dumpling-soup/", "cost_usd": 10 },
+        { "day": "Friday", "dish": "Thai Chicken Meatballs", "url": "https://tastesbetterfromscratch.com/thai-green-curry-meatballs/", "cost_usd": 7 } ] },
+    { "number": 211, "posted": "2026-01-04", "url": "https://tastesbetterfromscratch.com/meal-plan-211/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2026/01/Meal-Plan-211_Tastes-Better-From-Scratch.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Smothered Burritos", "url": "https://tastesbetterfromscratch.com/smothered-green-chile-chicken-burritos/", "cost_usd": 14 },
+        { "day": "Tuesday", "dish": "Chicken Avocado Wrap", "url": "https://tastesbetterfromscratch.com/chicken-bacon-avocado-wrap/", "cost_usd": 13 },
+        { "day": "Wednesday", "dish": "Taco Salad", "url": "https://tastesbetterfromscratch.com/taco-salad/", "cost_usd": 6 },
+        { "day": "Thursday", "dish": "Matzo Ball Soup", "url": "https://tastesbetterfromscratch.com/matzo-ball-soup/", "cost_usd": 18 },
+        { "day": "Friday", "dish": "Beef Gyros", "url": "https://tastesbetterfromscratch.com/beef-gyros-slow-cooker-instant-pot/", "cost_usd": 13 } ] },
+    { "number": 210, "posted": "2025-09-28", "url": "https://tastesbetterfromscratch.com/meal-plan-210/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2025/09/Meal-Plan-210_Tastes-Better-From-Scratch.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Biscuit Chicken Pot Pie", "url": "https://tastesbetterfromscratch.com/biscuit-chicken-pot-pie/", "cost_usd": 11 },
+        { "day": "Tuesday", "dish": "Calzone", "url": "https://tastesbetterfromscratch.com/calzones/", "cost_usd": 8 },
+        { "day": "Wednesday", "dish": "Quinoa Burger", "url": "https://tastesbetterfromscratch.com/quinoa-veggie-burger/", "cost_usd": 15 },
+        { "day": "Thursday", "dish": "Short Rib Ragu", "url": "https://tastesbetterfromscratch.com/short-rib-ragu/", "cost_usd": 26 },
+        { "day": "Friday", "dish": "Cabbage Roll Soup", "url": "https://tastesbetterfromscratch.com/cabbage-roll-soup/", "cost_usd": 20 } ] },
+    { "number": 209, "posted": "2025-08-24", "url": "https://tastesbetterfromscratch.com/meal-plan-209/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2025/08/Meal-Plan-209-_-Tastes-Better-From-Scratch.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Peanut Noodles", "url": "https://tastesbetterfromscratch.com/peanut-noodles/", "cost_usd": 5 },
+        { "day": "Tuesday", "dish": "Street Corn Chicken Bowl", "url": "https://tastesbetterfromscratch.com/street-corn-chicken-rice-bowls/", "cost_usd": 14 },
+        { "day": "Wednesday", "dish": "BBQ Pulled Pork Sandwiches", "url": "https://tastesbetterfromscratch.com/bbq-pulled-pork-sandwiches-with-pineapple-mango-slaw/", "cost_usd": 25 },
+        { "day": "Thursday", "dish": "Shrimp Alfredo", "url": "https://tastesbetterfromscratch.com/shrimp-alfredo/", "cost_usd": 10 },
+        { "day": "Friday", "dish": "Chicken Caesar Wrap", "url": "https://tastesbetterfromscratch.com/chicken-caesar-wrap/", "cost_usd": 14 } ] },
+    { "number": 208, "posted": "2025-07-31", "url": "https://tastesbetterfromscratch.com/meal-plan-208/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2025/06/Meal-Plan-208_Tastes-Better-From-Scratch.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Lemon Chicken Pasta", "url": "https://tastesbetterfromscratch.com/lemon-parmesan-chicken-pasta/", "cost_usd": 16 },
+        { "day": "Tuesday", "dish": "Lomo Saltado", "url": "https://tastesbetterfromscratch.com/lomo-saltado/", "cost_usd": 28 },
+        { "day": "Wednesday", "dish": "Burrata Pizza", "url": "https://tastesbetterfromscratch.com/burrata-pizza/", "cost_usd": 20 },
+        { "day": "Thursday", "dish": "Salmon Bowls", "url": "https://tastesbetterfromscratch.com/salmon-bowls/", "cost_usd": 25 },
+        { "day": "Friday", "dish": "BBQ Pulled Pork Sandwiches", "url": "https://tastesbetterfromscratch.com/bbq-pulled-pork-sandwiches-with-pineapple-mango-slaw/", "cost_usd": 25 } ] },
+    { "number": 207, "posted": "2025-05-18", "url": "https://tastesbetterfromscratch.com/meal-plan-207/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2025/05/Meal-Plan-207_Tastes-Better-From-Scratch.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Salmon Tacos", "url": "https://tastesbetterfromscratch.com/salmon-tacos/", "cost_usd": 25.79 },
+        { "day": "Tuesday", "dish": "Mediterranean Meatball Bowl", "url": "https://tastesbetterfromscratch.com/mediterranean-meatball-bowl/", "cost_usd": 14.24 },
+        { "day": "Wednesday", "dish": "Boursin Pasta", "url": "https://tastesbetterfromscratch.com/boursin-pasta/", "cost_usd": 13 },
+        { "day": "Thursday", "dish": "Cevapi", "url": "https://tastesbetterfromscratch.com/cevapi/", "cost_usd": 31 },
+        { "day": "Friday", "dish": "Panang Curry", "url": "https://tastesbetterfromscratch.com/panang-curry/", "cost_usd": 21.82 } ] },
+    { "number": 206, "posted": "2025-04-27", "url": "https://tastesbetterfromscratch.com/meal-plan-206/", "pdf": "https://tastesbetterfromscratch.com/wp-content/uploads/2025/04/Meal-Plan-206_Tastes-Better-From-Scratch.pdf",
+      "dinners": [
+        { "day": "Monday", "dish": "Sweet and Sour Chicken", "url": "https://tastesbetterfromscratch.com/sweet-sour-chicken/", "cost_usd": 12.85 },
+        { "day": "Tuesday", "dish": "Ground Beef Tacos", "url": "https://tastesbetterfromscratch.com/ground-beef-tacos/", "cost_usd": 11.15 },
+        { "day": "Wednesday", "dish": "Black Bean Burger", "url": "https://tastesbetterfromscratch.com/the-best-black-bean-burger/", "cost_usd": 6.9 },
+        { "day": "Thursday", "dish": "Thai Basil Chicken", "url": "https://tastesbetterfromscratch.com/thai-basil-chicken/", "cost_usd": 7.62 },
+        { "day": "Friday", "dish": "Swedish Meatballs", "url": "https://tastesbetterfromscratch.com/swedish-meatballs/", "cost_usd": 13.96 } ] }
+  ]
+}

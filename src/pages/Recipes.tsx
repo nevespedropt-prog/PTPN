@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
 import { localDate } from '../lib/dates'
-import { hue } from '../lib/util'
 import { MEAL_LABEL, MEALS, forServings } from '../lib/nutrition'
 import type { MealType, Recipe } from '../types'
 import { Empty, MacroChips, PageHead, Sheet, Skeleton } from '../components/ui'
 import Icon from '../components/Icon'
+import RecipeArt, { PhotoCredit } from '../components/RecipeArt'
 
 function RecipeForm({ onSaved, onClose }: { onSaved: () => void; onClose: () => void }) {
   const { profile } = useAuth()
@@ -96,11 +96,10 @@ export default function Recipes() {
       <div className="g-auto">
         {list.map(r => (
           <div key={r.id} className="card recipe-card click" onClick={() => show(r)} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') show(r) }}>
-            <div className="recipe-art" style={{ ['--h' as string]: hue(r.name) }}>
+            <RecipeArt name={r.name} url={r.image_url}>
               <span className="badge">{MEAL_LABEL[r.meal_type]}</span>
               {r.prep_min && <span className="badge">{r.prep_min} min</span>}
-              <span className="initial" aria-hidden="true">{r.name[0]}</span>
-            </div>
+            </RecipeArt>
             <div className="recipe-body">
               <b>{r.name}</b>
               <p className="mute small" style={{ margin: '2px 0 10px' }}>{r.description}</p>
@@ -113,6 +112,7 @@ export default function Recipes() {
       <Sheet open={!!open} onClose={() => setOpen(null)} title={open?.name ?? ''}>
         {open && (
           <div className="stack">
+            {open.image_url && <RecipeArt name={open.name} url={open.image_url} tall />}
             <p className="mute" style={{ margin: 0 }}>{open.description}</p>
             <MacroChips m={forServings(open, Number(servings) || 1)} />
             <div>{open.tags.map(t => <span key={t} className="badge" style={{ marginRight: 6 }}>{t}</span>)}</div>
@@ -120,6 +120,10 @@ export default function Recipes() {
             <ul className="ingredients">{open.ingredients.map((x, i) => <li key={i}>{x}</li>)}</ul>
             <h3>Method</h3>
             <ol className="steps">{open.steps.map((x, i) => <li key={i}>{x}</li>)}</ol>
+            {(open.inspired_by || open.image_credit) && <p className="mute small" style={{ margin: 0 }}>
+              {open.inspired_by && <>Inspired by {open.inspired_url ? <a href={open.inspired_url} target="_blank" rel="noopener noreferrer">{open.inspired_by}</a> : open.inspired_by}. Recipe rewritten, macros estimated. </>}
+              <PhotoCredit credit={open.image_credit} />
+            </p>}
             {!coach && <>
               <hr className="sep" />
               <div className="inline-inputs">

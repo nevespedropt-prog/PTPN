@@ -304,6 +304,13 @@ form.col { display: grid; gap: 10px; }
   background: radial-gradient(120% 120% at 0% 0%, hsl(var(--h, 350) 70% 45% / .85), transparent 60%), linear-gradient(135deg, hsl(calc(var(--h, 350) + 30) 60% 22%), #141418);
 }
 .recipe-art .initial { position: absolute; right: 10px; top: 0; font-family: var(--display); font-size: 5rem; font-weight: 700; color: rgba(255, 255, 255, .13); line-height: 1; }
+.recipe-art .photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.recipe-art.has-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10, 10, 14, .1) 30%, rgba(10, 10, 14, .78)); }
+.recipe-art > .badge { position: relative; z-index: 1; }
+.recipe-art.tall { height: 160px; border-radius: var(--r, 16px); overflow: hidden; }
+.photo-credit { font-size: .72rem; color: var(--ink-3, #8b8b97); }
+.photo-credit a { color: inherit; text-decoration: underline; }
+.day-tabs { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; }
 .recipe-body { padding: 12px 14px 14px; }
 .macro-chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .macro-chips span { font-size: .74rem; font-weight: 700; padding: 3px 8px; border-radius: 8px; background: rgba(255, 255, 255, .05); }

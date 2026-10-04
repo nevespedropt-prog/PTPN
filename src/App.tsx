@@ -14,6 +14,7 @@ import Nutrition from './pages/client/Nutrition'
 import WorkoutPlayer from './pages/WorkoutPlayer'
 import WorkoutBuilder from './pages/coach/WorkoutBuilder'
 import Recipes from './pages/Recipes'
+import MealPlans from './pages/MealPlans'
 import Progress from './pages/Progress'
 import { ClientChat, CoachChat } from './pages/Chat'
 import Book from './pages/Book'
@@ -86,6 +87,7 @@ export default function App() {
         ]}
         extras={[
           { to: '/slots', icon: 'calendar', label: 'Sessions' },
+          { to: '/meal-plans', icon: 'nutrition', label: 'Meal plans' },
           { to: '/recipes', icon: 'nutrition', label: 'Recipe book' },
           { to: '/community', icon: 'trophy', label: 'Community' },
           { to: '/resources', icon: 'link', label: 'Resources' },
@@ -100,6 +102,7 @@ export default function App() {
           <Route path="/workout/:id" element={<WorkoutPlayer />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/inbox/:clientId" element={<CoachChat />} />
+          <Route path="/meal-plans" element={<MealPlans />} />
           <Route path="/recipes" element={<Recipes />} />
           <Route path="/slots" element={<CoachSlots />} />
           <Route path="/community" element={<Community />} />
@@ -122,7 +125,8 @@ export default function App() {
         { to: '/chat', icon: 'chat', label: 'Coach', badge: unread },
       ]}
       extras={[
-        { to: '/recipes', icon: 'nutrition', label: 'Recipe book' },
+        { to: '/meal-plans', icon: 'nutrition', label: 'Meal plans' },
+          { to: '/recipes', icon: 'nutrition', label: 'Recipe book' },
         { to: '/community', icon: 'trophy', label: 'Community' },
         { to: '/book', icon: 'calendar', label: 'Book a session' },
         { to: '/resources', icon: 'link', label: 'Resources' },
@@ -133,7 +137,8 @@ export default function App() {
         <Route path="/workout/:id" element={<WorkoutPlayer />} />
         <Route path="/build/:id" element={<WorkoutBuilder />} />
         <Route path="/nutrition" element={<Nutrition />} />
-        <Route path="/recipes" element={<Recipes />} />
+        <Route path="/meal-plans" element={<MealPlans />} />
+          <Route path="/recipes" element={<Recipes />} />
         <Route path="/progress" element={<Progress clientId={profile.id} />} />
         <Route path="/chat" element={<ClientChat />} />
         <Route path="/book" element={<Book />} />

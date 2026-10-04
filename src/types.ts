@@ -37,7 +37,13 @@ export interface Food { id: string; name: string; serving_label: string; serving
 export interface Recipe {
   id: string; name: string; meal_type: MealType; description: string; prep_min: number | null
   kcal: number; protein: number; carbs: number; fat: number; ingredients: string[]; steps: string[]; tags: string[]; created_by: string | null
+  image_url?: string | null; image_credit?: string | null; inspired_by?: string | null; inspired_url?: string | null
 }
+export interface MealPlanTemplate {
+  id: string; name: string; goal: string; kcal: number; description: string; image_url: string | null; image_credit: string | null
+  source_name: string | null; source_title: string | null; source_url: string | null; source_posted: string | null; plan_no: number | null
+}
+export interface TemplateItem { id: string; template_id: string; day: number; meal_type: MealType; recipe_id: string; servings: number; sort: number }
 export interface Targets { client_id: string; kcal: number | null; protein: number | null; carbs: number | null; fat: number | null; notes: string }
 export interface MealPlanItem { id: string; client_id: string; day: number; meal_type: MealType; recipe_id: string; servings: number; sort: number }
 export interface FoodLog {

@@ -16,19 +16,24 @@ Premium, phone-first coaching app for personal trainers and their clients. React
 - Clients: add clients, per-client overview, training, nutrition, habits and progress
 - Library: 100+ exercises, 16 workout templates (straight sets, circuits, AMRAP, EMOM, intervals), 6 programme templates, builders for both, supersets, %1RM prescriptions
 - Assign workouts and programmes by date, nutrition targets, weekly meal plans (auto-generated from the recipe book)
+- Meal plan library: 10 weekly plan templates (49 original dinner recipes with photos), apply one to a client with portions fitted to their calorie target
 - Inbox, announcements, challenges, resources, session slots
 
 No payments, on purpose.
 
 ## Setup
 
-1. Create a Supabase project. In the SQL Editor run `supabase/schema.sql`, then `supabase/seed.sql` (the seed needs the `uuid-ossp` extension, which Supabase has by default).
+1. Create a Supabase project. In the SQL Editor run `supabase/schema.sql`, then `supabase/seed.sql`, then `supabase/seed_meal_plans.sql` (the seed needs the `uuid-ossp` extension, which Supabase has by default).
 2. Deploy the edge function `supabase/functions/create-client` (it lets the coach create client accounts). `supabase functions deploy create-client`.
 3. Copy `.env.example` to `.env` and fill in the project URL and the anon (publishable) key.
 4. `npm install` then `npm run dev`.
 5. Sign up in the app, then make yourself the coach (SQL at the bottom of `schema.sql`).
 
 New sign-ups are always clients. Roles can only be changed by a coach or in the dashboard.
+
+## Meal plan library
+
+The ten newest weekly plans from Tastes Better From Scratch (plans 206 to 215) were used as inspiration. Only facts were kept (plan numbers, dish names, dates, links), saved in `supabase/data/tbfs-meal-plans.json`. The recipes, methods and portions are original, and macros are estimated from typical values in the food list. Banner photos are hotlinked from Pexels (ids in `supabase/data/photos.json`, credit link on every recipe). To regenerate the seed after editing: `python3 supabase/tools/build_meal_plans.py supabase/seed_meal_plans.sql`. For an existing database, run `supabase/migrate_v3_meal_plans.sql` first.
 
 ## Deploy (GitHub Pages)
 

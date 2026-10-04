@@ -217,7 +217,7 @@ function Nutrition({ id }: { id: string }) {
       {msg && <p className={/saved|Generated|Split/.test(msg) ? 'ok small' : 'mute small'}>{msg}</p>}
 
       <div className="section-title"><h2>Weekly meal plan</h2>
-        <div className="row" style={{ marginBottom: 0 }}><button className="soft sm" onClick={generate}><Icon name="sparkle" size={15} />Generate week</button>{plan.length > 0 && <button className="link" onClick={clearPlan}>Clear</button>}</div>
+        <div className="row" style={{ marginBottom: 0 }}><button className="soft sm" onClick={generate}><Icon name="sparkle" size={15} />Generate week</button><Link className="btn soft sm" to={`/meal-plans?client=${id}`}>Meal plan library</Link>{plan.length > 0 && <button className="link" onClick={clearPlan}>Clear</button>}</div>
       </div>
       <div className="week-strip">
         {DAY_NAMES.map((n, i) => <button key={n} className={day === i + 1 ? 'on' : ''} onClick={() => setDay(i + 1)}><small>{n}</small><b>{plan.filter(p => p.day === i + 1).length || '–'}</b><i className={plan.some(p => p.day === i + 1) ? 'has' : ''} /></button>)}
