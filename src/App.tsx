@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import MyProgramme from './pages/MyProgramme'
 import Progress from './pages/Progress'
 import Book from './pages/Book'
+import Today from './pages/Today'
 import Account from './pages/Account'
 import CoachClients from './pages/CoachClients'
 import CoachSlots from './pages/CoachSlots'
@@ -34,6 +35,7 @@ export default function App() {
           <NavLink to="/clients"><Icon name="clients" />Clients</NavLink>
           <NavLink to="/slots"><Icon name="slots" />Slots</NavLink>
         </>) : (<>
+          <NavLink to="/today"><Icon name="today" />Today</NavLink>
           <NavLink to="/programme"><Icon name="programme" />Programme</NavLink>
           <NavLink to="/progress"><Icon name="progress" />Progress</NavLink>
           <NavLink to="/book"><Icon name="book" />Book</NavLink>
@@ -48,10 +50,11 @@ export default function App() {
             <Route path="/slots" element={<CoachSlots />} />
             <Route path="*" element={<Navigate to="/clients" replace />} />
           </>) : (<>
+            <Route path="/today" element={<Today />} />
             <Route path="/programme" element={<MyProgramme />} />
             <Route path="/progress" element={<Progress clientId={profile.id} />} />
             <Route path="/book" element={<Book />} />
-            <Route path="*" element={<Navigate to="/programme" replace />} />
+            <Route path="*" element={<Navigate to="/today" replace />} />
           </>)}
         </Routes>
       </main>

@@ -8,3 +8,6 @@ export interface ProgrammeExercise {
 export interface Measurement { id: string; client_id: string; date: string; weight_kg: number | null; body_fat_pct: number | null; notes: string }
 export interface Session { id: string; starts_at: string; duration_min: number; title: string }
 export interface Booking { id: string; session_id: string; client_id: string }
+export interface Habit { id: string; client_id: string; name: string; kind: 'check' | 'number'; unit: string; target: number | null; active: boolean; sort: number }
+export interface HabitLog { id: string; habit_id: string; client_id: string; date: string; value: number }
+export interface Checkin { id: string; client_id: string; date: string; mood: number | null; energy: number | null; sleep_hours: number | null; note: string }

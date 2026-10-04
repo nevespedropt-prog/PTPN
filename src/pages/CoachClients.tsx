@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import type { Profile, Programme, ProgrammeExercise } from '../types'
 import { ProgrammeView } from './MyProgramme'
 import Progress from './Progress'
+import CoachHabits from './CoachHabits'
 
 export default function CoachClients() {
   const [clients, setClients] = useState<Profile[]>([])
@@ -66,7 +67,7 @@ function AddClient({ done }: { done: () => void }) {
 function ClientDetail({ client, back }: { client: Profile; back: () => void }) {
   const [progs, setProgs] = useState<Programme[]>([])
   const [exs, setExs] = useState<ProgrammeExercise[]>([])
-  const [tab, setTab] = useState<'prog' | 'progress'>('prog')
+  const [tab, setTab] = useState<'prog' | 'progress' | 'habits'>('prog')
   const [name, setName] = useState('')
   const [err, setErr] = useState('')
 
@@ -96,8 +97,9 @@ function ClientDetail({ client, back }: { client: Profile; back: () => void }) {
       <div className="row">
         <button className={tab === 'prog' ? '' : 'ghost'} onClick={() => setTab('prog')}>Programmes</button>
         <button className={tab === 'progress' ? '' : 'ghost'} onClick={() => setTab('progress')}>Progress</button>
+        <button className={tab === 'habits' ? '' : 'ghost'} onClick={() => setTab('habits')}>Habits</button>
       </div>
-      {tab === 'progress' ? <Progress clientId={client.id} readOnly /> : (
+      {tab === 'habits' ? <CoachHabits clientId={client.id} /> : tab === 'progress' ? <Progress clientId={client.id} readOnly /> : (
         <>
           <form className="card row" onSubmit={addProgramme}>
             <input placeholder="New programme name" value={name} onChange={e => setName(e.target.value)} required />

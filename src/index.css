@@ -103,3 +103,37 @@ tr:last-child td { border-bottom: 0; }
 .auth .tabs button { background: transparent; box-shadow: none; color: var(--mute); min-height: 40px; border-radius: 10px; padding: 8px 6px; white-space: nowrap; font-size: 15px; }
 .auth .tabs button.on { background: var(--card); color: var(--ink); box-shadow: 0 2px 8px rgba(0, 0, 0, .4); }
 .auth .tabs button:hover { filter: none; }
+
+/* habits + check-ins */
+.bar { height: 8px; border-radius: 99px; background: var(--field); border: 1px solid var(--line); overflow: hidden; margin: 10px 0 12px; }
+.bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--red-dark), var(--red)); border-radius: 99px; transition: width .25s; }
+.habit {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; margin-top: 8px; padding: 10px 14px; text-align: left;
+  background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: none; font-weight: 600;
+}
+.habit:hover { filter: none; border-color: #3a3a44; }
+.habit .tick {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #3a3a44; display: grid; place-items: center; font-size: 16px; color: #fff;
+}
+.habit.done { border-color: rgba(95, 211, 141, .5); background: rgba(95, 211, 141, .08); }
+.habit.done .tick { background: #2fa866; border-color: #2fa866; }
+.habit.num input { width: 96px; flex: none; text-align: right; }
+.grow { flex: 1; min-width: 0; }
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+.scale button { background: var(--field); color: var(--mute); border: 1px solid var(--line); box-shadow: none; font-weight: 700; }
+.scale button:hover { filter: none; border-color: var(--red); }
+.scale button.on { background: linear-gradient(180deg, #f02a39, var(--red-dark)); color: #fff; border-color: transparent; box-shadow: 0 4px 14px var(--red-glow); }
+.scale-ends { display: flex; justify-content: space-between; font-size: .78rem; margin-top: 4px; }
+label.field { display: grid; gap: 6px; }
+textarea { resize: vertical; }
+.scroll-x { overflow-x: auto; margin: 0 -4px; }
+table.grid th, table.grid td { text-align: center; white-space: nowrap; padding: 8px 0; }
+table.grid th { font-size: .68rem; line-height: 1.25; letter-spacing: 0; text-transform: none; }
+table.grid th:not(:first-child), table.grid td:not(:first-child) { min-width: 30px; }
+table.grid th:first-child, table.grid td:first-child { text-align: left; white-space: normal; min-width: 88px; padding-right: 6px; }
+button.link { min-height: 0; padding: 2px 0; background: none; border: 0; box-shadow: none; color: var(--mute); font-size: 12px; font-weight: 600; text-decoration: underline; }
+button.link:hover { filter: none; color: var(--red); }
+table.grid tr.off td { opacity: .45; }
+button.small { min-height: 34px; padding: 4px 10px; font-size: 13px; }
+.checkin { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.checkin:last-child { border-bottom: 0; }
