@@ -68,6 +68,7 @@ begin
 end $$;
 create trigger on_auth_user_created after insert on auth.users
   for each row execute function public.handle_new_user();
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
 
 alter table public.profiles enable row level security;
 alter table public.programmes enable row level security;
@@ -115,6 +116,8 @@ create function public.booked_session_ids() returns setof uuid
 language sql stable security definer set search_path = public as $$
   select session_id from public.bookings;
 $$;
+revoke execute on function public.booked_session_ids() from public, anon;
+grant execute on function public.booked_session_ids() to authenticated;
 
 -- To make yourself the coach, after signing up once:
 -- update public.profiles set role = 'coach' where id = (select id from auth.users where email = 'YOUR@EMAIL');

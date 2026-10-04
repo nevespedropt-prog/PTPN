@@ -8,22 +8,58 @@ export default function CoachClients() {
   const [clients, setClients] = useState<Profile[]>([])
   const [sel, setSel] = useState<Profile | null>(null)
 
-  useEffect(() => {
-    supabase.from('profiles').select('*').eq('role', 'client').order('full_name')
-      .then(({ data }) => setClients((data ?? []) as Profile[]))
+  const load = useCallback(async () => {
+    const { data } = await supabase.from('profiles').select('*').eq('role', 'client').order('full_name')
+    setClients((data ?? []) as Profile[])
   }, [])
+  useEffect(() => { load() }, [load])
 
   if (sel) return <ClientDetail client={sel} back={() => setSel(null)} />
   return (
     <>
       <h1>Clients</h1>
-      {clients.length === 0 && <p className="mute">No clients yet. They appear here after signing up.</p>}
+      <AddClient done={load} />
+      {clients.length === 0 && <p className="mute">No clients yet. Add one above, or they appear here after signing up.</p>}
       {clients.map(c => (
         <div key={c.id} className="card row" style={{ justifyContent: 'space-between' }}>
           <b>{c.full_name || 'Unnamed'}</b><button onClick={() => setSel(c)}>Open</button>
         </div>
       ))}
     </>
+  )
+}
+
+function AddClient({ done }: { done: () => void }) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [created, setCreated] = useState<{ email: string; password: string } | null>(null)
+
+  async function add(e: React.FormEvent) {
+    e.preventDefault(); setErr(''); setCreated(null); setBusy(true)
+    const { data, error } = await supabase.functions.invoke('create-client', { body: { email, password, full_name: name } })
+    setBusy(false)
+    if (error || data?.error) {
+      let msg = data?.error ?? error?.message ?? 'Could not add client'
+      const res = (error as { context?: Response } | null)?.context
+      if (res && typeof res.json === 'function') msg = (await res.json().catch(() => null))?.error ?? msg
+      return setErr(msg)
+    }
+    setCreated({ email, password })
+    setName(''); setEmail(''); setPassword(''); done()
+  }
+
+  return (
+    <form className="card row" onSubmit={add}>
+      <input placeholder="Name" value={name} onChange={e => setName(e.target.value)} required />
+      <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
+      <input placeholder="Temporary password" value={password} onChange={e => setPassword(e.target.value)} minLength={6} required />
+      <button disabled={busy}>{busy ? 'Adding...' : 'Add client'}</button>
+      {err && <span className="err">{err}</span>}
+      {created && <span className="mute">Added. Send them: {created.email} / {created.password}</span>}
+    </form>
   )
 }
 
