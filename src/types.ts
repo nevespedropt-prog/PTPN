@@ -1,0 +1,10 @@
+export type Role = 'client' | 'coach'
+export interface Profile { id: string; full_name: string; role: Role }
+export interface Programme { id: string; client_id: string; name: string; notes: string; active: boolean }
+export interface ProgrammeExercise {
+  id: string; programme_id: string; day_label: string; exercise: string
+  sets: number | null; reps: string | null; notes: string; sort: number
+}
+export interface Measurement { id: string; client_id: string; date: string; weight_kg: number | null; body_fat_pct: number | null; notes: string }
+export interface Session { id: string; starts_at: string; duration_min: number; title: string }
+export interface Booking { id: string; session_id: string; client_id: string }
