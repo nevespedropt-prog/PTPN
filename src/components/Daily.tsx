@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
-import { localDate } from '../lib/dates'
 import type { Checkin, Habit, HabitLog } from '../types'
 
 const MOOD = ['Low', '', '', '', 'Great']
@@ -20,7 +19,7 @@ function Scale({ label, value, set, ends }: { label: string; value: number | nul
   )
 }
 
-function Habits({ today }: { today: string }) {
+export function Habits({ today }: { today: string }) {
   const { profile } = useAuth()
   const [habits, setHabits] = useState<Habit[]>([])
   const [logs, setLogs] = useState<Record<string, HabitLog>>({})
@@ -98,7 +97,7 @@ function Habits({ today }: { today: string }) {
   )
 }
 
-function CheckinForm({ today }: { today: string }) {
+export function CheckinForm({ today }: { today: string }) {
   const { profile } = useAuth()
   const [mood, setMood] = useState<number | null>(null)
   const [energy, setEnergy] = useState<number | null>(null)
@@ -145,18 +144,5 @@ function CheckinForm({ today }: { today: string }) {
       <button disabled={busy}>{busy ? 'Saving...' : saved ? 'Update check-in' : 'Save check-in'}</button>
       {err && <span className="err">{err}</span>}
     </form>
-  )
-}
-
-export default function Today() {
-  const [today] = useState(() => localDate())
-  const [heading] = useState(() => new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }))
-  return (
-    <>
-      <h1>Today</h1>
-      <p className="mute" style={{ marginTop: -8 }}>{heading}</p>
-      <Habits today={today} />
-      <CheckinForm today={today} />
-    </>
   )
 }
