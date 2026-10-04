@@ -10,11 +10,13 @@ export default function More() {
   const rows: { to: string; icon: IconName; title: string; sub: string }[] = coach
     ? [
         { to: '/slots', icon: 'calendar', title: 'Sessions', sub: 'Open and booked PT slots' },
+        { to: '/meal-plans', icon: 'nutrition', title: 'Meal plans', sub: 'Weekly plans with shopping lists' },
         { to: '/recipes', icon: 'nutrition', title: 'Recipe book', sub: 'Meal ideas with macros' },
         { to: '/community', icon: 'trophy', title: 'Community', sub: 'Announcements and challenges' },
         { to: '/resources', icon: 'link', title: 'Resources', sub: 'Guides and links for clients' },
       ]
     : [
+        { to: '/meal-plans', icon: 'nutrition', title: 'Meal plans', sub: 'Weekly plans with shopping lists' },
         { to: '/recipes', icon: 'nutrition', title: 'Recipe book', sub: 'Meal ideas with macros' },
         { to: '/community', icon: 'trophy', title: 'Community', sub: 'Announcements and challenges' },
         { to: '/book', icon: 'calendar', title: 'Book a session', sub: 'Pick a PT slot' },
