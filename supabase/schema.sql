@@ -181,5 +181,71 @@ create policy "checkins insert own" on public.checkins for insert with check (cl
 create policy "checkins update own" on public.checkins for update
   using (client_id = auth.uid()) with check (client_id = auth.uid());
 
+-- Custom metrics and %1RM
+create table public.metrics (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.profiles(id) on delete cascade,
+  name text not null,
+  unit text not null default '',
+  lower_is_better boolean not null default false,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create table public.metric_logs (
+  id uuid primary key default gen_random_uuid(),
+  metric_id uuid not null references public.metrics(id) on delete cascade,
+  client_id uuid not null references public.profiles(id) on delete cascade,
+  date date not null default current_date,
+  value numeric not null,
+  unique (metric_id, date)
+);
+create index metric_logs_client_date on public.metric_logs (client_id, date);
+
+create table public.one_rep_maxes (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.profiles(id) on delete cascade,
+  exercise text not null,
+  weight_kg numeric not null check (weight_kg > 0),
+  date date not null default current_date,
+  created_at timestamptz not null default now()
+);
+create index one_rep_maxes_client on public.one_rep_maxes (client_id, date);
+
+alter table public.programme_exercises
+  add column percent_1rm numeric check (percent_1rm > 0 and percent_1rm <= 150);
+
+alter table public.metrics enable row level security;
+alter table public.metric_logs enable row level security;
+alter table public.one_rep_maxes enable row level security;
+
+-- metrics: client reads own, coach manages all
+create policy "metrics read" on public.metrics for select
+  using (client_id = auth.uid() or public.is_coach());
+create policy "metrics coach write" on public.metrics for all
+  using (public.is_coach()) with check (public.is_coach());
+
+-- metric logs: client logs against own metrics, coach can log test results for any client
+create policy "mlogs read" on public.metric_logs for select
+  using (client_id = auth.uid() or public.is_coach());
+create policy "mlogs insert" on public.metric_logs for insert
+  with check (public.is_coach() or (client_id = auth.uid() and exists (select 1 from public.metrics m where m.id = metric_id and m.client_id = auth.uid())));
+create policy "mlogs update" on public.metric_logs for update
+  using (client_id = auth.uid() or public.is_coach())
+  with check (public.is_coach() or (client_id = auth.uid() and exists (select 1 from public.metrics m where m.id = metric_id and m.client_id = auth.uid())));
+create policy "mlogs delete" on public.metric_logs for delete
+  using (client_id = auth.uid() or public.is_coach());
+
+-- one-rep maxes: client and coach can record, client reads own, coach reads all
+create policy "1rm read" on public.one_rep_maxes for select
+  using (client_id = auth.uid() or public.is_coach());
+create policy "1rm insert" on public.one_rep_maxes for insert
+  with check (client_id = auth.uid() or public.is_coach());
+create policy "1rm update" on public.one_rep_maxes for update
+  using (client_id = auth.uid() or public.is_coach())
+  with check (client_id = auth.uid() or public.is_coach());
+create policy "1rm delete" on public.one_rep_maxes for delete
+  using (client_id = auth.uid() or public.is_coach());
+
 -- To make yourself the coach, after signing up once:
 -- update public.profiles set role = 'coach' where id = (select id from auth.users where email = 'YOUR@EMAIL');

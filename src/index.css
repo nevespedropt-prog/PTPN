@@ -137,3 +137,9 @@ table.grid tr.off td { opacity: .45; }
 button.small { min-height: 34px; padding: 4px 10px; font-size: 13px; }
 .checkin { padding: 10px 0; border-bottom: 1px solid var(--line); }
 .checkin:last-child { border-bottom: 0; }
+
+/* metrics + max lifts */
+.big { font-size: 1.7rem; font-weight: 800; letter-spacing: -.01em; } .big small { font-size: .85rem; font-weight: 600; color: var(--mute); }
+.lift { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.lift.small { padding: 6px 0; font-size: .92rem; }
+b.load { color: var(--red); }
