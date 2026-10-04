@@ -55,7 +55,7 @@ function AddClient({ done }: { done: () => void }) {
     <form className="card row" onSubmit={add}>
       <input placeholder="Name" value={name} onChange={e => setName(e.target.value)} required />
       <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-      <input placeholder="Temporary password" value={password} onChange={e => setPassword(e.target.value)} minLength={6} required />
+      <input placeholder="Temp password" value={password} onChange={e => setPassword(e.target.value)} minLength={6} required />
       <button disabled={busy}>{busy ? 'Adding...' : 'Add client'}</button>
       {err && <span className="err">{err}</span>}
       {created && <span className="mute">Added. Send them: {created.email} / {created.password}</span>}

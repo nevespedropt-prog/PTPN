@@ -11,7 +11,7 @@ export function ProgrammeView({ programme, exercises }: { programme: Programme; 
       {days.length === 0 && <p className="mute">No exercises yet.</p>}
       {days.map(d => (
         <div key={d}>
-          <b>{d}</b>
+          <span className="day">{d}</span>
           <table><tbody>
             {exercises.filter(x => x.day_label === d).sort((a, b) => a.sort - b.sort).map(x => (
               <tr key={x.id}><td>{x.exercise}</td><td>{x.sets ?? ''}{x.reps ? ` x ${x.reps}` : ''}</td><td className="mute">{x.notes}</td></tr>

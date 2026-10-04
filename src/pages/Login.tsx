@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { Logo } from '../components/Logo'
 
 export default function Login() {
   const [mode, setMode] = useState<'in' | 'up'>('in')
@@ -19,23 +20,28 @@ export default function Login() {
     setBusy(false)
   }
 
+  function pick(m: 'in' | 'up') { setMode(m); setMsg('') }
+
   return (
-    <main>
-      <div className="card">
-        <h1>MY GYM {mode === 'in' ? 'sign in' : 'sign up'}</h1>
-        <form className="col" onSubmit={submit}>
-          {mode === 'up' && <input placeholder="Full name" value={name} onChange={e => setName(e.target.value)} required />}
-          <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
-          <input type="password" placeholder="Password (min 6)" minLength={6} value={password} onChange={e => setPassword(e.target.value)} required />
-          <button disabled={busy}>{mode === 'in' ? 'Sign in' : 'Create account'}</button>
-        </form>
-        {msg && <p className="err">{msg}</p>}
-        <p className="mute">
-          <a href="#" onClick={e => { e.preventDefault(); setMode(mode === 'in' ? 'up' : 'in'); setMsg('') }}>
-            {mode === 'in' ? 'New client? Create an account' : 'Have an account? Sign in'}
-          </a>
-        </p>
+    <main className="auth">
+      <div className="hero">
+        <Logo size={72} tagline />
       </div>
+      <div className="card">
+        <div className="tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={mode === 'in'} className={mode === 'in' ? 'on' : ''} onClick={() => pick('in')}>Sign in</button>
+          <button type="button" role="tab" aria-selected={mode === 'up'} className={mode === 'up' ? 'on' : ''} onClick={() => pick('up')}>Create account</button>
+        </div>
+        <form className="col" onSubmit={submit}>
+          {mode === 'up' && <input placeholder="Full name" autoComplete="name" value={name} onChange={e => setName(e.target.value)} required />}
+          <input type="email" placeholder="Email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required />
+          <input type="password" placeholder="Password (min 6)" minLength={6} autoComplete={mode === 'in' ? 'current-password' : 'new-password'}
+            value={password} onChange={e => setPassword(e.target.value)} required />
+          <button disabled={busy}>{busy ? 'One moment...' : mode === 'in' ? 'Sign in' : 'Create account'}</button>
+        </form>
+        {msg && <p className={msg.startsWith('Check') ? 'ok' : 'err'}>{msg}</p>}
+      </div>
+      <p className="mute" style={{ textAlign: 'center' }}>Your coach may have already set up an account for you.</p>
     </main>
   )
 }
