@@ -68,8 +68,8 @@ export default function Photos({ clientId, canUpload }: { clientId: string; canU
         <div className="card">
           <div className="row between" style={{ marginBottom: 8 }}><h2 style={{ margin: 0 }}>Add a photo</h2></div>
           <div className="chips">{POSES.map(p => <button key={p} className={'chip' + (pose === p ? ' on' : '')} onClick={() => setPose(p)} style={{ textTransform: 'capitalize' }}>{p}</button>)}</div>
-          <input ref={file} type="file" accept="image/*" capture="environment" hidden onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = '' }} />
-          <button className="block" onClick={() => file.current?.click()} disabled={busy}><Icon name="camera" size={18} />{busy ? 'Uploading...' : `Take or choose a ${pose} photo`}</button>
+          <input ref={file} type="file" accept="image/*" hidden onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = '' }} />
+          <button className="block" onClick={() => file.current?.click()} disabled={busy}><Icon name="upload" size={18} />{busy ? 'Uploading...' : `Upload a ${pose} photo`}</button>
           {err && <p className="err">{err}</p>}
           <p className="mute small" style={{ marginBottom: 0 }}>Only you and your coach can see these.</p>
         </div>
