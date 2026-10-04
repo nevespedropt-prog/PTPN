@@ -6,12 +6,13 @@ function Chart({ points, unit }: { points: { x: string; y: number }[]; unit: str
   if (points.length < 2) return <p className="mute">Log at least two entries to see a trend.</p>
   const W = 320, H = 100, ys = points.map(p => p.y)
   const min = Math.min(...ys), max = Math.max(...ys), span = max - min || 1
-  const pts = points.map((p, i) => `${(i / (points.length - 1)) * W},${H - ((p.y - min) / span) * (H - 10) - 5}`).join(' ')
+  const L = 44 // left gutter so axis labels never sit on the line
+  const pts = points.map((p, i) => `${L + (i / (points.length - 1)) * (W - L - 4)},${H - ((p.y - min) / span) * (H - 20) - 10}`).join(' ')
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Trend in ${unit}`}>
-      <polyline points={pts} fill="none" stroke="#c80000" strokeWidth="2" />
-      <text x="0" y="10" fontSize="9" fill="#6b6b6b">{max}{unit}</text>
-      <text x="0" y={H} fontSize="9" fill="#6b6b6b">{min}{unit}</text>
+    <svg className="chart" viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Trend in ${unit}`}>
+      <polyline className="line" points={pts} />
+      <text className="axis" x="0" y="10">{max}{unit}</text>
+      <text className="axis" x="0" y={H}>{min}{unit}</text>
     </svg>
   )
 }

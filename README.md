@@ -1,6 +1,6 @@
 # PTPN
 
-Web app for MY GYM personal training clients and their coach. React + Vite + TypeScript, Supabase backend.
+Web app for PTPN personal training clients and their coach. React + Vite + TypeScript, Supabase backend.
 
 - Clients: view their programme, log weight and body fat with trend charts, book PT sessions.
 - Coach: see all clients, build programmes, view client progress, manage session slots.
