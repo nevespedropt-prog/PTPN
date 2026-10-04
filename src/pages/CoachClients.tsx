@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import type { Profile, Programme, ProgrammeExercise } from '../types'
+import type { OneRepMax, Profile, Programme, ProgrammeExercise } from '../types'
 import { ProgrammeView } from './MyProgramme'
 import Progress from './Progress'
 import CoachHabits from './CoachHabits'
@@ -67,6 +67,7 @@ function AddClient({ done }: { done: () => void }) {
 function ClientDetail({ client, back }: { client: Profile; back: () => void }) {
   const [progs, setProgs] = useState<Programme[]>([])
   const [exs, setExs] = useState<ProgrammeExercise[]>([])
+  const [maxes, setMaxes] = useState<OneRepMax[]>([])
   const [tab, setTab] = useState<'prog' | 'progress' | 'habits'>('prog')
   const [name, setName] = useState('')
   const [err, setErr] = useState('')
@@ -75,12 +76,14 @@ function ClientDetail({ client, back }: { client: Profile; back: () => void }) {
     const { data: p } = await supabase.from('programmes').select('*').eq('client_id', client.id).order('created_at', { ascending: false })
     const list = (p ?? []) as Programme[]
     setProgs(list)
+    const { data: mx } = await supabase.from('one_rep_maxes').select('*').eq('client_id', client.id).order('date', { ascending: false }).order('created_at', { ascending: false })
+    setMaxes((mx ?? []) as OneRepMax[])
     if (list.length) {
       const { data: e } = await supabase.from('programme_exercises').select('*').in('programme_id', list.map(x => x.id))
       setExs((e ?? []) as ProgrammeExercise[])
     } else setExs([])
   }, [client.id])
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load() }, [load, tab])
 
   async function addProgramme(e: React.FormEvent) {
     e.preventDefault(); setErr('')
@@ -107,7 +110,7 @@ function ClientDetail({ client, back }: { client: Profile; back: () => void }) {
           </form>
           {progs.map(p => (
             <div key={p.id}>
-              <ProgrammeView programme={p} exercises={exs.filter(x => x.programme_id === p.id)} />
+              <ProgrammeView programme={p} exercises={exs.filter(x => x.programme_id === p.id)} maxes={maxes} />
               <div className="row">
                 <AddExercise programmeId={p.id} count={exs.filter(x => x.programme_id === p.id).length} done={load} />
                 <button className="ghost" onClick={() => toggle(p)}>{p.active ? 'Archive' : 'Reactivate'}</button>
@@ -125,13 +128,14 @@ function AddExercise({ programmeId, count, done }: { programmeId: string; count:
   const [ex, setEx] = useState('')
   const [sets, setSets] = useState('')
   const [reps, setReps] = useState('')
+  const [pct, setPct] = useState('')
 
   async function add(e: React.FormEvent) {
     e.preventDefault()
     await supabase.from('programme_exercises').insert({
-      programme_id: programmeId, day_label: day, exercise: ex, sets: sets ? Number(sets) : null, reps: reps || null, sort: count,
+      programme_id: programmeId, day_label: day, exercise: ex, sets: sets ? Number(sets) : null, reps: reps || null, percent_1rm: pct ? Number(pct) : null, sort: count,
     })
-    setEx(''); setSets(''); setReps(''); done()
+    setEx(''); setSets(''); setReps(''); setPct(''); done()
   }
   return (
     <form className="row" onSubmit={add}>
@@ -139,6 +143,7 @@ function AddExercise({ programmeId, count, done }: { programmeId: string; count:
       <input placeholder="Exercise" value={ex} onChange={e => setEx(e.target.value)} required />
       <input type="number" placeholder="Sets" value={sets} onChange={e => setSets(e.target.value)} style={{ width: 70 }} />
       <input placeholder="Reps" value={reps} onChange={e => setReps(e.target.value)} style={{ width: 80 }} />
+      <input type="number" inputMode="decimal" step="any" min="1" max="150" placeholder="%1RM" value={pct} onChange={e => setPct(e.target.value)} style={{ width: 84 }} aria-label="Percent of one-rep max" />
       <button>Add</button>
     </form>
   )
