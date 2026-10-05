@@ -147,6 +147,19 @@ const dk = (await as(A, `select min(kcal) lo, max(kcal) hi from recipes where me
 ok(Number(dk.lo) > 300 && Number(dk.hi) < 900, 'dinner kcal sane')
 ok(await count(A, `select 1 from meal_plan_template_items i left join recipes r on r.id=i.recipe_id where r.id is null`) === 0, 'all items resolve')
 
+// push notifications: subscriptions are private, server settings are unreadable
+await db.exec(`insert into push_config (vapid_public, vapid_private, secret, app_url) values ('PUB', 'PRIV', 'SECRET', 'https://x.test/app/')`)
+ok(!(await as(A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ('${A}', 'https://push.test/a', 'k', 'a')`)).error, 'client saves own push subscription')
+ok((await as(A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ('${B}', 'https://push.test/b', 'k', 'a')`)).error, "client cannot save a subscription for someone else")
+ok(await count(B, `select id from push_subscriptions`) === 0, 'other client cannot see Ana subscription')
+ok(await count(C, `select id from push_subscriptions`) === 0, 'coach cannot read client subscriptions directly either')
+ok((await as(A, `select * from push_config`)).error, 'client cannot read push settings')
+ok((await as(C, `select * from push_config`)).error, 'coach cannot read push settings')
+ok((await as(A, `select public.push_public_key() k`)).rows?.[0]?.k === 'PUB', 'signed-in user can fetch the public push key')
+ok((await as(null, `select public.push_public_key() k`)).error, 'anon cannot call push_public_key')
+ok((await as(A, `delete from push_subscriptions where endpoint = 'https://push.test/a' returning id`)).rows?.length === 1, 'client removes own subscription')
+ok((await as(C, `update posts set pushed_at = now()`)).error === undefined, 'coach can mark posts pushed')
+
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)
 const left = await db.query(`select (select count(*) from food_logs) f, (select count(*) from messages) m, (select count(*) from client_workouts) w, (select count(*) from workouts where created_by = '${A}') ow`)
