@@ -135,7 +135,7 @@ export default function App() {
           { to: '/meal-plans', icon: 'nutrition', label: 'Meal plans' },
           { to: '/recipes', icon: 'nutrition', label: 'Recipe book' },
           { to: '/community', icon: 'trophy', label: 'Community' },
-          { to: '/resources', icon: 'link', label: 'Resources' },
+          { to: '/resources', icon: 'link', label: 'Workout videos' },
         ]}>
         <Routes>
           <Route path="/dashboard" element={<Dashboard />} />
@@ -172,7 +172,7 @@ export default function App() {
       extras={[
         { to: '/community', icon: 'trophy', label: 'Community' },
         { to: '/book', icon: 'calendar', label: 'Book a session' },
-        { to: '/resources', icon: 'link', label: 'Resources' },
+        { to: '/resources', icon: 'link', label: 'Workout videos' },
       ]}>
       <Routes>
         <Route path="/home" element={<Home />} />

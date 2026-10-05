@@ -13,12 +13,12 @@ export default function More() {
         { to: '/meal-plans', icon: 'nutrition', title: 'Meal plans', sub: 'Weekly plans with shopping lists' },
         { to: '/recipes', icon: 'nutrition', title: 'Recipe book', sub: 'Meal ideas with macros' },
         { to: '/community', icon: 'trophy', title: 'Community', sub: 'Announcements and challenges' },
-        { to: '/resources', icon: 'link', title: 'Resources', sub: 'Guides and links for clients' },
+        { to: '/resources', icon: 'link', title: 'Workout videos', sub: 'Videos and links for clients' },
       ]
     : [
         { to: '/community', icon: 'trophy', title: 'Community', sub: 'Announcements and challenges' },
         { to: '/book', icon: 'calendar', title: 'Book a session', sub: 'Pick a PT slot' },
-        { to: '/resources', icon: 'link', title: 'Resources', sub: 'Guides from your coach' },
+        { to: '/resources', icon: 'link', title: 'Workout videos', sub: 'Videos from your coach' },
       ]
   return (
     <>

@@ -65,7 +65,7 @@ export default function Resources() {
     if (error) return setErr(error.message)
     setF({ title: '', url: '', category: '', description: '' }); setAdding(false); load()
   }
-  async function remove(id: string) { if (confirm('Remove this resource?')) { await supabase.from('resources').delete().eq('id', id); load() } }
+  async function remove(id: string) { if (confirm('Remove this video or link?')) { await supabase.from('resources').delete().eq('id', id); load() } }
 
   async function rename(r: Resource) {
     const t = prompt('Video title', r.title)?.trim()
@@ -79,7 +79,7 @@ export default function Resources() {
 
   return (
     <>
-      <PageHead eyebrow="Learn" title="Resources" sub="Guides, videos and links from your coach">
+      <PageHead eyebrow="Learn" title="Workout videos" sub="Videos and links from your coach to try">
         {coach && <button className="sm" onClick={() => setAdding(true)}><Icon name="plus" size={16} />Add</button>}
       </PageHead>
       {cats.length > 0 && <div className="chips">
@@ -87,7 +87,7 @@ export default function Resources() {
         {cats.map(c => <button key={c} className={'chip' + (cat === c ? ' on' : '')} onClick={() => setCat(c)}>{c}</button>)}
       </div>}
       {!rows && <Skeleton n={3} />}
-      {rows && list.length === 0 && <div className="card"><Empty icon="link" title="Nothing here yet">{coach ? 'Add guides, videos or articles for your clients.' : 'Your coach has not shared any resources yet.'}</Empty></div>}
+      {rows && list.length === 0 && <div className="card"><Empty icon="link" title="Nothing here yet">{coach ? 'Add Instagram videos or links for your clients.' : 'Your coach has not shared any videos yet.'}</Empty></div>}
       {videos.length > 0 && <VideoGrid videos={videos} coach={coach} onRemove={remove} onRename={rename} />}
       {links.length > 0 && <div className="card tight"><div className="list">
         {links.map(r => (
@@ -101,7 +101,7 @@ export default function Resources() {
           </div>
         ))}
       </div></div>}
-      <Sheet open={adding} onClose={() => setAdding(false)} title="Add a resource">
+      <Sheet open={adding} onClose={() => setAdding(false)} title="Add a video or link">
         <form className="stack" onSubmit={add}>
           <input placeholder="Title" value={f.title} onChange={e => setF({ ...f, title: e.target.value })} required />
           <input placeholder="Link, e.g. an Instagram reel or any web page" value={f.url} onChange={e => setF({ ...f, url: e.target.value })} required />

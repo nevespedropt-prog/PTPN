@@ -17,7 +17,7 @@ Clients: Home (today's workout, macro rings, habits, check-in), Train (schedule,
 
 Coach: dashboard, clients (add client through an edge function), per-client overview, training, nutrition, habits, library (225 exercises, 16 workout templates, 6 programmes, workout and programme builders), meal plan library (apply a plan to a client, portions fitted to their calorie target), inbox, announcements, challenges, resources, session slots.
 
-Navigation on phones: bottom bar Home, Train, Nutrition, Progress, More. More opens a slide-out drawer with the remaining pages (Coach chat, Community, Book a session, Resources, account, sign out). For the coach the bar is Dashboard, Clients, Library, Inbox, More.
+Navigation on phones: bottom bar Home, Train, Nutrition, Progress, More. More opens a slide-out drawer with the remaining pages (Coach chat, Community, Book a session, Workout videos, account, sign out). For the coach the bar is Dashboard, Clients, Library, Inbox, More.
 
 ## Data in the live database
 
