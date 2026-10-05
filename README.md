@@ -43,6 +43,10 @@ The workflow in `.github/workflows/deploy.yml` builds and publishes on every pus
 2. Repo Settings > Secrets and variables > Actions > Variables: add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. One variable per value, with only the value in the box.
 3. In Supabase > Authentication > URL Configuration, set the Site URL to the Pages address.
 
+## Tests
+
+`tests/` has a database (row-level security) suite and a browser end-to-end suite that run on an in-memory Postgres, with no Supabase project needed. See `tests/README.md`.
+
 ## Security notes
 
 Every table has row-level security: clients only see their own data, the coach sees everything, and the leaderboard and message-read helpers are narrow `security definer` functions. Progress photos live in a private bucket with one folder per client. Turn on leaked-password protection in Supabase Auth settings if your plan allows it.
