@@ -12,20 +12,63 @@ import Icon from '../components/Icon'
 const DAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 type Row = TemplateItem & { recipe?: Recipe }
 
+const FRACTIONS: Record<string, number> = { '1/4': 0.25, '1/2': 0.5, '3/4': 0.75 }
+const num = (t: string) => FRACTIONS[t] ?? Number(t)
+const fmtQty = (n: number) => {
+  const whole = Math.floor(n), frac = Math.round((n - whole) * 4) / 4
+  const f = frac === 0.25 ? '1/4' : frac === 0.5 ? '1/2' : frac === 0.75 ? '3/4' : ''
+  if (frac === 1) return String(whole + 1)
+  return whole ? (f ? `${whole} ${f}` : String(whole)) : f || '1/4'
+}
+
+/** Adds up the ingredient lines of every planned meal: gram and ml items by weight, seasonings by spoon, clove or piece. */
 function groceries(rows: Row[]) {
   const totals = new Map<string, { g: number; unit: string }>()
-  const extras = new Set<string>()
+  const spices = new Map<string, { n: number; unit: string }>()
+  const taste = new Set<string>()
+  const addSpice = (name: string, unit: string, n: number) => {
+    const key = `${unit}|${name.toLowerCase()}`
+    const cur = spices.get(key) ?? { n: 0, unit }
+    cur.n += n; spices.set(key, cur)
+  }
   for (const r of rows) {
+    const sv = Number(r.servings)
     for (const ing of r.recipe?.ingredients ?? []) {
-      const m = /^(\d+(?:\.\d+)?) (g|ml) (.+)$/.exec(ing)
-      if (!m) { extras.add(ing); continue }
-      const key = m[3].toLowerCase()
-      const cur = totals.get(key) ?? { g: 0, unit: m[2] }
-      cur.g += Number(m[1]) * Number(r.servings); totals.set(key, cur)
+      let m = /^(\d+(?:\.\d+)?) (g|ml) (.+)$/.exec(ing)
+      if (m) {
+        const key = m[3].toLowerCase()
+        const cur = totals.get(key) ?? { g: 0, unit: m[2] }
+        cur.g += Number(m[1]) * sv; totals.set(key, cur)
+        continue
+      }
+      if (/ to taste$/i.test(ing)) { taste.add(ing.replace(/ to taste$/i, '')); continue }
+      m = /^zest and juice of (\S+) (.+)$/i.exec(ing)
+      if (m) { addSpice(`${m[2]} (zest and juice)`, '', num(m[1]) * sv); continue }
+      m = /^pinch of (.+)$/i.exec(ing)
+      if (m) { addSpice(m[1], 'pinch', sv); continue }
+      m = /^(\d+(?:\.\d+)?|\d\/\d) (tsp|tbsp|ml|cloves?|sprigs?) (?:of )?(.+)$/i.exec(ing)
+      if (m) {
+        const u = m[2].toLowerCase()
+        if (u === 'tbsp') addSpice(m[3], 'tsp', num(m[1]) * 3 * sv)
+        else addSpice(m[3], u.startsWith('clove') ? 'clove' : u.startsWith('sprig') ? 'sprig' : u, num(m[1]) * sv)
+        continue
+      }
+      m = /^(\d+(?:\.\d+)?|\d\/\d) (.+)$/.exec(ing)
+      if (m) { addSpice(m[2], '', num(m[1]) * sv); continue }
+      taste.add(ing)
     }
   }
   const list = [...totals.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([n, v]) => `${Math.round(v.g / 5) * 5 || Math.round(v.g)} ${v.unit} ${n}`)
-  return { list, extras: [...extras].sort() }
+  const extras = [...spices.entries()].map(([key, v]) => {
+    const name = key.slice(key.indexOf('|') + 1)
+    if (v.unit === 'tsp') return v.n >= 3 ? `${fmtQty(Math.round((v.n / 3) * 2) / 2)} tbsp ${name}` : `${fmtQty(v.n)} tsp ${name}`
+    if (v.unit === 'clove') return `${Math.ceil(v.n)} clove${Math.ceil(v.n) === 1 ? '' : 's'} ${name}`
+    if (v.unit === 'sprig') return `${Math.ceil(v.n)} sprig${Math.ceil(v.n) === 1 ? '' : 's'} ${name}`
+    if (v.unit === 'pinch') return `${Math.ceil(v.n)} pinch${Math.ceil(v.n) === 1 ? '' : 'es'} ${name}`
+    if (v.unit === 'ml') return `${Math.round(v.n / 5) * 5} ml ${name}`
+    return `${Math.ceil(v.n - 0.01)} ${name}`
+  }).sort((a, b) => a.replace(/^[\d/ ]+(tsp|tbsp)? ?/, '').localeCompare(b.replace(/^[\d/ ]+(tsp|tbsp)? ?/, '')))
+  return { list, extras, taste: [...taste].sort() }
 }
 
 function Detail({ tpl }: { tpl: MealPlanTemplate }) {
@@ -99,9 +142,10 @@ function Detail({ tpl }: { tpl: MealPlanTemplate }) {
         })}
       </>}
       {rows && view === 'shop' && <>
-        <p className="mute small" style={{ margin: 0 }}>Whole week, all servings added up. Quantities are as listed in the recipes.</p>
+        <p className="mute small" style={{ margin: 0 }}>Whole week, all servings added up, including seasonings. Spoons are rounded to the nearest half tablespoon.</p>
         <ul className="ingredients">{shop.list.map(x => <li key={x}>{x}</li>)}</ul>
-        {shop.extras.length > 0 && <><h3>Pantry and extras</h3><ul className="ingredients">{shop.extras.map(x => <li key={x}>{x}</li>)}</ul></>}
+        {shop.extras.length > 0 && <><h3>Seasonings and extras</h3><ul className="ingredients">{shop.extras.map(x => <li key={x}>{x}</li>)}</ul></>}
+        {shop.taste.length > 0 && <><h3>To taste</h3><p className="mute small" style={{ margin: 0 }}>{shop.taste.join(', ')}</p></>}
       </>}
       {coach && <>
         <hr className="sep" />
