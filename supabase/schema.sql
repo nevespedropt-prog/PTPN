@@ -550,11 +550,8 @@ alter publication supabase_realtime add table public.messages;
 -- update public.profiles set role = 'coach' where id = (select id from auth.users where email = 'YOUR@EMAIL');
 
 
--- ========== v3: meal plan library (templates, recipe photos and sources) ==========
+-- ========== v3: meal plan library (templates and recipe photos) ==========
 alter table public.recipes add column if not exists image_url text;
-alter table public.recipes add column if not exists image_credit text;
-alter table public.recipes add column if not exists inspired_by text;
-alter table public.recipes add column if not exists inspired_url text;
 
 create table if not exists public.meal_plan_templates (
   id uuid primary key default gen_random_uuid(),
@@ -563,11 +560,6 @@ create table if not exists public.meal_plan_templates (
   kcal int not null default 2000,
   description text not null default '',
   image_url text,
-  image_credit text,
-  source_name text,
-  source_title text,
-  source_url text,
-  source_posted date,
   plan_no int,
   created_by uuid references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now()

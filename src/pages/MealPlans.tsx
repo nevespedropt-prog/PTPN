@@ -6,7 +6,7 @@ import { useClients } from '../hooks'
 import { MEAL_LABEL, MEALS, forServings, sum } from '../lib/nutrition'
 import type { MealPlanTemplate, Recipe, TemplateItem } from '../types'
 import { Empty, MacroChips, PageHead, Sheet, Skeleton } from '../components/ui'
-import RecipeArt, { PhotoCredit } from '../components/RecipeArt'
+import RecipeArt from '../components/RecipeArt'
 import Icon from '../components/Icon'
 
 const DAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -158,10 +158,6 @@ function Detail({ tpl }: { tpl: MealPlanTemplate }) {
         <button disabled={!clientId || !rows} onClick={apply}>Apply to weekly plan</button>
         {msg && <span className={msg.startsWith('Applied') ? 'ok' : 'err'}>{msg}</span>}
       </>}
-      <p className="mute small" style={{ margin: 0 }}>
-        {tpl.source_name && <>Inspired by {tpl.source_url ? <a href={tpl.source_url} target="_blank" rel="noopener noreferrer">{tpl.source_name}, {tpl.source_title}</a> : tpl.source_name}. Dishes rewritten and re-balanced, macros are estimates. </>}
-        <PhotoCredit credit={tpl.image_credit} />
-      </p>
     </div>
   )
 }

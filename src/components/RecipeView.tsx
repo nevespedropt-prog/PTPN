@@ -1,7 +1,7 @@
 import type { Recipe } from '../types'
 import { forServings } from '../lib/nutrition'
 import { MacroChips } from './ui'
-import RecipeArt, { PhotoCredit } from './RecipeArt'
+import RecipeArt from './RecipeArt'
 
 /** Photo, macros, ingredients and method for one recipe at a given number of servings. */
 export default function RecipeView({ recipe, servings = 1 }: { recipe: Recipe; servings?: number }) {
@@ -15,10 +15,6 @@ export default function RecipeView({ recipe, servings = 1 }: { recipe: Recipe; s
       <ul className="ingredients">{recipe.ingredients.map((x, i) => <li key={i}>{x}</li>)}</ul>
       <h3>Method</h3>
       <ol className="steps">{recipe.steps.map((x, i) => <li key={i}>{x}</li>)}</ol>
-      {(recipe.inspired_by || recipe.image_credit) && <p className="mute small" style={{ margin: 0 }}>
-        {recipe.inspired_by && <>Inspired by {recipe.inspired_url ? <a href={recipe.inspired_url} target="_blank" rel="noopener noreferrer">{recipe.inspired_by}</a> : recipe.inspired_by}. </>}
-        <PhotoCredit credit={recipe.image_credit} />
-      </p>}
     </div>
   )
 }

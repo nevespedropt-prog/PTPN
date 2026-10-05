@@ -13,8 +13,3 @@ export default function RecipeArt({ name, url, tall, children }: { name: string;
     </div>
   )
 }
-
-export function PhotoCredit({ credit }: { credit?: string | null }) {
-  if (!credit) return null
-  return <span className="photo-credit">Photo: <a href={credit} target="_blank" rel="noopener noreferrer">Pexels</a></span>
-}

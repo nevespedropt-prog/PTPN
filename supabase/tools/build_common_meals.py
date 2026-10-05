@@ -25,8 +25,8 @@ if __name__ == '__main__':
         k, p, cb, f = b.macros(ings)
         url, credit = img(photo)
         labels = [b.ing_label(a, g) for a, g in ings] + extras
-        rows.append(f"({uid('recipe', name)},{q(name)},{q(meal)},{q(desc)},{prep},{k},{p},{cb},{f},{arr(labels)},{arr(steps)},{arr(tags)},{q(url)},{q(credit)})")
-    out.append("insert into public.recipes (id, name, meal_type, description, prep_min, kcal, protein, carbs, fat, ingredients, steps, tags, image_url, image_credit) values")
+        rows.append(f"({uid('recipe', name)},{q(name)},{q(meal)},{q(desc)},{prep},{k},{p},{cb},{f},{arr(labels)},{arr(steps)},{arr(tags)},{q(url)})")
+    out.append("insert into public.recipes (id, name, meal_type, description, prep_min, kcal, protein, carbs, fat, ingredients, steps, tags, image_url) values")
     out.append(",\n".join(rows) + "\non conflict (id) do nothing;\n")
     open(sys.argv[1], 'w').write("\n".join(out))
     print(f"foods {len(c.NEW_FOODS)}, recipes {len(rows)}")
