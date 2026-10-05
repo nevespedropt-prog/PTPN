@@ -464,6 +464,45 @@ console.log('Client flows')
   await ctx.close()
 }
 
+// ================= Installable app (PWA) on phone-sized devices =================
+{
+  const devices = [
+    { name: 'iPhone', viewport: { width: 390, height: 844 }, ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1' },
+    { name: 'Android', viewport: { width: 412, height: 915 }, ua: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36' },
+  ]
+  const m = await (await fetch(BASE + '/manifest.webmanifest')).json()
+  ok(m.display === 'standalone' && m.start_url && m.icons.some(i => i.purpose === 'maskable') && m.icons.some(i => i.sizes === '512x512'), 'manifest is installable (standalone, 512 and maskable icons)')
+  for (const i of m.icons) ok((await fetch(BASE + '/' + i.src)).headers.get('content-type') === 'image/png', 'icon served: ' + i.src)
+  ok((await fetch(BASE + '/icons/apple-touch-icon.png')).headers.get('content-type') === 'image/png', 'apple touch icon served')
+  for (const d of devices) {
+    const c = await browser.newContext({ viewport: d.viewport, userAgent: d.ua, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+    await c.addInitScript(([k, v]) => localStorage.setItem(k, v), [`sb-${REF}-auth-token`, JSON.stringify(sessionFor(IDS.ana, 'ana@x.com'))])
+    await c.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort())
+    const p = await c.newPage()
+    await p.goto(BASE + '/', { waitUntil: 'networkidle' })
+    ok(await p.locator('link[rel=manifest]').count() === 1 && await p.locator('link[rel=apple-touch-icon]').count() === 1, `${d.name}: manifest and touch icon linked`)
+    ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `${d.name}: no sideways scroll on home`)
+    await p.evaluate(() => navigator.serviceWorker.ready)
+    ok(await p.evaluate(async () => (await navigator.serviceWorker.getRegistrations()).length === 1), `${d.name}: service worker registered`)
+    await p.reload({ waitUntil: 'networkidle' })
+    await c.setOffline(true)
+    await p.reload({ waitUntil: 'domcontentloaded' }).catch(() => {})
+    await p.waitForTimeout(1200)
+    ok(await p.locator('#root').evaluate(r => r.children.length > 0), `${d.name}: app shell opens offline`)
+    ok(await p.getByText(/You are offline/).count() === 1, `${d.name}: offline bar shown`)
+    await shot(p, `pwa-offline-${d.name.toLowerCase()}`)
+    await c.setOffline(false)
+    await p.goto(BASE + '/more', { waitUntil: 'networkidle' })
+    if (d.name === 'iPhone') {
+      ok(await p.getByText('Install the app').count() === 1, 'iPhone: install card with Add to Home Screen steps')
+      await p.getByRole('button', { name: 'How' }).click()
+      ok(await p.getByText(/Add to Home Screen/).count() === 1, 'iPhone: install steps shown')
+    } else ok(await p.getByText('Install the app').count() === 0, 'Android: no iOS install card when the browser offers no prompt yet')
+    await shot(p, `pwa-more-${d.name.toLowerCase()}`)
+    await c.close()
+  }
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 await browser.close(); server.close()
 process.exit(fail ? 1 : 0)

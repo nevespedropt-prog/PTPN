@@ -211,7 +211,7 @@ export function startServer(db, { port = 4180, dist }) {
       // static app with SPA fallback
       let file = path.join(dist, url.pathname === '/' ? 'index.html' : url.pathname)
       if (!file.startsWith(dist) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) file = path.join(dist, 'index.html')
-      const types = { '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.html': 'text/html' }
+      const types = { '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.html': 'text/html', '.webmanifest': 'application/manifest+json', '.png': 'image/png' }
       res.writeHead(200, { 'content-type': types[path.extname(file)] || 'application/octet-stream' })
       res.end(fs.readFileSync(file))
     } catch (e) {

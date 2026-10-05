@@ -21,6 +21,7 @@ import { ClientChat, CoachChat } from './pages/Chat'
 import Book from './pages/Book'
 import Community from './pages/Community'
 import Resources from './pages/Resources'
+import { OfflineBar } from './components/Install'
 import Dashboard from './pages/coach/Dashboard'
 import Clients from './pages/coach/Clients'
 import ClientDetail from './pages/coach/ClientDetail'
@@ -104,7 +105,7 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
           </aside>
         </div>
       )}
-      <main><div className="wrap">{children}</div></main>
+      <main><OfflineBar /><div className="wrap">{children}</div></main>
     </>
   )
 }
