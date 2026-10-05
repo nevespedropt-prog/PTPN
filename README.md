@@ -23,7 +23,7 @@ No payments, on purpose.
 
 ## Setup
 
-1. Create a Supabase project. In the SQL Editor run `supabase/schema.sql`, then `supabase/seed.sql`, then `supabase/seed_meal_plans.sql` (the seed needs the `uuid-ossp` extension, which Supabase has by default).
+1. Create a Supabase project. In the SQL Editor run `supabase/schema.sql`, then `supabase/seed.sql`, then `supabase/seed_meal_plans.sql` and `supabase/seed_common_meals.sql` (the seed needs the `uuid-ossp` extension, which Supabase has by default).
 2. Deploy the edge function `supabase/functions/create-client` (it lets the coach create client accounts). `supabase functions deploy create-client`.
 3. Copy `.env.example` to `.env` and fill in the project URL and the anon (publishable) key.
 4. `npm install` then `npm run dev`.
