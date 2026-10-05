@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
 import { addDays, localDate, longDay, relDay, weekday } from '../../lib/dates'
@@ -142,7 +143,9 @@ export default function Nutrition() {
 
   return (
     <>
-      <PageHead eyebrow="Nutrition" title="Food diary" />
+      <PageHead eyebrow="Nutrition" title="Food diary">
+        <Link className="btn soft sm" to="/meal-plans">Meal plans</Link>
+      </PageHead>
       <div className="row between" style={{ marginBottom: 12 }}>
         <button className="icon" onClick={() => setDate(addDays(date, -1))} aria-label="Previous day"><Icon name="back" size={18} /></button>
         <div className="center"><b>{relDay(date)}</b><div className="mute small">{longDay(date)}</div></div>
