@@ -492,7 +492,8 @@ console.log('Client flows')
   ok((await fetch(BASE + '/icons/apple-touch-icon.png')).headers.get('content-type') === 'image/png', 'apple touch icon served')
   for (const d of devices) {
     const c = await browser.newContext({ viewport: d.viewport, userAgent: d.ua, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
-    await c.grantPermissions(['notifications'], { origin: BASE }) // headless Chrome starts with notifications denied; a real phone starts undecided
+    // Headless Chrome reports notifications as denied; a real phone starts undecided, so emulate that.
+    await c.addInitScript(() => { try { Object.defineProperty(Notification, 'permission', { get: () => 'default' }) } catch { /* no Notification API */ } })
     await c.addInitScript(([k, v]) => localStorage.setItem(k, v), [`sb-${REF}-auth-token`, JSON.stringify(sessionFor(IDS.ana, 'ana@x.com'))])
     await c.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort())
     const p = await c.newPage()
