@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { NavLink, Navigate, Route, Routes, Link } from 'react-router-dom'
 import { useAuth } from './auth'
 import { configured, supabase } from './lib/supabase'
@@ -32,6 +33,7 @@ interface NavItem { to: string; icon: IconName; label: string; badge?: number; w
 
 function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[]; children: React.ReactNode }) {
   const { profile, session } = useAuth()
+  const [menu, setMenu] = useState(false)
   const name = profile?.full_name || session?.user.email || ''
   const link = (n: NavItem) => (
     <NavLink key={n.to} to={n.to} className={n.where === 'm' ? 'm-only' : n.where === 'd' ? 'd-only' : undefined}>
@@ -40,17 +42,35 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
       {!!n.badge && <span className="dot">{n.badge > 9 ? '9+' : n.badge}</span>}
     </NavLink>
   )
+  // The hamburger drawer lists every page that does not have a tab on the phone bar.
+  const drawer = [...items.filter(n => n.where === 'd'), ...extras]
+  const menuBadge = drawer.reduce((t, n) => t + (n.badge ?? 0), 0)
+
+  useEffect(() => {
+    if (!menu) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false) }
+    document.addEventListener('keydown', onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+  }, [menu])
+
   return (
     <>
       <header className="top">
         <Link to="/" aria-label="Home"><Logo size={30} /></Link>
         <div className="actions">
-          <Link to="/more" aria-label="Menu and account"><Avatar name={name} size={34} /></Link>
+          <Link to="/account" aria-label="Account"><Avatar name={name} size={34} /></Link>
         </div>
       </header>
       <nav className="nav" aria-label="Main">
         <div className="nav-head"><Logo size={34} tagline /></div>
         {items.map(link)}
+        <button type="button" className="menu-btn m-only" onClick={() => setMenu(true)} aria-label="Open menu" aria-expanded={menu}>
+          <Icon name="menu" />
+          <span>Menu</span>
+          {menuBadge > 0 && <span className="dot">{menuBadge > 9 ? '9+' : menuBadge}</span>}
+        </button>
         <span className="nav-label">More</span>
         {extras.map(n => link({ ...n, where: 'd' }))}
         <Link to="/account" className="nav-foot item" style={{ borderTop: '1px solid var(--line)', paddingTop: 14, gap: 10 }}>
@@ -58,6 +78,32 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
           <span className="grow"><span className="title truncate" style={{ display: 'block' }}>{profile?.full_name || 'Account'}</span><span className="meta">{profile?.role === 'coach' ? 'Coach' : 'Client'}</span></span>
         </Link>
       </nav>
+      {menu && (
+        <div className="drawer-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setMenu(false) }}>
+          <aside className="drawer" role="dialog" aria-modal="true" aria-label="Menu">
+            <div className="drawer-head">
+              <Logo size={30} />
+              <button className="icon" onClick={() => setMenu(false)} aria-label="Close menu"><Icon name="x" size={18} /></button>
+            </div>
+            <Link to="/account" className="drawer-user" onClick={() => setMenu(false)}>
+              <Avatar name={name} size={44} />
+              <span className="grow"><b>{profile?.full_name || 'Account'}</b><br /><span className="mute small">{profile?.role === 'coach' ? 'Coach' : 'Client'} · Account and password</span></span>
+              <Icon name="chev" />
+            </Link>
+            <div className="drawer-list">
+              {drawer.map(n => (
+                <Link key={n.to} to={n.to} className="drawer-item" onClick={() => setMenu(false)}>
+                  <span className="drawer-icon"><Icon name={n.icon} size={19} /></span>
+                  <span className="grow">{n.label}</span>
+                  {!!n.badge && <span className="dot" style={{ position: 'static' }}>{n.badge > 9 ? '9+' : n.badge}</span>}
+                  <Icon name="chev" size={16} />
+                </Link>
+              ))}
+            </div>
+            <button className="ghost block" onClick={() => supabase.auth.signOut()}><Icon name="logout" size={18} />Sign out</button>
+          </aside>
+        </div>
+      )}
       <main><div className="wrap">{children}</div></main>
     </>
   )
@@ -83,7 +129,6 @@ export default function App() {
           { to: '/clients', icon: 'clients', label: 'Clients' },
           { to: '/library', icon: 'library', label: 'Library' },
           { to: '/inbox', icon: 'inbox', label: 'Inbox', badge: unread },
-          { to: '/more', icon: 'more', label: 'More', where: 'm' },
         ]}
         extras={[
           { to: '/slots', icon: 'calendar', label: 'Sessions' },
@@ -122,7 +167,7 @@ export default function App() {
         { to: '/train', icon: 'train', label: 'Train' },
         { to: '/nutrition', icon: 'nutrition', label: 'Nutrition' },
         { to: '/progress', icon: 'progress', label: 'Progress' },
-        { to: '/chat', icon: 'chat', label: 'Coach', badge: unread },
+        { to: '/chat', icon: 'chat', label: 'Coach', badge: unread, where: 'd' },
       ]}
       extras={[
         { to: '/meal-plans', icon: 'nutrition', label: 'Meal plans' },
