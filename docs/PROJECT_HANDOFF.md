@@ -71,3 +71,8 @@ Say: "Read docs/PROJECT_HANDOFF.md in the PTPN repo and continue from the open i
 
 ## Installable app (PWA)
 The app installs to the home screen on Android (Chrome install prompt) and iPhone/iPad (Share, Add to Home Screen; the More page shows the steps). Files: `public/manifest.webmanifest`, `public/sw.js`, `public/icons/*`, `src/components/Install.tsx`. The service worker only caches the app shell, built assets, fonts and recipe photos; it never caches Supabase data. Offline the app opens from the saved shell and last-known profile and shows an offline bar, but data screens stay empty until the phone reconnects. Bump `VERSION` in `public/sw.js` if the caching rules change. The workout player keeps the screen awake. Not built yet: push notifications (chat, workout reminders, announcements), native store apps.
+
+## Getting the app on phones (no store accounts, no cost)
+- Public page `/get-app` (linked from the login screen and the More page): Android Chrome install, Android .apk download, iPhone Home Screen steps.
+- Android .apk: `mobile/` is a thin Capacitor wrapper that opens the live site, so web changes never need a new APK. `.github/workflows/android.yml` generates the Android project, builds a debug-signed APK and publishes it as the `android-latest` release (`PTPN.apk`). It runs when `mobile/**` changes or from the Actions tab. The APK does not get web push notifications (Android WebView has no Push API); the Chrome install does. Adding push to the APK would need a free Firebase project.
+- iPhone: Apple has no free route to a downloadable file, so it is Add to Home Screen only. A TestFlight or App Store app needs an Apple Developer account (about $99 a year) and a Mac or cloud build.

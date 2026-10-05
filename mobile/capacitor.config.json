@@ -1,0 +1,12 @@
+{
+  "appId": "app.ptpn.coach",
+  "appName": "PTPN",
+  "webDir": "www",
+  "server": {
+    "url": "https://nevespedropt-prog.github.io/PTPN/",
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#09090b"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "ptpn-android",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Thin Android wrapper around the PTPN web app (Capacitor). The app itself loads from the live site, so web updates need no new APK.",
+  "scripts": {
+    "add": "cap add android && capacitor-assets generate --android --iconBackgroundColor '#111114' --iconBackgroundColorDark '#111114'",
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.2"
+  }
+}

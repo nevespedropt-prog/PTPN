@@ -532,6 +532,24 @@ console.log('Client flows')
   }
 }
 
+// ================= Get the app page (public) =================
+{
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36', isMobile: true, hasTouch: true })
+  await c.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort())
+  const p = await c.newPage()
+  await p.goto(BASE + '/get-app', { waitUntil: 'networkidle' })
+  ok(await p.getByRole('heading', { name: 'Get the app' }).count() === 1, 'signed-out visitor can open the Get the app page')
+  ok((await p.getByRole('link', { name: 'Download PTPN.apk' }).getAttribute('href')) === 'https://github.com/nevespedropt-prog/PTPN/releases/download/android-latest/PTPN.apk', 'APK download link points at the release file')
+  ok(await p.getByText(/Add to Home Screen/).count() >= 1, 'iPhone steps are on the page')
+  ok(await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), 'Get the app page has no sideways scroll')
+  await shot(p, 'get-app-android')
+  await p.goto(BASE + '/', { waitUntil: 'networkidle' })
+  await p.getByRole('link', { name: /Get the app/ }).click()
+  await p.getByRole('heading', { name: 'Get the app' }).waitFor()
+  ok(true, 'login page links to Get the app')
+  await c.close()
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 await browser.close(); server.close()
 process.exit(fail ? 1 : 0)

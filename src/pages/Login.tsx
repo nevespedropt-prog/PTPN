@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { Logo } from '../components/Logo'
 
@@ -42,6 +43,7 @@ export default function Login() {
         {msg && <p className={msg.startsWith('Check') ? 'ok' : 'err'}>{msg}</p>}
       </div>
       <p className="mute" style={{ textAlign: 'center' }}>Your coach may have already set up an account for you.</p>
+      <p className="small" style={{ textAlign: 'center' }}><Link to="/get-app">Get the app for Android or iPhone</Link></p>
     </main>
   )
 }
