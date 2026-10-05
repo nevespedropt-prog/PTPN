@@ -33,7 +33,7 @@ New sign-ups are always clients. Roles can only be changed by a coach or in the 
 
 ## Meal plan library
 
-The ten newest weekly plans from Tastes Better From Scratch (plans 206 to 215) were used as inspiration. Only facts were kept (plan numbers, dish names, dates, links), saved in `supabase/data/tbfs-meal-plans.json`. The recipes, methods and portions are original, and macros are estimated from typical values in the food list. Banner photos are hotlinked from Pexels (ids in `supabase/data/photos.json`, credit link on every recipe). To regenerate the seed after editing: `python3 supabase/tools/build_meal_plans.py supabase/seed_meal_plans.sql`. For an existing database, run `supabase/migrate_v3_meal_plans.sql` first.
+Ten weekly meal plan templates, 49 dinner recipes and 28 everyday meal ideas, all written fresh with macros computed from the food list. Banner photos are hotlinked from Pexels (ids in `supabase/data/photos.json`). Seeds: `supabase/seed_meal_plans.sql` and `supabase/seed_common_meals.sql`. To regenerate after editing: `python3 supabase/tools/build_meal_plans.py supabase/seed_meal_plans.sql` and `python3 supabase/tools/build_common_meals.py supabase/seed_common_meals.sql`. For an existing database, run `supabase/migrate_v3_meal_plans.sql` first.
 
 ## Deploy (GitHub Pages)
 

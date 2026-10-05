@@ -36,7 +36,6 @@ def r_macros(name, ings):
 
 if __name__ == '__main__':
     out = ["-- PTPN meal plan library. Safe to re-run (deterministic ids, on conflict do nothing).",
-           "-- Source facts: supabase/data/tbfs-meal-plans.json. Recipes are original rewrites, photos are Pexels.",
            "create or replace function pg_temp.sid(t text) returns uuid language sql immutable as $$ select extensions.uuid_generate_v5('6f1c1e4a-8d3b-4c55-9a9e-5b1d2e7c0a11'::uuid, t) $$;", ""]
     out.append("insert into public.foods (id, name, serving_label, serving_g, kcal, protein, carbs, fat) values")
     out.append(",\n".join(f"({uid('food', n)},{q(n)},{q(sl)},{g},{k},{p},{c},{f})" for n, sl, g, k, p, c, f in m.NEW_FOODS) + "\non conflict (id) do nothing;\n")
@@ -47,14 +46,14 @@ if __name__ == '__main__':
         dmac[key] = (k, p, c, f)
         url, credit = img(photo)
         labels = [b.ing_label(a, g) for a, g in ings] + extras
-        rows.append(f"({uid('recipe', name)},{q(name)},'dinner',{q(desc)},{prep},{k},{p},{c},{f},{arr(labels)},{arr(steps)},{arr(tags)},{q(url)},{q(credit)},{q('Tastes Better From Scratch: ' + inspired)},{q(DISH_URL[inspired])})")
-    out.append("insert into public.recipes (id, name, meal_type, description, prep_min, kcal, protein, carbs, fat, ingredients, steps, tags, image_url, image_credit, inspired_by, inspired_url) values")
+        rows.append(f"({uid('recipe', name)},{q(name)},'dinner',{q(desc)},{prep},{k},{p},{c},{f},{arr(labels)},{arr(steps)},{arr(tags)},{q(url)})")
+    out.append("insert into public.recipes (id, name, meal_type, description, prep_min, kcal, protein, carbs, fat, ingredients, steps, tags, image_url) values")
     out.append(",\n".join(rows) + "\non conflict (id) do nothing;\n")
 
     # photos on the original recipes (they already exist in the database)
     for n, key in ORIGINAL_PHOTO.items():
         url, credit = img(key)
-        out.append(f"update public.recipes set image_url = {q(url)}, image_credit = {q(credit)} where id = {uid('recipe', n)} and image_url is null;")
+        out.append(f"update public.recipes set image_url = {q(url)} where id = {uid('recipe', n)} and image_url is null;")
     out.append("")
 
     breakfasts, lunches, snacks = day_pool('breakfast'), day_pool('lunch'), day_pool('snack')
@@ -62,7 +61,7 @@ if __name__ == '__main__':
     for ti, (num, tname, goal, kcal, desc, hero, keys) in enumerate(m.TEMPLATES):
         plan = PLAN[num]
         url, credit = img(m.D[hero][-1])
-        trows.append(f"({uid('mpt', f'tbfs-{num}')},{q(tname)},{q(goal)},{kcal},{q(desc)},{q(url)},{q(credit)},{q(SRC['source']['name'])},{q(f'Meal plan {num}')},{q(plan['url'])},{num},{q(plan['posted'])})")
+        trows.append(f"({uid('mpt', f'tbfs-{num}')},{q(tname)},{q(goal)},{kcal},{q(desc)},{q(url)},{num})")
         week = keys + [keys[0], keys[2]]  # Saturday and Sunday repeat two favourites
         for d in range(7):
             dish = m.D[week[d]]
@@ -77,7 +76,7 @@ if __name__ == '__main__':
                 s = max(0.5, round(factor * 10) / 10)
                 rid = uid('recipe', dish[0]) if r is None else uid('recipe', r[0])
                 irows.append(f"({uid('mpti', f'{num}:{d + 1}:{meal}')},{uid('mpt', f'tbfs-{num}')},{d + 1},{q(meal)},{rid},{s},{sort})")
-    out.append("insert into public.meal_plan_templates (id, name, goal, kcal, description, image_url, image_credit, source_name, source_title, source_url, plan_no, source_posted) values")
+    out.append("insert into public.meal_plan_templates (id, name, goal, kcal, description, image_url, plan_no) values")
     out.append(",\n".join(trows) + "\non conflict (id) do nothing;\n")
     out.append("insert into public.meal_plan_template_items (id, template_id, day, meal_type, recipe_id, servings, sort) values")
     out.append(",\n".join(irows) + "\non conflict (id) do nothing;\n")

@@ -6,7 +6,7 @@ import { MEAL_LABEL, MEALS, forServings } from '../lib/nutrition'
 import type { MealType, Recipe } from '../types'
 import { Empty, MacroChips, PageHead, Sheet, Skeleton } from '../components/ui'
 import Icon from '../components/Icon'
-import RecipeArt, { PhotoCredit } from '../components/RecipeArt'
+import RecipeArt from '../components/RecipeArt'
 
 function RecipeForm({ onSaved, onClose }: { onSaved: () => void; onClose: () => void }) {
   const { profile } = useAuth()
@@ -120,10 +120,6 @@ export default function Recipes() {
             <ul className="ingredients">{open.ingredients.map((x, i) => <li key={i}>{x}</li>)}</ul>
             <h3>Method</h3>
             <ol className="steps">{open.steps.map((x, i) => <li key={i}>{x}</li>)}</ol>
-            {(open.inspired_by || open.image_credit) && <p className="mute small" style={{ margin: 0 }}>
-              {open.inspired_by && <>Inspired by {open.inspired_url ? <a href={open.inspired_url} target="_blank" rel="noopener noreferrer">{open.inspired_by}</a> : open.inspired_by}. Recipe rewritten, macros estimated. </>}
-              <PhotoCredit credit={open.image_credit} />
-            </p>}
             {!coach && <>
               <hr className="sep" />
               <div className="inline-inputs">
