@@ -309,6 +309,62 @@ assert len(D) == 49, len(D)
 
 # ---------------- plan templates ----------------
 # number -> (name, goal, kcal target, description, hero dish key, [Mon..Fri dish keys])
+# Seasonings and other small ingredients with quantities (per serving). Replaces the bare names given in dish().
+EXTRAS_QTY = {
+ "carne_asada": ["1 tbsp lime juice", "1 clove garlic", "1/2 tsp ground cumin", "1 tbsp fresh coriander"],
+ "general_tso": ["1 tsp grated fresh ginger", "1 clove garlic", "1 tbsp rice vinegar", "pinch of chilli flakes"],
+ "tortellini_soup": ["1 clove garlic", "300 ml chicken or vegetable stock", "1 tsp dried basil"],
+ "ham_fried_rice": ["2 spring onions", "1 clove garlic"],
+ "honey_mustard_chicken": ["1 clove garlic", "1/2 tsp paprika"],
+ "tostadas": ["1/2 lime", "1/2 tsp chilli powder"],
+ "tortellini_salad": ["1 tbsp lime juice", "1 tbsp chopped coriander"],
+ "cajun_kebabs": ["2 tsp cajun seasoning", "1/2 tsp garlic powder"],
+ "meatballs_arrabbiata": ["2 cloves garlic", "1/2 tsp chilli flakes", "1 tsp dried oregano"],
+ "smash_burger": ["1 tsp mustard", "4 pickle slices"],
+ "walking_tacos": ["2 tsp taco seasoning"],
+ "chicken_gnocchi": ["1 clove garlic", "black pepper to taste"],
+ "veggie_wrap": ["1 tsp lemon juice"],
+ "red_curry": ["1 tsp fish sauce", "1/2 lime", "1 tbsp fresh basil"],
+ "kung_pao": ["1 clove garlic", "1 tsp grated fresh ginger", "3 dried chillies", "1 tbsp rice vinegar"],
+ "nourish_bowl": ["1 tbsp lemon juice", "1/2 tsp paprika", "1 tsp tahini (optional)"],
+ "mushroom_tacos": ["1/2 tsp smoked paprika", "1/2 lime", "1 tbsp chopped coriander"],
+ "sloppy_joes": ["1 tsp worcestershire sauce", "1 clove garlic", "1/2 tsp smoked paprika"],
+ "dumpling_soup": ["300 ml chicken stock", "1 tsp grated fresh ginger", "2 spring onions"],
+ "thai_meatballs": ["1 tbsp chopped coriander", "1/2 lime", "1 tsp fish sauce"],
+ "smothered_burritos": ["1 tbsp chopped green chiles", "1/2 tsp ground cumin"],
+ "chicken_avocado_wrap": ["1 tsp lime juice", "black pepper to taste"],
+ "taco_salad": ["2 tsp taco seasoning", "1/2 lime"],
+ "matzo_ball_soup": ["400 ml chicken stock", "1 celery stick", "1 tbsp fresh dill"],
+ "beef_gyros": ["1/2 tsp dried oregano", "1 clove garlic", "1 tsp lemon juice"],
+ "pot_pie": ["1/2 tsp dried thyme", "100 ml chicken stock"],
+ "calzone": ["1 clove garlic", "1/2 tsp dried oregano"],
+ "quinoa_burger": ["1/2 tsp ground cumin", "1 clove garlic", "1 tbsp chopped parsley"],
+ "short_rib_ragu": ["50 ml red wine (optional)", "2 cloves garlic", "1 sprig rosemary", "200 ml beef stock"],
+ "cabbage_roll_soup": ["300 ml beef stock", "1 tsp paprika", "1 bay leaf"],
+ "peanut_noodles": ["1 tbsp lime juice", "pinch of chilli flakes", "1 clove garlic"],
+ "street_corn_bowl": ["1/2 lime", "1/2 tsp chilli powder", "1 tbsp chopped coriander"],
+ "pulled_pork": ["1/2 tsp smoked paprika", "1 tsp lime juice"],
+ "shrimp_alfredo": ["1 clove garlic", "black pepper to taste", "1/2 tsp lemon zest"],
+ "caesar_wrap": ["1 tsp lemon juice", "1/2 clove garlic", "1/2 tsp Dijon mustard"],
+ "lemon_chicken_pasta": ["zest and juice of 1/2 lemon", "1 clove garlic", "black pepper to taste"],
+ "lomo_saltado": ["1 clove garlic", "1 tbsp red wine vinegar", "1 tbsp chopped coriander"],
+ "burrata_pizza": ["6 fresh basil leaves", "1 clove garlic", "1 tsp olive oil to drizzle"],
+ "salmon_bowl": ["1 tsp rice vinegar", "1 tsp sesame seeds", "1 spring onion"],
+ "salmon_tacos": ["1/2 lime", "1/2 tsp chilli powder", "1 tbsp chopped coriander"],
+ "med_meatball_bowl": ["1 tsp dried oregano", "1 tbsp lemon juice", "1 tbsp chopped parsley"],
+ "creamy_herb_pasta": ["1 clove garlic", "1 tsp mixed herbs", "black pepper to taste"],
+ "cevapi": ["1 clove garlic", "1 tsp paprika", "pinch of bicarbonate of soda"],
+ "panang_curry": ["1 tbsp lime juice", "1 tsp fish sauce", "6 basil leaves"],
+ "sweet_sour_chicken": ["1 tbsp rice vinegar", "1 tbsp soy sauce", "1 clove garlic"],
+ "beef_tacos": ["2 tsp taco seasoning", "1/2 lime"],
+ "black_bean_burger": ["1/2 tsp smoked paprika", "1/2 tsp ground cumin", "1 clove garlic"],
+ "thai_basil_chicken": ["1 tbsp fresh basil", "1 clove garlic", "1 red chilli", "1 tsp fish sauce"],
+ "swedish_meatballs": ["100 ml beef stock", "1/4 tsp ground allspice", "1 tbsp fresh dill"],
+}
+assert set(EXTRAS_QTY) == set(D)
+for _k, _v in EXTRAS_QTY.items():
+    _d = list(D[_k]); _d[5] = _v; D[_k] = tuple(_d)
+
 TEMPLATES = [
     (215, "Taco Night and Takeaway Lite", "Balanced", 2000, "Carne asada tacos, a lighter General Tso's, creamy tortellini soup, ham fried rice and honey mustard chicken.", "carne_asada",
      ["carne_asada", "general_tso", "tortellini_soup", "ham_fried_rice", "honey_mustard_chicken"]),
