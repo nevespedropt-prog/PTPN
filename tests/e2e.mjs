@@ -42,6 +42,7 @@ const shot = (page, name) => page.screenshot({ path: `${SHOTS}/${name}.png`, ful
 const clean = (label, errors) => { ok(errors.length === 0, `${label}: no runtime errors${errors.length ? ' -> ' + errors.slice(0, 3).join(' | ') : ''}`); errors.length = 0 }
 const tab = (page, name) => page.locator('nav a', { hasText: new RegExp('^\\s*' + name, 'i') }).first().click().then(() => page.waitForLoadState('networkidle'))
 const today = new Date().toLocaleDateString('en-CA')
+const addDaysISO = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA') }
 
 // ================= COACH (desktop) =================
 console.log('Coach flows')
@@ -86,6 +87,21 @@ console.log('Coach flows')
   ok((await sql(`select count(*)::int n from client_workouts cw join workouts w on w.id = cw.workout_id where cw.client_id = '${IDS.ana}' and w.name = 'Push' and cw.date = '${today}'`))[0].n === 1, 'single workout scheduled for today')
   await page.waitForTimeout(1100)
   await shot(page, 'coach-client-training'); clean('client training tab', errors)
+
+  // custom workout built just for this client, then assigned
+  await page.getByRole('button', { name: /Custom workout/ }).click()
+  await page.getByText('Add exercise').first().waitFor()
+  ok(page.url().includes('assignTo='), 'custom workout opens the builder for this client')
+  await page.getByRole('button', { name: /Add exercise/ }).click()
+  await page.locator('.sheet .item').first().click()
+  await page.getByRole('button', { name: /Save and assign to Ana/ }).click()
+  await page.locator('.sheet input[type=date]').fill(addDaysISO(today, 6))
+  await page.locator('.sheet button', { hasText: 'Schedule' }).click()
+  await page.getByText(/Scheduled 1 session/).waitFor()
+  await page.getByText('Upcoming').first().waitFor()
+  ok((await sql(`select count(*)::int n from client_workouts cw join workouts w on w.id = cw.workout_id where cw.client_id = '${IDS.ana}' and w.name = 'Ana''s workout' and cw.date = '${addDaysISO(today, 6)}'`))[0].n === 1, 'custom workout saved and scheduled for the client')
+  ok((await sql(`select count(*)::int n from workout_items wi join workouts w on w.id = wi.workout_id where w.name = 'Ana''s workout'`))[0].n === 1, 'custom workout has its exercise')
+  await page.waitForTimeout(1100)
 
   // nutrition: targets, suggest split, generate week
   await page.getByRole('tab', { name: 'Nutrition' }).click()
