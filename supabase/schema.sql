@@ -37,6 +37,8 @@ create function public.is_coach() returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.profiles where id = auth.uid() and role = 'coach');
 $$;
+revoke execute on function public.is_coach() from public, anon;
+grant execute on function public.is_coach() to authenticated;
 
 -- new users always start as clients
 create function public.handle_new_user() returns trigger
