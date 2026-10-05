@@ -170,8 +170,6 @@ export default function App() {
         { to: '/chat', icon: 'chat', label: 'Coach', badge: unread, where: 'd' },
       ]}
       extras={[
-        { to: '/meal-plans', icon: 'nutrition', label: 'Meal plans' },
-          { to: '/recipes', icon: 'nutrition', label: 'Recipe book' },
         { to: '/community', icon: 'trophy', label: 'Community' },
         { to: '/book', icon: 'calendar', label: 'Book a session' },
         { to: '/resources', icon: 'link', label: 'Resources' },

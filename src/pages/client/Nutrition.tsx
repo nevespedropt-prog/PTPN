@@ -4,11 +4,13 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
 import { addDays, localDate, longDay, relDay, weekday } from '../../lib/dates'
 import { MEAL_LABEL, MEALS, forGrams, forServings, mealGoal, pickRandomMeal, sum } from '../../lib/nutrition'
-import type { Food, FoodLog, MealPlanItem, MealType, Recipe, Targets } from '../../types'
+import type { Food, FoodLog, MealPlanItem, MealPlanTemplate, MealType, Recipe, Targets } from '../../types'
 import { Empty, MacroBar, MacroChips, PageHead, Ring, Seg, Sheet, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
 import { RecipePicker } from '../../components/Pickers'
 import RecipeView from '../../components/RecipeView'
+import RecipeArt from '../../components/RecipeArt'
+import { Detail as PlanDetail } from '../MealPlans'
 
 type AddTab = 'foods' | 'recipes' | 'quick'
 
@@ -96,6 +98,8 @@ export default function Nutrition() {
   const [library, setLibrary] = useState<Recipe[] | null>(null)
   const [rnd, setRnd] = useState<{ meal: MealType; pick: { recipe: Recipe; servings: number } | null; seen: string[] } | null>(null)
   const [view, setView] = useState<{ recipe: Recipe; servings: number } | null>(null)
+  const [templates, setTemplates] = useState<MealPlanTemplate[]>([])
+  const [planOpen, setPlanOpen] = useState<MealPlanTemplate | null>(null)
   const isFuture = date > today
   const lastDay = addDays(today, 28)
 
@@ -113,6 +117,7 @@ export default function Nutrition() {
     setPlan(items.map(i => ({ ...i, recipe: recipes.find(r => r.id === i.recipe_id) })))
   }, [profile, date])
   useEffect(() => { load() }, [load])
+  useEffect(() => { supabase.from('meal_plan_templates').select('*').order('plan_no', { ascending: false }).then(({ data }) => setTemplates((data ?? []) as MealPlanTemplate[])) }, [])
 
   async function remove(id: string) { await supabase.from('food_logs').delete().eq('id', id); load() }
   async function logPlanned(i: MealPlanItem & { recipe?: Recipe }) {
@@ -143,9 +148,7 @@ export default function Nutrition() {
 
   return (
     <>
-      <PageHead eyebrow="Nutrition" title="Food diary">
-        <Link className="btn soft sm" to="/meal-plans">Meal plans</Link>
-      </PageHead>
+      <PageHead eyebrow="Nutrition" title="Food diary" />
       <div className="row between" style={{ marginBottom: 12 }}>
         <button className="icon" onClick={() => setDate(addDays(date, -1))} aria-label="Previous day"><Icon name="back" size={18} /></button>
         <div className="center"><b>{relDay(date)}</b><div className="mute small">{longDay(date)}</div></div>
@@ -203,6 +206,24 @@ export default function Nutrition() {
       })}
       {logs && !isFuture && logs.length === 0 && <div className="card"><Empty icon="nutrition" title="Start your day">Tap Add on any meal to log foods, recipes or a quick entry.</Empty></div>}
 
+      <Link to="/recipes" className="card click" style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)' }}>
+        <span className="drawer-icon"><Icon name="nutrition" size={20} /></span>
+        <span className="grow"><b>Recipe book</b><br /><span className="mute small">Meal ideas with photos, macros and ingredients</span></span>
+        <Icon name="chev" />
+      </Link>
+      {templates.length > 0 && <>
+        <div className="row between" style={{ margin: '18px 0 8px' }}><h2 style={{ margin: 0 }}>Meal plans</h2><Link className="link" to="/meal-plans">See all</Link></div>
+        <div className="plan-rail">
+          {templates.map(t => (
+            <div key={t.id} role="button" tabIndex={0} className="plan-card" onClick={() => setPlanOpen(t)} onKeyDown={e => { if (e.key === 'Enter') setPlanOpen(t) }}>
+              <RecipeArt name={t.name} url={t.image_url}><span className="badge">{t.goal}</span><span className="badge">~{t.kcal} kcal</span></RecipeArt>
+              <b>{t.name}</b>
+            </div>
+          ))}
+        </div>
+      </>}
+
+      <Sheet open={!!planOpen} onClose={() => setPlanOpen(null)} title={planOpen?.name ?? ''}>{planOpen && <PlanDetail tpl={planOpen} />}</Sheet>
       <Sheet open={!!view} onClose={() => setView(null)} title={view?.recipe.name ?? ''}>{view && <RecipeView recipe={view.recipe} servings={view.servings} />}</Sheet>
       <Sheet open={!!rnd} onClose={() => setRnd(null)} title={rnd ? `Random ${MEAL_LABEL[rnd.meal].toLowerCase()} idea` : ''}>
         {rnd && (rnd.pick ? (
