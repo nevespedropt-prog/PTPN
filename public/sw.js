@@ -1,6 +1,6 @@
 // PTPN service worker: keeps the app shell available offline.
 // Data calls (Supabase) are never cached, so nothing stale or private is stored.
-const VERSION = 'ptpn-v1'
+const VERSION = 'ptpn-v2'
 const SHELL = VERSION + '-shell'
 const ASSETS = VERSION + '-assets'
 const IMAGES = VERSION + '-images'
@@ -58,4 +58,29 @@ self.addEventListener('fetch', e => {
       return hit || net
     }))
   }
+})
+
+// Push notifications: show them, and open the right page when tapped.
+self.addEventListener('push', e => {
+  let d = {}
+  try { d = e.data ? e.data.json() : {} } catch { d = { body: e.data ? e.data.text() : '' } }
+  e.waitUntil(self.registration.showNotification(d.title || 'PTPN', {
+    body: d.body || '',
+    icon: 'icons/icon-192.png',
+    badge: 'icons/icon-192.png',
+    tag: d.tag,
+    renotify: !!d.tag,
+    data: { url: d.url || self.registration.scope },
+  }))
+})
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close()
+  const url = (e.notification.data && e.notification.data.url) || self.registration.scope
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+    for (const c of list) {
+      if (c.url.startsWith(self.registration.scope) && 'focus' in c) return c.navigate(url).then(x => (x || c).focus())
+    }
+    return self.clients.openWindow(url)
+  }))
 })

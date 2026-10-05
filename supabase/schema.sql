@@ -584,3 +584,44 @@ create policy "meal templates read" on public.meal_plan_templates for select usi
 create policy "meal templates coach write" on public.meal_plan_templates for all using (public.is_coach()) with check (public.is_coach());
 create policy "meal template items read" on public.meal_plan_template_items for select using (auth.uid() is not null);
 create policy "meal template items coach write" on public.meal_plan_template_items for all using (public.is_coach()) with check (public.is_coach());
+
+-- ========== v4: push notifications (tables) ==========
+-- One row per browser/phone that turned notifications on.
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  user_agent text not null default '',
+  created_at timestamptz not null default now()
+);
+create index if not exists push_subscriptions_user on public.push_subscriptions (user_id);
+alter table public.push_subscriptions enable row level security;
+create policy "push own read" on public.push_subscriptions for select using (user_id = auth.uid());
+create policy "push own insert" on public.push_subscriptions for insert with check (user_id = auth.uid());
+create policy "push own update" on public.push_subscriptions for update using (user_id = auth.uid()) with check (user_id = auth.uid());
+create policy "push own delete" on public.push_subscriptions for delete using (user_id = auth.uid());
+
+-- Server-only settings (VAPID keys, shared secret, app address). RLS is on with no policies and
+-- no grants, so only the service role (the send-push function) can read it.
+create table if not exists public.push_config (
+  id int primary key default 1 check (id = 1),
+  vapid_public text not null,
+  vapid_private text not null,
+  subject text not null default 'mailto:nevespedro.pt@gmail.com',
+  secret text not null,
+  app_url text not null
+);
+alter table public.push_config enable row level security;
+revoke all on public.push_config from anon, authenticated;
+
+-- The public half of the key is safe to share: the app needs it to subscribe.
+create or replace function public.push_public_key() returns text
+language sql stable security definer set search_path = public as $$
+  select vapid_public from public.push_config where id = 1 $$;
+revoke execute on function public.push_public_key() from public, anon;
+grant execute on function public.push_public_key() to authenticated;
+
+-- Announcements are pushed once; scheduled ones go out when their time arrives.
+alter table public.posts add column if not exists pushed_at timestamptz;

@@ -492,6 +492,8 @@ console.log('Client flows')
   ok((await fetch(BASE + '/icons/apple-touch-icon.png')).headers.get('content-type') === 'image/png', 'apple touch icon served')
   for (const d of devices) {
     const c = await browser.newContext({ viewport: d.viewport, userAgent: d.ua, isMobile: true, hasTouch: true, deviceScaleFactor: 2 })
+    // Headless Chrome reports notifications as denied; a real phone starts undecided, so emulate that.
+    await c.addInitScript(() => { try { Object.defineProperty(Notification, 'permission', { get: () => 'default' }) } catch { /* no Notification API */ } })
     await c.addInitScript(([k, v]) => localStorage.setItem(k, v), [`sb-${REF}-auth-token`, JSON.stringify(sessionFor(IDS.ana, 'ana@x.com'))])
     await c.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort())
     const p = await c.newPage()
@@ -508,6 +510,17 @@ console.log('Client flows')
     ok(await p.getByText(/You are offline/).count() === 1, `${d.name}: offline bar shown`)
     await shot(p, `pwa-offline-${d.name.toLowerCase()}`)
     await c.setOffline(false)
+    await p.goto(BASE + '/more', { waitUntil: 'networkidle' })
+    await p.goto(BASE + '/account', { waitUntil: 'networkidle' })
+    await p.getByText(/Notifications/).first().waitFor({ timeout: 8000 }).catch(() => {})
+    await p.getByRole('button', { name: 'Turn on notifications' }).or(p.getByText(/add the app to your Home Screen first/)).first().waitFor({ timeout: 8000 }).catch(() => {})
+    if (d.name === 'iPhone') ok(await p.getByText(/add the app to your Home Screen first/).count() === 1, 'iPhone: notifications explain the Home Screen requirement')
+    else {
+      const found = await p.getByRole('button', { name: 'Turn on notifications' }).count() === 1
+      if (!found) console.log('  DEBUG account page:', JSON.stringify(await p.evaluate(() => ({ perm: Notification.permission, push: 'PushManager' in window, sw: 'serviceWorker' in navigator, text: document.querySelector('main')?.innerText.slice(0, 400) }))))
+      ok(found, 'Android: notifications can be turned on')
+    }
+    await shot(p, `pwa-account-${d.name.toLowerCase()}`)
     await p.goto(BASE + '/more', { waitUntil: 'networkidle' })
     if (d.name === 'iPhone') {
       ok(await p.getByText('Install the app').count() === 1, 'iPhone: install card with Add to Home Screen steps')
