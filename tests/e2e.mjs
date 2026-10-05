@@ -514,7 +514,11 @@ console.log('Client flows')
     await p.getByText(/Notifications/).first().waitFor({ timeout: 8000 }).catch(() => {})
     await p.getByRole('button', { name: 'Turn on notifications' }).or(p.getByText(/add the app to your Home Screen first/)).first().waitFor({ timeout: 8000 }).catch(() => {})
     if (d.name === 'iPhone') ok(await p.getByText(/add the app to your Home Screen first/).count() === 1, 'iPhone: notifications explain the Home Screen requirement')
-    else ok(await p.getByRole('button', { name: 'Turn on notifications' }).count() === 1, 'Android: notifications can be turned on')
+    else {
+      const found = await p.getByRole('button', { name: 'Turn on notifications' }).count() === 1
+      if (!found) console.log('  DEBUG account page:', JSON.stringify(await p.evaluate(() => ({ perm: Notification.permission, push: 'PushManager' in window, sw: 'serviceWorker' in navigator, text: document.querySelector('main')?.innerText.slice(0, 400) }))))
+      ok(found, 'Android: notifications can be turned on')
+    }
     await shot(p, `pwa-account-${d.name.toLowerCase()}`)
     await p.goto(BASE + '/more', { waitUntil: 'networkidle' })
     if (d.name === 'iPhone') {
