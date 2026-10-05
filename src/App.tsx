@@ -66,9 +66,9 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
       <nav className="nav" aria-label="Main">
         <div className="nav-head"><Logo size={34} tagline /></div>
         {items.map(link)}
-        <button type="button" className="menu-btn m-only" onClick={() => setMenu(true)} aria-label="Open menu" aria-expanded={menu}>
+        <button type="button" className="menu-btn m-only" onClick={() => setMenu(true)} aria-label="More" aria-expanded={menu}>
           <Icon name="menu" />
-          <span>Menu</span>
+          <span>More</span>
           {menuBadge > 0 && <span className="dot">{menuBadge > 9 ? '9+' : menuBadge}</span>}
         </button>
         <span className="nav-label">More</span>
@@ -80,10 +80,10 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
       </nav>
       {menu && (
         <div className="drawer-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setMenu(false) }}>
-          <aside className="drawer" role="dialog" aria-modal="true" aria-label="Menu">
+          <aside className="drawer" role="dialog" aria-modal="true" aria-label="More">
             <div className="drawer-head">
               <Logo size={30} />
-              <button className="icon" onClick={() => setMenu(false)} aria-label="Close menu"><Icon name="x" size={18} /></button>
+              <button className="icon" onClick={() => setMenu(false)} aria-label="Close more menu"><Icon name="x" size={18} /></button>
             </div>
             <Link to="/account" className="drawer-user" onClick={() => setMenu(false)}>
               <Avatar name={name} size={44} />
