@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useClients } from '../../hooks'
+import { useAuth } from '../../auth'
 import { addDays, DAY_NAMES, localDate, niceDate, relDay } from '../../lib/dates'
 import { MEAL_LABEL, MEALS, forServings, generateWeek, suggestTargets, sum } from '../../lib/nutrition'
 import { setsDone } from '../../lib/training'
@@ -77,6 +78,9 @@ function Training({ id }: { id: string }) {
   const [cws, setCws] = useState<ClientWorkout[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
   const [programs, setPrograms] = useState<Program[]>([])
+  const { profile } = useAuth()
+  const nav = useNavigate()
+  const [creating, setCreating] = useState(false)
   const [pick, setPick] = useState(false)
   const [wk, setWk] = useState<Workout | null>(null)
   const [prog, setProg] = useState<{ p: Program; days: ProgramDay[] } | null>(null)
@@ -96,6 +100,14 @@ function Training({ id }: { id: string }) {
   useEffect(() => { load() }, [load])
   useEffect(() => { supabase.from('programs').select('*').order('name').then(({ data }) => setPrograms((data ?? []) as Program[])) }, [])
 
+  async function custom() {
+    setCreating(true)
+    const first = (client?.full_name ?? '').split(' ')[0]
+    const { data, error } = await supabase.from('workouts').insert({ name: first ? `${first}'s workout` : 'Custom workout', created_by: profile!.id }).select().single()
+    setCreating(false)
+    if (error || !data) return alert(error?.message ?? 'Could not create the workout')
+    nav(`/library/workouts/${data.id}?assignTo=${id}`)
+  }
   async function remove(c: ClientWorkout) { await supabase.from('client_workouts').delete().eq('id', c.id); load() }
   async function choose(p: Program) {
     const { data } = await supabase.from('program_days').select('*').eq('program_id', p.id)
@@ -115,6 +127,7 @@ function Training({ id }: { id: string }) {
     <>
       <div className="row">
         <button onClick={() => setPick(true)}><Icon name="plus" size={16} />Assign workout</button>
+        <button className="soft" onClick={custom} disabled={creating}><Icon name="edit" size={16} />{creating ? 'Creating...' : 'Custom workout'}</button>
         <button className="soft" onClick={() => setProgList(true)}><Icon name="library" size={16} />Assign programme</button>
       </div>
       <div className="section-title"><h2>Upcoming</h2></div>
@@ -257,7 +270,8 @@ function Nutrition({ id }: { id: string }) {
 export default function ClientDetail() {
   const { id } = useParams()
   const { clients } = useClients()
-  const [tab, setTab] = useState<Tab>('overview')
+  const [sp] = useSearchParams()
+  const [tab, setTab] = useState<Tab>(sp.get('tab') === 'training' ? 'training' : 'overview')
   if (!id) return null
   if (!clients) return <Skeleton n={3} />
   const c = clients.find(x => x.id === id)

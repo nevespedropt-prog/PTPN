@@ -4,7 +4,9 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
 import { FORMAT_LABEL } from '../../lib/training'
 import type { Workout, WorkoutFormat, WorkoutItem } from '../../types'
-import { Empty, PageHead, Skeleton } from '../../components/ui'
+import { Empty, PageHead, Sheet, Skeleton } from '../../components/ui'
+import { useClients } from '../../hooks'
+import { AssignWorkout } from './Assign'
 import Icon from '../../components/Icon'
 import { ExercisePicker } from '../../components/Pickers'
 
@@ -23,8 +25,12 @@ export default function WorkoutBuilder() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState('')
   const [dirty, setDirty] = useState(false)
+  const [sched, setSched] = useState(false)
+  const { clients } = useClients()
   const coach = profile?.role === 'coach'
-  const back = coach ? '/library' : '/train'
+  const assignTo = coach ? sp.get('assignTo') : null
+  const target = clients?.find(c => c.id === assignTo)
+  const back = assignTo ? `/clients/${assignTo}?tab=training` : coach ? '/library' : '/train'
 
   useEffect(() => {
     if (!id) return
@@ -59,23 +65,25 @@ export default function WorkoutBuilder() {
     setPicker(false); setDirty(true)
   }
 
-  async function save() {
+  async function save(): Promise<boolean> {
     setBusy(true); setMsg('')
     const { error: e1 } = await supabase.from('workouts').update({
       name: w!.name.trim() || 'Untitled workout', description: w!.description, format: w!.format,
       duration_min: w!.duration_min || null, rounds: w!.rounds || null,
     }).eq('id', w!.id)
-    if (e1) { setBusy(false); return setMsg(e1.message) }
+    if (e1) { setBusy(false); setMsg(e1.message); return false }
     if (removed.length) await supabase.from('workout_items').delete().in('id', removed)
     if (rows.length) {
       const payload = rows.map(({ isNew: _n, ...r }, i) => ({ ...r, workout_id: w!.id, sort: i, percent_1rm: r.percent_1rm || null, sets: r.sets || null, rest_sec: r.rest_sec ?? null }))
       const { error } = await supabase.from('workout_items').upsert(payload)
-      if (error) { setBusy(false); return setMsg(error.message) }
+      if (error) { setBusy(false); setMsg(error.message); return false }
     }
     setRemoved([]); setRows(rows.map(r => ({ ...r, isNew: false }))); setDirty(false); setBusy(false); setMsg('Saved')
     const cw = sp.get('cw')
     if (cw && !coach) nav(`/workout/${cw}`)
+    return true
   }
+  async function saveAndSchedule() { if (!dirty || (await save())) setSched(true) }
 
   const num = (v: string) => (v === '' ? null : Number(v))
 
@@ -132,9 +140,13 @@ export default function WorkoutBuilder() {
 
       {editable && (
         <div className="row" style={{ marginTop: 16 }}>
-          <button className="grow" style={{ minHeight: 52 }} onClick={save} disabled={busy || !dirty}>{busy ? 'Saving...' : dirty ? 'Save workout' : 'Saved'}</button>
+          <button className={'grow' + (target ? ' soft' : '')} style={{ minHeight: 52 }} onClick={save} disabled={busy || !dirty}>{busy ? 'Saving...' : dirty ? 'Save workout' : 'Saved'}</button>
+          {target && <button className="grow" style={{ minHeight: 52 }} onClick={saveAndSchedule} disabled={busy || rows.length === 0}>Save and assign to {target.full_name?.split(' ')[0] || 'client'}</button>}
         </div>
       )}
+      <Sheet open={sched} onClose={() => setSched(false)} title={`Assign to ${target?.full_name ?? 'client'}`}>
+        {target && <AssignWorkout workout={w} clients={[target]} presetClient={target.id} onClose={() => nav(`/clients/${target.id}?tab=training`)} />}
+      </Sheet>
       <ExercisePicker open={picker} onClose={() => setPicker(false)} onPick={add} />
     </>
   )
