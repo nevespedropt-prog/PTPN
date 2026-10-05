@@ -417,3 +417,8 @@ table.grid tr.off td { opacity: .45; }
 .auth .tabs button.on { background: var(--card-2); color: var(--ink); box-shadow: 0 2px 8px rgba(0, 0, 0, .4); }
 .auth .tabs button:hover { filter: none; }
 @media (min-width: 1024px) { main.auth { margin: 0 auto; padding: 24px 16px; } }
+
+.plan-rail { display: flex; gap: 12px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 12px; scroll-snap-type: x proximity; scroll-padding-left: 16px; }
+.plan-card { flex: 0 0 220px; width: 220px; scroll-snap-align: start; display: grid; gap: 8px; align-content: start; cursor: pointer; color: var(--ink); }
+.plan-card .recipe-art { height: 120px; border-radius: 16px; overflow: hidden; }
+.plan-card b { font-size: .95rem; line-height: 1.25; }

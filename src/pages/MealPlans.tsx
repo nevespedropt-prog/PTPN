@@ -71,7 +71,7 @@ function groceries(rows: Row[]) {
   return { list, extras, taste: [...taste].sort() }
 }
 
-function Detail({ tpl }: { tpl: MealPlanTemplate }) {
+export function Detail({ tpl }: { tpl: MealPlanTemplate }) {
   const { profile } = useAuth()
   const coach = profile?.role === 'coach'
   const { clients } = useClients()
