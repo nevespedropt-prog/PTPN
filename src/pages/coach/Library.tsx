@@ -145,7 +145,7 @@ function Exercises() {
       </div>
       {!rows && <Skeleton n={4} />}
       <div className="card tight"><div className="list">
-        {list.slice(0, 150).map(x => (
+        {list.slice(0, 400).map(x => (
           <button key={x.id} className="item" onClick={() => setOpen(x)}>
             <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta">{x.muscle} · {x.equipment}</span></span>
             <span className="badge" style={{ textTransform: 'capitalize' }}>{x.category}</span>
