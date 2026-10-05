@@ -168,6 +168,13 @@ console.log('Coach flows')
   ok(await page.locator('.recipe-card').count() === 105, 'coach sees all 105 recipes')
   await shot(page, 'coach-recipes'); clean('resources and recipes', errors)
 
+  // exercise library includes the MyGym list
+  await page.goto(BASE + '/library', { waitUntil: 'networkidle' })
+  await page.getByRole('tab', { name: 'Exercises' }).click()
+  await page.getByPlaceholder(/Search 225 exercises/).fill('turkish')
+  ok(await page.getByText('Turkish get-up').count() === 1, 'library has the MyGym exercises (225 in total)')
+  await page.getByPlaceholder(/Search 225 exercises/).fill('')
+
   // meal plan library: browse, shopping list, apply to a client
   await page.goto(BASE + '/meal-plans', { waitUntil: 'networkidle' })
   ok(await page.locator('.recipe-card').count() === 10, 'coach sees 10 meal plans')

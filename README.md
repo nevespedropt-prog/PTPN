@@ -14,7 +14,7 @@ Premium, phone-first coaching app for personal trainers and their clients. React
 **Coach**
 - Dashboard: compliance, unread messages, clients who need attention, recent workouts
 - Clients: add clients, per-client overview, training, nutrition, habits and progress
-- Library: 100+ exercises, 16 workout templates (straight sets, circuits, AMRAP, EMOM, intervals), 6 programme templates, builders for both, supersets, %1RM prescriptions
+- Library: 225 exercises (including the MyGym London list), 16 workout templates (straight sets, circuits, AMRAP, EMOM, intervals), 6 programme templates, builders for both, supersets, %1RM prescriptions
 - Assign workouts and programmes by date, nutrition targets, weekly meal plans (auto-generated from the recipe book)
 - Meal plan library: 10 weekly plan templates (49 original dinner recipes with photos), apply one to a client with portions fitted to their calorie target
 - Inbox, announcements, challenges, resources, session slots

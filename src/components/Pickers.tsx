@@ -36,7 +36,7 @@ export function ExerciseList({ rows, onPick, query, setQuery, allowCustom }: {
         </button>
       )}
       <div className="list">
-        {list.slice(0, 120).map(e => (
+        {list.slice(0, 400).map(e => (
           <button key={e.id} className="item" type="button" onClick={() => onPick({ id: e.id, name: e.name })}>
             <span className="grow"><span className="title">{e.name}</span><br /><span className="meta">{e.muscle} · {e.equipment}</span></span>
             <Icon name="plus" />

@@ -127,6 +127,9 @@ EX = [
  ("Deep squat hold","Mobility","Bodyweight","mobility","Sit in the bottom of a squat, chest tall, breathe."),
 ]
 
+from mygym_exercises import NEW_EX as _MYGYM_EX  # exercises from the MyGym London sheets
+EX = EX + _MYGYM_EX
+
 # ---------- foods: name, serving_label, serving_g, kcal, protein, carbs, fat (per 100 g) ----------
 FOODS = [
  ("Chicken breast, cooked","100 g",100,165,31,0,3.6),

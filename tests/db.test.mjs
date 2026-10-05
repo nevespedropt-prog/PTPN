@@ -55,7 +55,7 @@ async function as(who, sql, params = []) {
 const count = async (who, sql) => { const r = await as(who, sql); return r.error ? `ERR ${r.error}` : r.rows.length }
 
 // library counts
-ok(await count(A, 'select id from exercises') === 104, 'client reads exercise library')
+ok(await count(A, 'select id from exercises') === 225, 'client reads exercise library')
 ok(await count(A, 'select id from workouts') === 16, 'client sees 16 built-in workouts')
 ok(await count(A, 'select id from recipes') === 105, 'client reads recipes')
 ok(await count(A, 'select id from foods') === 139, 'client reads foods')
