@@ -3,6 +3,7 @@ import { useAuth } from '../auth'
 import { supabase } from '../lib/supabase'
 import Icon, { type IconName } from '../components/Icon'
 import { Avatar, PageHead } from '../components/ui'
+import { InstallCard } from '../components/Install'
 
 export default function More() {
   const { profile, session } = useAuth()
@@ -28,6 +29,7 @@ export default function More() {
         <span className="grow"><b>{profile?.full_name || 'Account'}</b><br /><span className="mute small">{session?.user.email}</span></span>
         <Icon name="chev" />
       </Link>
+      <InstallCard />
       <div className="card tight">
         <div className="list">
           {rows.map(r => (

@@ -61,6 +61,17 @@ export default function WorkoutPlayer() {
     })()
   }, [id])
 
+  // Keep the screen on during a session (the lock is released when the tab is hidden, so ask again on return).
+  useEffect(() => {
+    type Lock = { release: () => Promise<void> }
+    const wl = (navigator as unknown as { wakeLock?: { request: (t: 'screen') => Promise<Lock> } }).wakeLock
+    if (!wl) return
+    let lock: Lock | null = null
+    const ask = () => { if (document.visibilityState === 'visible') wl.request('screen').then(l => { lock = l }).catch(() => {}) }
+    ask()
+    document.addEventListener('visibilitychange', ask)
+    return () => { document.removeEventListener('visibilitychange', ask); lock?.release().catch(() => {}) }
+  }, [])
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 500)
     return () => clearInterval(t)

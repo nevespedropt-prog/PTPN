@@ -67,3 +67,7 @@ Short, plain replies. Ask a few clarifying questions with the multiple-choice qu
 ## To resume in a new chat
 
 Say: "Read docs/PROJECT_HANDOFF.md in the PTPN repo and continue from the open items." The repo is the source of truth, this file is the briefing.
+
+
+## Installable app (PWA)
+The app installs to the home screen on Android (Chrome install prompt) and iPhone/iPad (Share, Add to Home Screen; the More page shows the steps). Files: `public/manifest.webmanifest`, `public/sw.js`, `public/icons/*`, `src/components/Install.tsx`. The service worker only caches the app shell, built assets, fonts and recipe photos; it never caches Supabase data. Offline the app opens from the saved shell and last-known profile and shows an offline bar, but data screens stay empty until the phone reconnects. Bump `VERSION` in `public/sw.js` if the caching rules change. The workout player keeps the screen awake. Not built yet: push notifications (chat, workout reminders, announcements), native store apps.
