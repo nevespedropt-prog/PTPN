@@ -19,6 +19,10 @@ CHROMIUM_PATH=/path/to/chromium npm run test:e2e   # CHROMIUM_PATH is optional i
 
 `npm test` runs all three steps. Screenshots from the browser run land in `tests/.out/shots` (ignored by git).
 
+## On GitHub
+
+`.github/workflows/test.yml` runs the type check and both suites on every pull request and on every push to `main`. Screenshots from the browser run are kept for 7 days as the `e2e-screenshots` artifact on each run.
+
 ## When you change things
 
 - New seed file: load it in `db.test.mjs` and `shim.mjs`, and update the library counts in both (recipes, foods, photos) and `e2e.mjs` (recipe cards).

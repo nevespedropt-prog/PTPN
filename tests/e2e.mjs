@@ -54,8 +54,7 @@ console.log('Coach flows')
 
   // clients list + add client through the edge function emulation
   await tab(page, 'Clients')
-  await page.getByText('Ana Silva').first().waitFor()
-  ok(await page.getByText('Ana Silva').count() > 0, 'clients list shows Ana')
+  ok(await page.getByText('Ana Silva').first().waitFor({ timeout: 10000 }).then(() => true, () => false), 'clients list shows Ana')
   await page.getByRole('button', { name: /Add client/ }).first().click()
   await page.getByPlaceholder('Full name').fill('Cara Test')
   await page.getByPlaceholder('Email').fill('cara@x.com')
