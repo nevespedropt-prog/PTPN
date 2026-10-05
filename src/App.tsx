@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { NavLink, Navigate, Route, Routes, Link } from 'react-router-dom'
+import { NavLink, Navigate, Route, Routes, Link, useLocation } from 'react-router-dom'
 import { useAuth } from './auth'
 import { configured, supabase } from './lib/supabase'
 import { useUnread } from './hooks'
@@ -21,6 +21,7 @@ import { ClientChat, CoachChat } from './pages/Chat'
 import Book from './pages/Book'
 import Community from './pages/Community'
 import Resources from './pages/Resources'
+import GetApp from './pages/GetApp'
 import { OfflineBar } from './components/Install'
 import Dashboard from './pages/coach/Dashboard'
 import Clients from './pages/coach/Clients'
@@ -113,7 +114,9 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
 export default function App() {
   const { session, profile, loading } = useAuth()
   const unread = useUnread(profile?.id)
+  const { pathname } = useLocation()
 
+  if (pathname.replace(/\/+$/, '') === '/get-app') return <GetApp />
   if (!configured) {
     return <main className="auth"><div className="card"><h1>Setup needed</h1>
       <p>Copy <code>.env.example</code> to <code>.env</code> and add your Supabase URL and anon key, then restart <code>npm run dev</code>.</p></div></main>
