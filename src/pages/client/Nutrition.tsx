@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
 import { addDays, localDate, longDay, relDay, weekday } from '../../lib/dates'
-import { MEAL_LABEL, MEALS, forGrams, forServings, sum } from '../../lib/nutrition'
+import { MEAL_LABEL, MEALS, forGrams, forServings, mealGoal, pickRandomMeal, sum } from '../../lib/nutrition'
 import type { Food, FoodLog, MealPlanItem, MealType, Recipe, Targets } from '../../types'
 import { Empty, MacroBar, MacroChips, PageHead, Ring, Seg, Sheet, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
 import { RecipePicker } from '../../components/Pickers'
+import RecipeView from '../../components/RecipeView'
 
 type AddTab = 'foods' | 'recipes' | 'quick'
 
@@ -91,6 +92,11 @@ export default function Nutrition() {
   const [logs, setLogs] = useState<FoodLog[] | null>(null)
   const [plan, setPlan] = useState<(MealPlanItem & { recipe?: Recipe })[]>([])
   const [adding, setAdding] = useState<MealType | null>(null)
+  const [library, setLibrary] = useState<Recipe[] | null>(null)
+  const [rnd, setRnd] = useState<{ meal: MealType; pick: { recipe: Recipe; servings: number } | null; seen: string[] } | null>(null)
+  const [view, setView] = useState<{ recipe: Recipe; servings: number } | null>(null)
+  const isFuture = date > today
+  const lastDay = addDays(today, 28)
 
   const load = useCallback(async () => {
     if (!profile) return
@@ -115,8 +121,24 @@ export default function Nutrition() {
     load()
   }
 
-  const total = sum(logs ?? [])
-  const left = targets?.kcal ? targets.kcal - total.kcal : null
+  const logged = sum(logs ?? [])
+  const planned = sum(plan.filter(p => p.recipe).map(p => forServings(p.recipe!, Number(p.servings))))
+  const total = isFuture ? planned : logged
+  const left = !isFuture && targets?.kcal ? targets.kcal - logged.kcal : null
+
+  async function randomFor(meal: MealType, seen: string[] = []) {
+    let all = library
+    if (!all) { all = ((await supabase.from('recipes').select('*')).data ?? []) as Recipe[]; setLibrary(all) }
+    const mealLeft = left !== null ? left : null
+    const pick = pickRandomMeal(all, meal, mealGoal(meal, targets?.kcal ?? null, mealLeft), seen)
+    setRnd({ meal, pick, seen: pick ? [...seen, pick.recipe.id] : seen })
+  }
+  async function addRandom() {
+    if (!rnd?.pick) return
+    const { recipe, servings } = rnd.pick
+    await supabase.from('food_logs').insert({ client_id: profile!.id, date, meal_type: rnd.meal, name: recipe.name, amount_label: `${servings} serving${servings === 1 ? '' : 's'}`, recipe_id: recipe.id, ...forServings(recipe, servings) })
+    setRnd(null); load()
+  }
 
   return (
     <>
@@ -124,17 +146,18 @@ export default function Nutrition() {
       <div className="row between" style={{ marginBottom: 12 }}>
         <button className="icon" onClick={() => setDate(addDays(date, -1))} aria-label="Previous day"><Icon name="back" size={18} /></button>
         <div className="center"><b>{relDay(date)}</b><div className="mute small">{longDay(date)}</div></div>
-        <button className="icon" onClick={() => setDate(addDays(date, 1))} aria-label="Next day" disabled={date >= today}><Icon name="chev" size={18} /></button>
+        <button className="icon" onClick={() => setDate(addDays(date, 1))} aria-label="Next day" disabled={date >= lastDay}><Icon name="chev" size={18} /></button>
       </div>
 
       <div className="card hero" style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
-        <Ring value={total.kcal} max={targets?.kcal ?? 0} size={124} label={Math.round(total.kcal)} sub={targets?.kcal ? `of ${targets.kcal}` : 'kcal'} />
+        <Ring value={total.kcal} max={targets?.kcal ?? 0} size={124} label={Math.round(total.kcal)} sub={isFuture ? 'planned' : targets?.kcal ? `of ${targets.kcal}` : 'kcal'} />
         <div className="grow stack" style={{ gap: 12 }}>
           <MacroBar label="Protein" value={total.protein} target={targets?.protein ?? null} color="var(--protein)" />
           <MacroBar label="Carbs" value={total.carbs} target={targets?.carbs ?? null} color="var(--carbs)" />
           <MacroBar label="Fat" value={total.fat} target={targets?.fat ?? null} color="var(--fat)" />
         </div>
       </div>
+      {isFuture && <p className="mute small center" style={{ marginTop: 0 }}>Upcoming day: your coach's planned meals. Tap one to see the recipe. You can log it on the day.</p>}
       {targets === null && <p className="mute small center">Your coach hasn't set targets yet. Log meals anyway and they'll show up in your totals.</p>}
       {left !== null && <div className="grid g2" style={{ marginBottom: 12 }}>
         <Tile label={left >= 0 ? 'Remaining' : 'Over target'} value={Math.abs(Math.round(left))} unit=" kcal" accent={left >= 0 ? 'var(--green)' : '#ff7a87'} />
@@ -145,13 +168,16 @@ export default function Nutrition() {
       {!logs && <Skeleton n={3} />}
       {logs && MEALS.map(meal => {
         const rows = logs.filter(l => l.meal_type === meal)
-        const planned = plan.filter(p => p.meal_type === meal && p.recipe && !rows.some(r => r.recipe_id === p.recipe_id))
+        const upcoming = plan.filter(p => p.meal_type === meal && p.recipe && (isFuture || !rows.some(r => r.recipe_id === p.recipe_id)))
         const mt = sum(rows)
         return (
           <div key={meal} className="card">
             <div className="meal-head">
               <h3>{MEAL_LABEL[meal]}{rows.length > 0 && <span className="mute small" style={{ fontWeight: 500 }}> · {Math.round(mt.kcal)} kcal</span>}</h3>
-              <button className="soft sm" onClick={() => setAdding(meal)}><Icon name="plus" size={15} />Add</button>
+              {!isFuture && <div className="row nowrap" style={{ marginBottom: 0, gap: 6 }}>
+                <button className="soft sm" onClick={() => randomFor(meal)} aria-label={`Random ${MEAL_LABEL[meal].toLowerCase()} idea`}><Icon name="dice" size={15} />Random</button>
+                <button className="soft sm" onClick={() => setAdding(meal)}><Icon name="plus" size={15} />Add</button>
+              </div>}
             </div>
             {rows.map(r => (
               <div key={r.id} className="food-row">
@@ -160,18 +186,33 @@ export default function Nutrition() {
                 <button className="link" onClick={() => remove(r.id)} aria-label={`Remove ${r.name}`}>Remove</button>
               </div>
             ))}
-            {rows.length === 0 && planned.length === 0 && <p className="mute small" style={{ margin: 0 }}>Nothing logged yet.</p>}
-            {planned.map(p => (
-              <div key={p.id} className="food-row" style={{ opacity: .9 }}>
-                <span className="grow"><span className="badge blue">Planned</span> <b style={{ fontWeight: 600 }}>{p.recipe!.name}</b><br /><span className="mute small">{Number(p.servings)} serving · {Math.round(p.recipe!.kcal * Number(p.servings))} kcal</span></span>
-                <button className="sm soft" onClick={() => logPlanned(p)}>Log</button>
+            {rows.length === 0 && upcoming.length === 0 && <p className="mute small" style={{ margin: 0 }}>{isFuture ? 'Nothing planned.' : 'Nothing logged yet.'}</p>}
+            {upcoming.map(p => (
+              <div key={p.id} className="food-row" style={{ opacity: .95 }}>
+                <div className="grow" style={{ cursor: 'pointer' }} role="button" tabIndex={0} onClick={() => setView({ recipe: p.recipe!, servings: Number(p.servings) })} onKeyDown={e => { if (e.key === 'Enter') setView({ recipe: p.recipe!, servings: Number(p.servings) }) }}>
+                  <span className="badge blue">{isFuture ? 'Upcoming' : 'Planned'}</span> <b style={{ fontWeight: 600, color: 'var(--ink)' }}>{p.recipe!.name}</b><br /><span className="mute small">{Number(p.servings)} serving · {Math.round(p.recipe!.kcal * Number(p.servings))} kcal · tap for recipe</span>
+                </div>
+                {!isFuture && <button className="sm soft" onClick={() => logPlanned(p)}>Log</button>}
               </div>
             ))}
           </div>
         )
       })}
-      {logs && logs.length === 0 && <div className="card"><Empty icon="nutrition" title="Start your day">Tap Add on any meal to log foods, recipes or a quick entry.</Empty></div>}
+      {logs && !isFuture && logs.length === 0 && <div className="card"><Empty icon="nutrition" title="Start your day">Tap Add on any meal to log foods, recipes or a quick entry.</Empty></div>}
 
+      <Sheet open={!!view} onClose={() => setView(null)} title={view?.recipe.name ?? ''}>{view && <RecipeView recipe={view.recipe} servings={view.servings} />}</Sheet>
+      <Sheet open={!!rnd} onClose={() => setRnd(null)} title={rnd ? `Random ${MEAL_LABEL[rnd.meal].toLowerCase()} idea` : ''}>
+        {rnd && (rnd.pick ? (
+          <div className="stack">
+            <b style={{ fontSize: '1.1rem' }}>{rnd.pick.recipe.name}</b>
+            <RecipeView recipe={rnd.pick.recipe} servings={rnd.pick.servings} />
+            <div className="row" style={{ marginBottom: 0 }}>
+              <button onClick={addRandom}>Add to {MEAL_LABEL[rnd.meal].toLowerCase()}</button>
+              <button className="soft" onClick={() => randomFor(rnd.meal, rnd.seen)}><Icon name="dice" size={16} />Try another</button>
+            </div>
+          </div>
+        ) : <p className="mute">No recipes found for this meal.</p>)}
+      </Sheet>
       <Sheet open={!!adding} onClose={() => setAdding(null)} title={adding ? `Add to ${MEAL_LABEL[adding].toLowerCase()}` : ''}>
         {adding && <AddFood meal={adding} date={date} onDone={load} onClose={() => setAdding(null)} />}
       </Sheet>

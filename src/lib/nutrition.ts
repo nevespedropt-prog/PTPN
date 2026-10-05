@@ -63,3 +63,24 @@ export function generateWeek(recipes: Recipe[], t: Targets, clientId: string): O
   }
   return out
 }
+
+/**
+ * Random recipe for one meal. Candidates are the recipes of that meal type; each is scored on how close its calories
+ * (at 0.5 to 2 servings) land to what the client has left for that meal, then one of the best few is picked at random.
+ */
+export function pickRandomMeal(recipes: Recipe[], meal: MealType, goalKcal: number, exclude: string[] = []): { recipe: Recipe; servings: number } | null {
+  const pool = recipes.filter(r => r.meal_type === meal && r.kcal > 0)
+  const fresh = pool.filter(r => !exclude.includes(r.id))
+  const from = fresh.length ? fresh : pool
+  if (!from.length) return null
+  const scored = from.map(r => {
+    const servings = Math.min(2, Math.max(0.5, Math.round((goalKcal / r.kcal) * 2) / 2))
+    return { recipe: r, servings, off: Math.abs(r.kcal * servings - goalKcal) / goalKcal }
+  }).sort((a, b) => a.off - b.off)
+  const top = scored.slice(0, Math.min(6, scored.length))
+  return top[Math.floor(Math.random() * top.length)]
+}
+
+/** Default share of the daily target for one meal. */
+export const mealGoal = (meal: MealType, dailyKcal: number | null, leftKcal: number | null) =>
+  Math.max(150, Math.min(leftKcal !== null && leftKcal > 0 ? leftKcal : Infinity, (dailyKcal || 2000) * SPLIT[meal]))
