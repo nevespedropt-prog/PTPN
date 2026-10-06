@@ -645,3 +645,12 @@ alter table public.client_health enable row level security;
 create policy "health read own or coach" on public.client_health for select using (client_id = auth.uid() or public.is_coach());
 create policy "health insert own" on public.client_health for insert with check (client_id = auth.uid());
 create policy "health update own" on public.client_health for update using (client_id = auth.uid()) with check (client_id = auth.uid());
+
+
+-- v6: weight and effort wording, cardio targets (time, distance, speed)
+alter table public.workout_items add column if not exists weight text not null default '';              -- kg ("80"), percent of the client's max ("75%") or text ("bodyweight")
+alter table public.workout_items add column if not exists cardio_time text not null default '';          -- "20:00", "1:00", or minutes
+alter table public.workout_items add column if not exists cardio_distance_km numeric check (cardio_distance_km >= 0);
+alter table public.workout_items add column if not exists cardio_speed_kmh numeric check (cardio_speed_kmh >= 0);
+-- Existing percent-of-max prescriptions show up in the new Weight field as "75%".
+update public.workout_items set weight = (percent_1rm::float8)::text || '%' where weight = '' and percent_1rm is not null;

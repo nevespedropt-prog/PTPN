@@ -18,7 +18,7 @@ export function useExercises(open = true) {
 }
 
 export function ExerciseList({ rows, onPick, query, setQuery, allowCustom }: {
-  rows: Exercise[] | null; onPick: (e: { id: string | null; name: string }) => void; query: string; setQuery: (s: string) => void; allowCustom?: boolean
+  rows: Exercise[] | null; onPick: (e: { id: string | null; name: string; category?: string }) => void; query: string; setQuery: (s: string) => void; allowCustom?: boolean
 }) {
   const [muscle, setMuscle] = useState('All')
   const list = useMemo(() => (rows ?? []).filter(e =>
@@ -37,7 +37,7 @@ export function ExerciseList({ rows, onPick, query, setQuery, allowCustom }: {
       )}
       <div className="list">
         {list.slice(0, 400).map(e => (
-          <button key={e.id} className="item" type="button" onClick={() => onPick({ id: e.id, name: e.name })}>
+          <button key={e.id} className="item" type="button" onClick={() => onPick({ id: e.id, name: e.name, category: e.category })}>
             <span className="grow"><span className="title">{e.name}</span><br /><span className="meta">{e.muscle} · {e.equipment}</span></span>
             <Icon name="plus" />
           </button>
@@ -48,7 +48,7 @@ export function ExerciseList({ rows, onPick, query, setQuery, allowCustom }: {
   )
 }
 
-export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (e: { id: string | null; name: string }) => void }) {
+export function ExercisePicker({ open, onClose, onPick }: { open: boolean; onClose: () => void; onPick: (e: { id: string | null; name: string; category?: string }) => void }) {
   const { rows } = useExercises(open)
   const [query, setQuery] = useState('')
   return (

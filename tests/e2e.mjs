@@ -144,10 +144,27 @@ console.log('Coach flows')
   await page.getByRole('button', { name: /Add exercise/ }).click()
   await page.getByPlaceholder(/Search 100/).fill('Leg press')
   await page.locator('.sheet .item', { hasText: 'Leg press' }).click()
+  await page.getByRole('button', { name: /Add exercise/ }).click()
+  await page.getByPlaceholder(/Search 100/).fill('Treadmill run')
+  await page.locator('.sheet .item', { hasText: 'Treadmill run' }).click()
+  // wording: Weight and Effort replace %1RM and Load
+  ok(await page.getByText('%1RM').count() === 0 && await page.getByText('Load', { exact: true }).count() === 0, 'builder no longer shows %1RM or Load')
+  ok(await page.getByText('Weight', { exact: true }).count() === 2 && await page.getByText('Effort', { exact: true }).count() === 3, 'builder shows Weight and Effort')
+  await page.getByPlaceholder('kg, or 75%').nth(0).fill('80')
+  await page.getByPlaceholder('kg, or 75%').nth(1).fill('75%')
+  await page.getByPlaceholder('e.g. RPE 8').nth(0).fill('RPE 8')
+  // cardio exercise gets time, distance and speed instead of sets, reps and weight
+  ok(await page.getByText('Distance (km)').count() === 1 && await page.getByText('Speed (km/h)').count() === 1, 'cardio exercise shows time, distance and speed fields')
+  await page.getByPlaceholder('20:00 or 1:00').fill('20:00')
+  await page.getByLabel('Distance (km)').fill('5')
   await page.getByRole('button', { name: 'Save workout' }).click()
   await page.getByText('Saved').first().waitFor()
   const wk = (await sql(`select w.id, count(i.id)::int n from workouts w join workout_items i on i.workout_id = w.id where w.name = 'Coach leg day' group by w.id`))[0]
-  ok(wk?.n === 2, 'workout builder saved two exercises')
+  ok(wk?.n === 3, 'workout builder saved three exercises')
+  const its = await sql(`select exercise_name, weight, percent_1rm, load, cardio_time, cardio_distance_km from workout_items where workout_id = '${wk.id}' order by sort`)
+  ok(its[0].weight === '80' && its[0].percent_1rm === null && its[0].load === 'RPE 8', 'weight in kg and effort saved')
+  ok(its[1].weight === '75%' && Number(its[1].percent_1rm) === 75, 'weight as a percent of max saved (still drives the working load)')
+  ok(its[2].cardio_time === '20:00' && Number(its[2].cardio_distance_km) === 5, 'cardio time and distance saved')
   await shot(page, 'coach-workout-builder'); clean('workout builder', errors)
 
   // programme builder
@@ -490,6 +507,35 @@ console.log('Client flows')
   clean('coach client views', errors)
   await page.goto(BASE + '/dashboard', { waitUntil: 'networkidle' }); await page.waitForTimeout(400)
   await shot(page, 'coach-dashboard-after')
+  await ctx.close()
+}
+
+// ================= Cardio logging in the workout player =================
+{
+  const w = (await sql(`select id from workouts where name = 'Treadmill intervals'`))[0]
+  const cwId = (await sql(`insert into client_workouts (client_id, workout_id, date) values ('${IDS.ana}', '${w.id}', '${addDaysISO(today, 12)}') returning id`))[0].id
+  const { ctx, page, errors } = await open('ana')
+  await page.goto(BASE + `/workout/${cwId}`, { waitUntil: 'networkidle' })
+  await page.getByText('Treadmill run').first().waitFor()
+  ok(await page.locator('.set-grid .h', { hasText: /^Time$/ }).count() === 1 && await page.locator('.set-grid .h', { hasText: /^km\/h$/ }).count() === 1, 'interval cardio shows Time and speed columns')
+  ok(await page.locator('.set-grid .h', { hasText: /^kg$/i }).count() === 0, 'cardio shows no kg or reps columns')
+  ok(await page.getByRole('button', { name: /Complete round/ }).count() === 8, 'eight interval rounds')
+  await page.getByLabel('Time, round 1').fill('1:00')
+  await page.getByLabel('Speed in kilometres per hour, round 1').fill('12')
+  await page.getByLabel('Time, round 1').click(); await page.getByLabel('Speed in kilometres per hour, round 1').click() // blur
+  await page.getByRole('button', { name: 'Complete round 1' }).click()
+  ok(await page.getByLabel('Time, round 1').inputValue() === '1:00' && await page.getByLabel('Speed in kilometres per hour, round 1').inputValue() === '12', 'cardio round keeps time and speed')
+  await shot(page, 'client-cardio-intervals'); clean('cardio player', errors)
+  // a steady run: time and distance give the speed
+  const std = (await sql(`insert into workouts (name, format, created_by) values ('Steady run', 'standard', '${IDS.coach}') returning id`))[0].id
+  const ex = (await sql(`select id from exercises where name = 'Treadmill run'`))[0].id
+  await sql(`insert into workout_items (workout_id, exercise_id, exercise_name, sort, sets, reps, rest_sec) values ('${std}', '${ex}', 'Treadmill run', 0, 1, '', 0)`)
+  const cw2 = (await sql(`insert into client_workouts (client_id, workout_id, date) values ('${IDS.ana}', '${std}', '${addDaysISO(today, 13)}') returning id`))[0].id
+  await page.goto(BASE + `/workout/${cw2}`, { waitUntil: 'networkidle' })
+  await page.getByLabel('Time', { exact: true }).fill('30:00')
+  await page.getByLabel('Distance in kilometres').fill('5')
+  await page.getByLabel('Distance in kilometres').blur()
+  ok((await page.getByLabel('Speed in kilometres per hour').inputValue()) === '10', 'speed worked out from time and distance (5 km in 30:00 = 10 km/h)')
   await ctx.close()
 }
 

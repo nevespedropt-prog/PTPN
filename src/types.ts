@@ -21,10 +21,13 @@ export interface Workout { id: string; name: string; description: string; format
 export interface WorkoutItem {
   id: string; workout_id: string; exercise_id: string | null; exercise_name: string; sort: number; group_label: string
   sets: number | null; reps: string; load: string; percent_1rm: number | null; rest_sec: number | null; tempo: string; notes: string
+  /** kg ("80"), percent of the client's max ("75%") or text ("bodyweight"). `load` is now shown as Effort (e.g. RPE 8). */
+  weight: string
+  cardio_time: string; cardio_distance_km: number | null; cardio_speed_kmh: number | null
 }
 export interface Program { id: string; name: string; description: string; goal: string; level: string; weeks: number; created_by: string | null }
 export interface ProgramDay { id: string; program_id: string; week: number; day: number; workout_id: string }
-export interface SetLog { reps: string; kg: string; done: boolean }
+export interface SetLog { reps: string; kg: string; done: boolean; time?: string; distance?: string; speed?: string }
 export interface WorkoutLog { items?: Record<string, SetLog[]>; rounds?: number; seconds?: number }
 export interface ClientWorkout {
   id: string; client_id: string; workout_id: string; date: string; program_id: string | null; status: 'scheduled' | 'done' | 'skipped'

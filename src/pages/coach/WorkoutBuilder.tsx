@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
-import { FORMAT_LABEL } from '../../lib/training'
+import { CARDIO_FIELDS, CARDIO_STYLE_HINT, FORMAT_LABEL, parseWeight, weightOf } from '../../lib/training'
 import type { Workout, WorkoutFormat, WorkoutItem } from '../../types'
 import { Empty, PageHead, Sheet, Skeleton } from '../../components/ui'
 import { useClients } from '../../hooks'
@@ -10,7 +10,7 @@ import { AssignWorkout } from './Assign'
 import Icon from '../../components/Icon'
 import { ExercisePicker } from '../../components/Pickers'
 
-type Row = Omit<WorkoutItem, 'workout_id' | 'load' | 'tempo'> & { load: string; tempo: string; isNew?: boolean }
+type Row = Omit<WorkoutItem, 'workout_id' | 'load' | 'tempo'> & { load: string; tempo: string; isNew?: boolean; cardio?: boolean }
 const LABELS = ['', 'A', 'B', 'C', 'D', 'E']
 
 export default function WorkoutBuilder() {
@@ -39,7 +39,13 @@ export default function WorkoutBuilder() {
         supabase.from('workouts').select('*').eq('id', id).maybeSingle(),
         supabase.from('workout_items').select('*').eq('workout_id', id).order('sort'),
       ])
-      setW(a.data as Workout | null); setRows((b.data ?? []) as Row[])
+      const items = (b.data ?? []) as Row[]
+      // Cardio exercises get time, distance and speed instead of sets, reps and weight.
+      const ids = [...new Set(items.map(r => r.exercise_id).filter(Boolean))] as string[]
+      const cats = new Map<string, string>()
+      if (ids.length) for (const e of (await supabase.from('exercises').select('id, category').in('id', ids)).data ?? []) cats.set(e.id as string, e.category as string)
+      setW(a.data as Workout | null)
+      setRows(items.map(r => ({ ...r, weight: weightOf(r), cardio: !!r.exercise_id && cats.get(r.exercise_id) === 'cardio' })))
     })()
   }, [id])
 
@@ -60,8 +66,9 @@ export default function WorkoutBuilder() {
     if (!r.isNew) setRemoved([...removed, r.id])
     setRows(rows.filter((_, k) => k !== i)); setDirty(true)
   }
-  const add = (e: { id: string | null; name: string }) => {
-    setRows([...rows, { id: crypto.randomUUID(), exercise_id: e.id, exercise_name: e.name, sort: rows.length, group_label: '', sets: 3, reps: '10', load: '', percent_1rm: null, rest_sec: 90, tempo: '', notes: '', isNew: true }])
+  const add = (e: { id: string | null; name: string; category?: string }) => {
+    const cardio = e.category === 'cardio'
+    setRows([...rows, { id: crypto.randomUUID(), exercise_id: e.id, exercise_name: e.name, sort: rows.length, group_label: '', sets: cardio ? 1 : 3, reps: cardio ? '' : '10', load: '', weight: '', percent_1rm: null, cardio_time: '', cardio_distance_km: null, cardio_speed_kmh: null, rest_sec: cardio ? 0 : 90, tempo: '', notes: '', isNew: true, cardio }])
     setPicker(false); setDirty(true)
   }
 
@@ -74,7 +81,11 @@ export default function WorkoutBuilder() {
     if (e1) { setBusy(false); setMsg(e1.message); return false }
     if (removed.length) await supabase.from('workout_items').delete().in('id', removed)
     if (rows.length) {
-      const payload = rows.map(({ isNew: _n, ...r }, i) => ({ ...r, workout_id: w!.id, sort: i, percent_1rm: r.percent_1rm || null, sets: r.sets || null, rest_sec: r.rest_sec ?? null }))
+      const payload = rows.map(({ isNew: _n, cardio: _c, ...r }, i) => {
+        // Weight is typed once: "80" for kilos, "75%" for a percent of the client's max, or text. The percent is kept in its own column for the working-load maths.
+        const pw = parseWeight(r.weight)
+        return { ...r, workout_id: w!.id, sort: i, weight: r.weight.trim(), percent_1rm: pw.kind === 'percent' ? pw.percent : null, sets: r.sets || null, rest_sec: r.rest_sec ?? null }
+      })
       const { error } = await supabase.from('workout_items').upsert(payload)
       if (error) { setBusy(false); setMsg(error.message); return false }
     }
@@ -119,19 +130,39 @@ export default function WorkoutBuilder() {
               <button type="button" className="icon sm" onClick={() => move(i, 1)} disabled={i === rows.length - 1} aria-label="Move down"><Icon name="down" size={16} /></button>
               <button type="button" className="icon sm" onClick={() => drop(i)} aria-label={`Remove ${r.exercise_name}`}><Icon name="trash" size={16} /></button>
             </div>
-            <div className="inline-inputs">
-              <label className="field">Sets<input type="number" inputMode="numeric" min="1" value={r.sets ?? ''} onChange={e => updRow(i, { sets: num(e.target.value) })} /></label>
-              <label className="field">Reps<input value={r.reps} onChange={e => updRow(i, { reps: e.target.value })} placeholder="10 or 30 s" /></label>
-              <label className="field">%1RM<input type="number" inputMode="decimal" min="1" max="150" value={r.percent_1rm ?? ''} onChange={e => updRow(i, { percent_1rm: num(e.target.value) })} /></label>
-              <label className="field">Load<input value={r.load} onChange={e => updRow(i, { load: e.target.value })} placeholder="e.g. RPE 8" /></label>
-              <label className="field">Rest (s)<input type="number" inputMode="numeric" min="0" step="15" value={r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>
-              <label className="field">Tempo<input value={r.tempo} onChange={e => updRow(i, { tempo: e.target.value })} placeholder="3-1-1" /></label>
-              <label className="field">Group
-                <select value={r.group_label} onChange={e => updRow(i, { group_label: e.target.value })}>
-                  {LABELS.map(l => <option key={l} value={l}>{l || 'None'}</option>)}
-                </select>
-              </label>
-            </div>
+            {r.cardio ? (
+              <>
+                <div className="mute small" style={{ marginBottom: 8 }}>Cardio. {CARDIO_STYLE_HINT[w.format]}</div>
+                <div className="inline-inputs">
+                  {CARDIO_FIELDS[w.format].includes('sets') && <label className="field">Rounds<input type="number" inputMode="numeric" min="1" value={r.sets ?? ''} onChange={e => updRow(i, { sets: num(e.target.value) })} /></label>}
+                  {CARDIO_FIELDS[w.format].includes('time') && <label className="field">Time<input value={r.cardio_time} onChange={e => updRow(i, { cardio_time: e.target.value })} placeholder="20:00 or 1:00" /></label>}
+                  {CARDIO_FIELDS[w.format].includes('distance') && <label className="field">Distance (km)<input type="number" inputMode="decimal" min="0" step="any" value={r.cardio_distance_km ?? ''} onChange={e => updRow(i, { cardio_distance_km: num(e.target.value) })} /></label>}
+                  {CARDIO_FIELDS[w.format].includes('speed') && <label className="field">Speed (km/h)<input type="number" inputMode="decimal" min="0" step="any" value={r.cardio_speed_kmh ?? ''} onChange={e => updRow(i, { cardio_speed_kmh: num(e.target.value) })} /></label>}
+                  {CARDIO_FIELDS[w.format].includes('rest') && <label className="field">Rest (s)<input type="number" inputMode="numeric" min="0" step="15" value={r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>}
+                  <label className="field">Effort<input value={r.load} onChange={e => updRow(i, { load: e.target.value })} placeholder="e.g. RPE 8" /></label>
+                  <label className="field">Details<input value={r.reps} onChange={e => updRow(i, { reps: e.target.value })} placeholder="60 s hard / 60 s easy" /></label>
+                  <label className="field">Group
+                    <select value={r.group_label} onChange={e => updRow(i, { group_label: e.target.value })}>
+                      {LABELS.map(l => <option key={l} value={l}>{l || 'None'}</option>)}
+                    </select>
+                  </label>
+                </div>
+              </>
+            ) : (
+              <div className="inline-inputs">
+                <label className="field">Sets<input type="number" inputMode="numeric" min="1" value={r.sets ?? ''} onChange={e => updRow(i, { sets: num(e.target.value) })} /></label>
+                <label className="field">Reps<input value={r.reps} onChange={e => updRow(i, { reps: e.target.value })} placeholder="10 or 30 s" /></label>
+                <label className="field">Weight<input value={r.weight} onChange={e => updRow(i, { weight: e.target.value })} placeholder="kg, or 75%" /></label>
+                <label className="field">Effort<input value={r.load} onChange={e => updRow(i, { load: e.target.value })} placeholder="e.g. RPE 8" /></label>
+                <label className="field">Rest (s)<input type="number" inputMode="numeric" min="0" step="15" value={r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>
+                <label className="field">Tempo<input value={r.tempo} onChange={e => updRow(i, { tempo: e.target.value })} placeholder="3-1-1" /></label>
+                <label className="field">Group
+                  <select value={r.group_label} onChange={e => updRow(i, { group_label: e.target.value })}>
+                    {LABELS.map(l => <option key={l} value={l}>{l || 'None'}</option>)}
+                  </select>
+                </label>
+              </div>
+            )}
             <input style={{ marginTop: 8 }} placeholder="Coaching notes" value={r.notes} onChange={e => updRow(i, { notes: e.target.value })} />
           </div>
         ))}
