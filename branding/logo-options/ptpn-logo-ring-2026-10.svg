@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <title>PTPN option B: Progress ring</title>
+  <rect width="120" height="120" rx="26" fill="#0b0b0d"/>
+  <circle cx="60" cy="60" r="40" fill="none" stroke="#24242a" stroke-width="4.5"/>
+  <path d="M60 20a40 40 0 1 1 -40 40" fill="none" stroke="#f4f4f5" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M20 60a40 40 0 0 1 31-39" fill="none" stroke="#e11d2e" stroke-width="4.5" stroke-linecap="round"/>
+  <g fill="none" stroke="#f4f4f5" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34 70V52H38A5 5 0 0 1 38 62H34"/>
+    <path d="M49 52H60M54.5 52V70"/>
+    <path d="M65 70V52H69A5 5 0 0 1 69 62H65"/>
+    <path d="M80 70V52L89 70V52"/>
+  </g>
+</svg>
