@@ -4,13 +4,17 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
 import { demoUrl, fmtSeconds } from '../lib/util'
 import { niceDate } from '../lib/dates'
-import { FORMAT_LABEL, groupItems, prescription, setsDone, volumeKg, workingLoad } from '../lib/training'
+import { CARDIO_FIELDS, FORMAT_LABEL, cardioPrescription, fillCardio, groupItems, prescription, setsDone, volumeKg, workingLoad } from '../lib/training'
 import type { ClientWorkout, OneRepMax, SetLog, Workout, WorkoutItem, WorkoutLog } from '../types'
 import { Empty, Sheet, Skeleton, Stars } from '../components/ui'
 import Icon from '../components/Icon'
 
 const emptySets = (it: WorkoutItem, load?: number | null): SetLog[] =>
   Array.from({ length: it.sets ?? 1 }, () => ({ reps: '', kg: load ? String(load) : '', done: false }))
+// Cardio: one row per round when the style has rounds (intervals, EMOM), otherwise a single row.
+const emptyCardio = (it: WorkoutItem, rounds: boolean): SetLog[] =>
+  Array.from({ length: rounds ? it.sets ?? 1 : 1 }, () => ({ reps: '', kg: '', done: false, time: '', distance: '', speed: '' }))
+const CARDIO_HEAD: Record<string, string> = { time: 'Time', distance: 'km', speed: 'km/h' }
 
 export default function WorkoutPlayer() {
   const { id } = useParams()
@@ -20,6 +24,7 @@ export default function WorkoutPlayer() {
   const [w, setW] = useState<Workout | null>(null)
   const [items, setItems] = useState<WorkoutItem[]>([])
   const [maxes, setMaxes] = useState<OneRepMax[]>([])
+  const [cardio, setCardio] = useState<Set<string>>(new Set())
   const [prev, setPrev] = useState<WorkoutLog | null>(null)
   const [log, setLog] = useState<WorkoutLog>({ items: {} })
   const [saved, setSaved] = useState<'idle' | 'saving' | 'saved'>('idle')
@@ -51,11 +56,17 @@ export default function WorkoutPlayer() {
       const maxList = (mx.data ?? []) as OneRepMax[]
       setW(wk.data as Workout | null); setItems(list); setMaxes(maxList)
       setPrev(((pv.data ?? []) as { log: WorkoutLog }[])[0]?.log ?? null)
+      const exIds = [...new Set(list.map(i => i.exercise_id).filter(Boolean))] as string[]
+      const cats = new Map<string, string>()
+      if (exIds.length) for (const e of (await supabase.from('exercises').select('id, category').in('id', exIds)).data ?? []) cats.set(e.id as string, e.category as string)
+      const cardioItems = new Set(list.filter(i => i.exercise_id && cats.get(i.exercise_id) === 'cardio').map(i => i.id))
+      setCardio(cardioItems)
+      const rounds = CARDIO_FIELDS[(wk.data as Workout | null)?.format ?? 'standard'].includes('sets')
       const have = row.log?.items ?? {}
       const init: Record<string, SetLog[]> = {}
       for (const i of list) {
         const wl = workingLoad(i, maxList)
-        init[i.id] = have[i.id]?.length ? have[i.id] : emptySets(i, wl)
+        init[i.id] = have[i.id]?.length ? have[i.id] : cardioItems.has(i.id) ? emptyCardio(i, rounds) : emptySets(i, wl)
       }
       setLog({ ...row.log, items: init })
     })()
@@ -104,7 +115,7 @@ export default function WorkoutPlayer() {
   const addSet = (it: WorkoutItem) => {
     const sets = log.items?.[it.id] ?? []
     const last = sets[sets.length - 1]
-    change({ ...log, items: { ...log.items, [it.id]: [...sets, { reps: '', kg: last?.kg ?? '', done: false }] } })
+    change({ ...log, items: { ...log.items, [it.id]: [...sets, cardio.has(it.id) ? { reps: '', kg: '', done: false, time: '', distance: '', speed: '' } : { reps: '', kg: last?.kg ?? '', done: false }] } })
   }
 
   async function finish(status: 'done' | 'skipped') {
@@ -157,15 +168,19 @@ export default function WorkoutPlayer() {
           <div key={gi} style={g.label ? { borderLeft: '3px solid var(--violet)', paddingLeft: 12, margin: '4px 0' } : undefined}>
             {g.label && g.items.length > 1 && <div className="group-label"><Icon name="link" size={13} />{g.items.length === 2 ? 'Superset' : 'Circuit'} {g.label}</div>}
             {g.items.map(it => {
-              const load = workingLoad(it, maxes)
+              const isCardio = cardio.has(it.id)
+              const load = isCardio ? null : workingLoad(it, maxes)
               const sets = log.items?.[it.id] ?? []
-              const simple = !it.sets
+              const simple = !it.sets && !isCardio
+              const cf = CARDIO_FIELDS[w.format].filter(f => f === 'time' || f === 'distance' || f === 'speed')
+              const target = (f: string) => f === 'time' ? it.cardio_time : f === 'distance' ? (it.cardio_distance_km ? String(Number(it.cardio_distance_km)) : '') : (it.cardio_speed_kmh ? String(Number(it.cardio_speed_kmh)) : '')
+              const fieldKey = (f: string) => (f === 'time' ? 'time' : f === 'distance' ? 'distance' : 'speed') as 'time' | 'distance' | 'speed'
               return (
                 <div key={it.id} className="exercise-block">
                   <div className="row between nowrap" style={{ marginBottom: 2 }}>
                     <div className="grow">
                       <b style={{ fontSize: '1.02rem' }}>{it.exercise_name}</b>
-                      <div className="presc">{prescription(it)}{load ? <> · <span className="load">{load} kg</span></> : load === undefined ? <span className="mute"> · no max yet</span> : null}</div>
+                      <div className="presc">{isCardio ? cardioPrescription(it, w.format) : prescription(it)}{load ? <> · <span className="load">{load} kg</span></> : load === undefined ? <span className="mute"> · no max yet</span> : null}</div>
                       {it.notes && <div className="mute small">{it.notes}</div>}
                     </div>
                     <a className="btn icon" href={demoUrl(it.exercise_name)} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${it.exercise_name} demo`}><Icon name="play" size={16} /></a>
@@ -174,6 +189,33 @@ export default function WorkoutPlayer() {
                     <div className="row between nowrap" style={{ marginTop: 8 }}>
                       <span className="mute">{it.reps}</span>
                       <button className={'set-check' + (sets[0]?.done ? ' on' : '')} disabled={readOnly} onClick={() => setField(it.id, 0, { done: !sets[0]?.done }, it.rest_sec)} aria-pressed={!!sets[0]?.done} aria-label="Mark done"><Icon name="check" size={20} /></button>
+                    </div>
+                  ) : isCardio ? (
+                    <div className="set-grid" style={{ gridTemplateColumns: `34px repeat(${cf.length}, 1fr) 52px` }}>
+                      <span className="h">{CARDIO_FIELDS[w.format].includes('sets') ? 'Set' : ''}</span>
+                      {cf.map(f => <span key={f} className="h">{CARDIO_HEAD[f]}</span>)}
+                      <span className="h" />
+                      {sets.map((s, i) => {
+                        const p = prevOf(it, i)
+                        return (
+                          <div key={i} style={{ display: 'contents' }}>
+                            <span className="n">{CARDIO_FIELDS[w.format].includes('sets') ? i + 1 : ''}</span>
+                            {cf.map(f => {
+                              const k = fieldKey(f)
+                              return <input key={f} type={f === 'time' ? 'text' : 'number'} inputMode={f === 'time' ? 'numeric' : 'decimal'} step="any" min="0" placeholder={p?.[k] || target(f) || '–'} value={s[k] ?? ''} disabled={readOnly}
+                                onChange={e => setField(it.id, i, { [k]: e.target.value })}
+                                onBlur={() => { const filled = fillCardio(s); const patch: Partial<SetLog> = {}; for (const key of ['time', 'distance', 'speed'] as const) if (filled[key] !== s[key]) patch[key] = filled[key]; if (Object.keys(patch).length) setField(it.id, i, patch) }}
+                                aria-label={`${CARDIO_HEAD[f] === 'Time' ? 'Time' : f === 'distance' ? 'Distance in kilometres' : 'Speed in kilometres per hour'}${CARDIO_FIELDS[w.format].includes('sets') ? `, round ${i + 1}` : ''}`} />
+                            })}
+                            <button className={'set-check' + (s.done ? ' on' : '')} disabled={readOnly}
+                              onClick={() => {
+                                // Marking done keeps what was typed and fills the rest from the plan, then works out the missing one.
+                                const base = s.done ? s : fillCardio({ ...s, time: s.time || (cf.includes('time') ? it.cardio_time : ''), distance: s.distance || (cf.includes('distance') ? target('distance') : ''), speed: s.speed || (cf.includes('speed') ? target('speed') : '') })
+                                setField(it.id, i, { time: base.time, distance: base.distance, speed: base.speed, done: !s.done }, it.rest_sec)
+                              }} aria-pressed={s.done} aria-label={`Complete ${CARDIO_FIELDS[w.format].includes('sets') ? `round ${i + 1}` : 'cardio'}`}><Icon name="check" size={20} /></button>
+                          </div>
+                        )
+                      })}
                     </div>
                   ) : (
                     <div className="set-grid">
@@ -191,8 +233,8 @@ export default function WorkoutPlayer() {
                       })}
                     </div>
                   )}
-                  {!simple && !readOnly && <button className="link" style={{ marginTop: 8 }} onClick={() => addSet(it)}>+ Add set</button>}
-                  {prev?.items?.[it.id]?.some(s => s.done) && !simple && <div className="mute small" style={{ marginTop: 6 }}>Last time: {prev.items[it.id].filter(s => s.done).map(s => `${s.kg || '–'}×${s.reps || '–'}`).join(', ')}</div>}
+                  {!simple && !readOnly && (!isCardio || CARDIO_FIELDS[w.format].includes('sets')) && <button className="link" style={{ marginTop: 8 }} onClick={() => addSet(it)}>{isCardio ? '+ Add round' : '+ Add set'}</button>}
+                  {prev?.items?.[it.id]?.some(s => s.done) && !simple && <div className="mute small" style={{ marginTop: 6 }}>Last time: {prev.items[it.id].filter(s => s.done).map(s => isCardio ? [s.time, s.distance && `${s.distance} km`, s.speed && `${s.speed} km/h`].filter(Boolean).join(' · ') || '–' : `${s.kg || '–'}×${s.reps || '–'}`).join(isCardio ? ' | ' : ', ')}</div>}
                 </div>
               )
             })}
