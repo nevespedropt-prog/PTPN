@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
+import { HealthForm } from '../components/Consent'
+import type { ClientHealth } from '../types'
 import { disablePush, enablePush, pushState, type PushState } from '../lib/push'
 
 export default function Account() {
@@ -10,6 +12,12 @@ export default function Account() {
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const [health, setHealth] = useState<ClientHealth | null | undefined>(undefined)
+  const [editHealth, setEditHealth] = useState(false)
+  useEffect(() => {
+    if (profile?.role !== 'client') return
+    supabase.from('client_health').select('*').eq('client_id', profile.id).maybeSingle().then(({ data }) => setHealth((data as ClientHealth) ?? null))
+  }, [profile])
   const [ps, setPs] = useState<PushState | null>(null)
   const [pushMsg, setPushMsg] = useState('')
   useEffect(() => { pushState().then(setPs) }, [])
@@ -37,6 +45,21 @@ export default function Account() {
         <b>{profile?.full_name || 'Unnamed'}</b><br />
         <span className="mute">{session?.user.email}</span>
       </div>
+      {profile?.role === 'client' && health !== undefined && (
+        <div className="card col">
+          <h2>Health information</h2>
+          {!editHealth && health && <>
+            <span className="small"><b>Allergies:</b> {health.allergies || 'Not given'}</span>
+            <span className="small"><b>Health conditions or injuries:</b> {health.health_conditions || 'Not given'}</span>
+            <span className="small"><b>Medication:</b> {health.medications || 'Not given'}</span>
+            <span className="small"><b>Emergency contact:</b> {health.emergency_contact || 'Not given'}</span>
+            {health.consented_at && <span className="mute small">Consent given {new Date(health.consented_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
+          </>}
+          {editHealth
+            ? <HealthForm initial={health} submitLabel="Save changes" onSaved={h => { setHealth(h); setEditHealth(false) }} />
+            : <button className="soft" onClick={() => setEditHealth(true)}>Update health information</button>}
+        </div>
+      )}
       {ps && ps !== 'unsupported' && (
         <div className="card col">
           <h2>Notifications</h2>

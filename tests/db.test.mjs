@@ -160,6 +160,13 @@ ok((await as(null, `select public.push_public_key() k`)).error, 'anon cannot cal
 ok((await as(A, `delete from push_subscriptions where endpoint = 'https://push.test/a' returning id`)).rows?.length === 1, 'client removes own subscription')
 ok((await as(C, `update posts set pushed_at = now()`)).error === undefined, 'coach can mark posts pushed')
 
+// health and consent: own row only, coach can read, nobody else
+ok(!(await as(A, `insert into client_health (client_id, allergies, health_conditions, consent_data, consent_health, consent_accurate, consented_at) values ('${A}', 'Peanuts', 'None', true, true, true, now())`)).error, 'client saves own health and consent')
+ok((await as(B, `insert into client_health (client_id, allergies) values ('${A}', 'x') on conflict do nothing`)).error, 'client cannot write health data for someone else')
+ok(await count(B, `select 1 from client_health where client_id = '${A}'`) === 0, 'other client cannot read Ana health data')
+ok(await count(C, `select 1 from client_health where client_id = '${A}'`) === 1, 'coach can read client health data')
+ok((await as(C, `update client_health set allergies = 'x' where client_id = '${A}' returning 1`)).rows?.length === 0, 'coach cannot change client health answers')
+
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)
 const left = await db.query(`select (select count(*) from food_logs) f, (select count(*) from messages) m, (select count(*) from client_workouts) w, (select count(*) from workouts where created_by = '${A}') ow`)

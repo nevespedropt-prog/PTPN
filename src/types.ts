@@ -58,3 +58,8 @@ export interface Post { id: string; author_id: string; body: string; pinned: boo
 export interface Challenge { id: string; name: string; description: string; unit: string; goal: number | null; start_date: string; end_date: string }
 export interface ChallengeEntry { id: string; challenge_id: string; client_id: string; date: string; value: number }
 export interface Resource { id: string; title: string; url: string; category: string; description: string }
+
+export interface ClientHealth {
+  client_id: string; allergies: string; health_conditions: string; medications: string; emergency_contact: string
+  consent_data: boolean; consent_health: boolean; consent_accurate: boolean; consent_version: number; consented_at: string | null; updated_at?: string
+}
