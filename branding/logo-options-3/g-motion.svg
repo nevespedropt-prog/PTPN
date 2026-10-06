@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <title>PTPN option G: Rising P in motion</title>
+  <rect width="120" height="120" rx="26" fill="#0b0b0d"/>
+  <g transform="translate(6 0) skewX(-12)" transform-origin="60 90">
+    <g stroke-linecap="round">
+      <path d="M30 90V76" stroke="#4a4a52" stroke-width="11"/>
+      <path d="M47 90V62" stroke="#9a9aa3" stroke-width="11"/>
+      <path d="M64 90V30" stroke="#f4f4f5" stroke-width="11"/>
+    </g>
+    <path d="M64 30H76a13.5 13.5 0 0 1 0 27H64" fill="none" stroke="#e11d2e" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

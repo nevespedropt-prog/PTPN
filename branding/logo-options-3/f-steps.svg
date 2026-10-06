@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <title>PTPN option F: Steps</title>
+  <rect width="120" height="120" rx="26" fill="#0b0b0d"/>
+  <path d="M24 92V78a4 4 0 0 1 4-4h12v18z" fill="#4a4a52"/>
+  <path d="M40 92V62a4 4 0 0 1 4-4h12v34z" fill="#9a9aa3"/>
+  <path d="M56 92V30a4 4 0 0 1 4-4h12v66z" fill="#f4f4f5"/>
+  <path d="M72 26h8a16 16 0 0 1 0 32h-8z" fill="#e11d2e"/>
+  <path d="M72 38h7a4 4 0 0 1 0 8h-7z" fill="#0b0b0d"/>
+</svg>
