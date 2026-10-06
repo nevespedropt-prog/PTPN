@@ -6,7 +6,7 @@ import { useAuth } from '../../auth'
 import { addDays, DAY_NAMES, localDate, niceDate, relDay } from '../../lib/dates'
 import { MEAL_LABEL, MEALS, forServings, generateWeek, suggestTargets, sum } from '../../lib/nutrition'
 import { setsDone } from '../../lib/training'
-import type { Checkin, ClientWorkout, FoodLog, MealPlanItem, Measurement, Program, ProgramDay, Recipe, Targets, Workout } from '../../types'
+import type { ClientHealth, Checkin, ClientWorkout, FoodLog, MealPlanItem, Measurement, Program, ProgramDay, Recipe, Targets, Workout } from '../../types'
 import { Avatar, Empty, MacroBar, MacroChips, Seg, Sheet, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
 import { RecipePicker, WorkoutPicker } from '../../components/Pickers'
@@ -16,10 +16,14 @@ import { AssignProgram, AssignWorkout } from './Assign'
 
 type Tab = 'overview' | 'training' | 'nutrition' | 'habits' | 'progress'
 
+const flagged = (v?: string) => !!v && v.trim() !== '' && v.trim().toLowerCase() !== 'none'
+
 function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
   const [cws, setCws] = useState<ClientWorkout[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
   const [checkin, setCheckin] = useState<Checkin | null>(null)
+  const [health, setHealth] = useState<ClientHealth | null | undefined>(undefined)
+  useEffect(() => { supabase.from('client_health').select('*').eq('client_id', id).maybeSingle().then(({ data }) => setHealth((data as ClientHealth) ?? null)) }, [id])
   const [weight, setWeight] = useState<Measurement | null>(null)
   const [kcal, setKcal] = useState<number | null>(null)
   const today = localDate()
@@ -55,6 +59,20 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
         <Tile label="Avg calories" value={kcal ?? '–'} foot="logged days, last 7" />
         <Tile label="Latest mood" value={checkin?.mood ? `${checkin.mood}/5` : '–'} foot={checkin ? `Energy ${checkin.energy ?? '–'}/5 · ${niceDate(checkin.date)}` : 'No check-ins'} />
       </div>
+      {health !== undefined && (
+        <div className={'card tight' + (health && (flagged(health.allergies) || flagged(health.health_conditions)) ? ' consent-card' : '')}>
+          <span className="eyebrow">Health and consent</span>
+          {!health || !health.consented_at
+            ? <p style={{ margin: 0 }} className="health-alert">Has not completed the health and consent form yet. They will be asked when they next sign in.</p>
+            : <div className="stack" style={{ gap: 4 }}>
+                <span className={'small' + (flagged(health.allergies) ? ' health-alert' : '')}><b>Allergies:</b> {health.allergies}</span>
+                <span className={'small' + (flagged(health.health_conditions) ? ' health-alert' : '')}><b>Health conditions or injuries:</b> {health.health_conditions}</span>
+                {health.medications && <span className="small"><b>Medication:</b> {health.medications}</span>}
+                {health.emergency_contact && <span className="small"><b>Emergency contact:</b> {health.emergency_contact}</span>}
+                <span className="mute small">Consent given {new Date(health.consented_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+              </div>}
+        </div>
+      )}
       {checkin?.note && <div className="card tight"><span className="eyebrow">Latest check-in note</span><p style={{ margin: 0 }}>{checkin.note}</p></div>}
       <div className="section-title"><h2>Recent workouts</h2><button className="link red" onClick={() => go('training')}>Manage</button></div>
       <div className="card tight">

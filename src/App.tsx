@@ -23,6 +23,7 @@ import Community from './pages/Community'
 import Resources from './pages/Resources'
 import GetApp from './pages/GetApp'
 import { OfflineBar } from './components/Install'
+import { ConsentGate } from './components/Consent'
 import Dashboard from './pages/coach/Dashboard'
 import Clients from './pages/coach/Clients'
 import ClientDetail from './pages/coach/ClientDetail'
@@ -165,6 +166,7 @@ export default function App() {
   }
 
   return (
+    <ConsentGate>
     <Shell
       items={[
         { to: '/home', icon: 'home', label: 'Home' },
@@ -196,5 +198,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
     </Shell>
+    </ConsentGate>
   )
 }

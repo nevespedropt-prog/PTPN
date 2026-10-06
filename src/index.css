@@ -435,3 +435,12 @@ table.grid tr.off td { opacity: .45; }
 
 /* Offline bar */
 .offline-bar { position: sticky; top: 0; z-index: 30; padding: calc(6px + env(safe-area-inset-top)) 16px 6px; background: #3a2a05; color: #ffd27a; font-size: 13px; text-align: center; }
+
+/* Health and data consent */
+.consent { justify-content: flex-start; padding-top: 24px; }
+.consent-card { border: 1px solid rgba(225, 29, 46, .55); box-shadow: 0 0 0 4px rgba(225, 29, 46, .12); }
+.consent-card h1 { margin: 4px 0 6px; }
+.consent-box { display: flex; flex-direction: column; gap: 12px; padding: 14px; border-radius: 14px; background: rgba(225, 29, 46, .08); border: 1px solid rgba(225, 29, 46, .35); }
+.tick { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.45; cursor: pointer; }
+.tick input { width: 22px; height: 22px; flex: none; margin-top: 1px; accent-color: #e11d2e; }
+.health-alert { color: #ff8a94; font-weight: 600; }
