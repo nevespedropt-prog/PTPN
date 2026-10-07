@@ -76,3 +76,6 @@ The app installs to the home screen on Android (Chrome install prompt) and iPhon
 - Public page `/get-app` (linked from the login screen and the More page): Android Chrome install, Android .apk download, iPhone Home Screen steps.
 - Android .apk: `mobile/` is a thin Capacitor wrapper that opens the live site, so web changes never need a new APK. `.github/workflows/android.yml` generates the Android project, builds a debug-signed APK and publishes it as the `android-latest` release (`PTPN.apk`). It runs when `mobile/**` changes or from the Actions tab. The APK does not get web push notifications (Android WebView has no Push API); the Chrome install does. Adding push to the APK would need a free Firebase project.
 - iPhone: Apple has no free route to a downloadable file, so it is Add to Home Screen only. A TestFlight or App Store app needs an Apple Developer account (about $99 a year) and a Mac or cloud build.
+
+## Skills
+`.claude/skills/app-builder/SKILL.md` (APP BUILDER SKILL) describes how to build, test and ship features in this app. `.claude/skills/import-meal-plans/SKILL.md` covers importing meal plan sites.
