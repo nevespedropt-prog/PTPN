@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Send a prompt to Gemini and print the reply.
 
-Setup:  pip install google-genai
+Setup:  pip install google-genai truststore
         export GEMINI_API_KEY=...   (or GOOGLE_API_KEY)
 Usage:  python3 scripts/gemini_ask.py "Explain how AI works in a few words"
         python3 scripts/gemini_ask.py -m gemini-flash-latest "your prompt"
@@ -9,6 +9,13 @@ Usage:  python3 scripts/gemini_ask.py "Explain how AI works in a few words"
 import argparse
 import os
 import sys
+
+try:  # use the OS certificate store (fixes antivirus/VPN HTTPS interception on Windows)
+    import truststore
+
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
 
 from google import genai
 

@@ -8,7 +8,7 @@ description: Ask Google Gemini a question or get a second opinion from it. Use w
 Sends a prompt to Gemini and prints the reply.
 
 ## Requirements
-- `pip install google-genai`
+- `pip install google-genai truststore` (truststore is optional; it fixes certificate errors behind antivirus or a VPN)
 - `GEMINI_API_KEY` set in the environment (never paste the key into chat or commit it)
 
 ## Usage
