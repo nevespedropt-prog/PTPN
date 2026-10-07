@@ -90,7 +90,7 @@ Mistakes in earlier sessions came from guessing instead of checking. Do these ev
 
 - **Parallelise.** Make independent tool calls in one message (read several files, push and open the PR, check a PR and start a timer).
 - **One wait, not many.** After opening a PR, start one background `sleep` of about 120 to 150 seconds, then check. Do not post a reply for a timer notification that carries no news; just run the check and answer with the result.
-- **Keep tool output small.** `list_workflow_runs` returns very large output. After a merge, find the run ids once, then poll them with `actions_get` `get_workflow_run` using the run id. Use `tail_lines` just big enough for `get_job_logs`.
+- **Keep tool output small.** `list_workflow_runs` ignores `per_page` and the filters and returns about 20 full runs, so call it once per merge and read only the first entries (newest first: Tests, Deploy and, for `mobile/**` changes, Build Android app, all for the merge commit). Note their run ids and poll those with `actions_get` `get_workflow_run`, which returns one run. Use `tail_lines` just big enough for `get_job_logs`.
 - **One PR per request.** Put code, tests, docs and test fixes for a request in as few commits as possible so CI runs once. Run the full local suite before pushing so CI does not find what you could have found.
 - **Do not repeat explanations.** Final message: what changed, what was tested, what needs the user, in a few short paragraphs. Do not recap earlier work.
 - **Reuse.** Copy the pattern of the nearest existing feature (a migration, a Sheet form, a test block) instead of inventing a new one.
