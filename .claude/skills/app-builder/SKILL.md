@@ -71,11 +71,38 @@ Dark premium look: background #0b0b0d, chalk #f4f4f5, PTPN red #e11d2e, steel #8
 - No credits, "inspired by" lines or photo credits are shown anywhere in the app.
 - Logo: rising P (three bars, tallest becomes a red P) with a custom wordmark. Regenerate all icons with `node branding/make-icons.mjs`.
 
+## Verify before you claim (avoid repeat mistakes)
+
+Mistakes in earlier sessions came from guessing instead of checking. Do these every time.
+
+1. **Check the real state first.** Before answering "deploy", "is it live" or "what is left", run `git status`, compare the branch with `origin/main`, and look at the latest workflow runs. If nothing is pending, say so in one line instead of redoing work.
+2. **Read before you write.** Open the file you are about to change and the files that use it. When renaming a label or field "everywhere", `grep -rn` for every spelling (UI text, types, tests, docs, seeds) and fix them all in the same commit.
+3. **UI copy must match the real UI.** Before writing user-facing text (guides, steps, help text), grep the app for the exact button and page names. Do not describe a control from memory (for example "the dice"); use the label that is on screen.
+4. **Run the whole suite, not part of it.** Use `cd tests && CHROMIUM_PATH=/opt/pw-browsers/chromium npm run test`. It rebuilds the app first. `npm run test:e2e` alone reuses the previous build and can test stale code.
+5. **Reproduce CI failures with evidence, not guesses.** When CI fails on something that passes locally, read the failing line from the log, then add one temporary diagnostic (print the page state) and push once, instead of trying fixes one at a time. Known cause so far: CI Chrome is newer (notifications start as denied, slower timing). Remove diagnostics afterwards.
+6. **Offline and slow network.** Supabase calls retry for several seconds when offline, so anything that blocks the first screen must have an offline shortcut (see the profile cache and the consent gate).
+7. **Look at the screenshots** of every changed screen at phone width before saying it works. Fix layout problems found there.
+8. **After DDL, run the Supabase advisors** (`get_advisors`, security) and mention anything new that is not intended.
+9. **Never say "live", "fixed" or "tested" unless you saw it.** Say "merged, deploy running" until the deploy run shows `success`. Say what was only tested in the sandbox.
+10. **Check the working tree before ending a turn.** Untracked or uncommitted files trigger the stop hook. Commit them to the branch (or delete scratch files). Scratch work belongs in the scratchpad directory.
+
+## Be efficient
+
+- **Parallelise.** Make independent tool calls in one message (read several files, push and open the PR, check a PR and start a timer).
+- **One wait, not many.** After opening a PR, start one background `sleep` of about 120 to 150 seconds, then check. Do not post a reply for a timer notification that carries no news; just run the check and answer with the result.
+- **Keep tool output small.** `list_workflow_runs` returns very large output. After a merge, find the run ids once, then poll them with `actions_get` `get_workflow_run` using the run id. Use `tail_lines` just big enough for `get_job_logs`.
+- **One PR per request.** Put code, tests, docs and test fixes for a request in as few commits as possible so CI runs once. Run the full local suite before pushing so CI does not find what you could have found.
+- **Do not repeat explanations.** Final message: what changed, what was tested, what needs the user, in a few short paragraphs. Do not recap earlier work.
+- **Reuse.** Copy the pattern of the nearest existing feature (a migration, a Sheet form, a test block) instead of inventing a new one.
+- **Ask once, up front.** If the request is ambiguous, ask the 3 or 4 questions in one AskUserQuestion call; if the user says "go", choose defaults and list them.
+
 ## Final checklist before saying "done"
 
-- [ ] tsc clean, db and browser tests pass, screenshots looked at
+- [ ] Read the code first; searched for every usage of anything renamed
+- [ ] tsc clean, full local suite passes (`npm run test`), screenshots looked at
 - [ ] Migration applied to the live project if the schema changed (and committed as `migrate_vN`)
 - [ ] PR merged, Deploy run succeeded (state the run number and time), Tests run on main noted
+- [ ] Nothing claimed that was not seen; working tree clean and pushed
 - [ ] Told the user what could not be tested without a real phone
 - [ ] `docs/PROJECT_HANDOFF.md` updated if the feature changes how the app works
 - [ ] Open items listed (user-side steps such as running SQL, switching on dashboard settings)
