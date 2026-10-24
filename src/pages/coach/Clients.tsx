@@ -92,7 +92,7 @@ export default function Clients() {
       if (saved.client_id !== client.id) throw new Error('Client status was not saved')
       setArchives(previous => {
         const next = { ...previous }
-        if (archive && 'archived_at' in saved) next[client.id] = saved.archived_at
+        if (archive && 'archived_at' in saved && typeof saved.archived_at === 'string') next[client.id] = saved.archived_at
         else delete next[client.id]
         return next
       })
