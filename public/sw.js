@@ -1,6 +1,6 @@
 // PTPN service worker: keeps the app shell available offline.
 // Data calls (Supabase) are never cached, so nothing stale or private is stored.
-const VERSION = 'ptpn-gold-v3'
+const VERSION = 'ptpn-gold-v4'
 const SHELL = VERSION + '-shell'
 const ASSETS = VERSION + '-assets'
 const IMAGES = VERSION + '-images'
