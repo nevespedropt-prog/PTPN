@@ -20,6 +20,8 @@ async function png(file, size, { content, bg = null, scale = 1 }) {
   await page.close()
 }
 
+// Browser tab: distinct filename avoids stale favicon.svg entries.
+await png('public/favicon-gold-v1-32.png', 32, { content: inner })
 // Web app (manifest, home screen, notifications)
 await png('public/icons/icon-192.png', 192, { content: inner })
 await png('public/icons/icon-512.png', 512, { content: inner })
