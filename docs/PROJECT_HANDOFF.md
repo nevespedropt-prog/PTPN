@@ -79,3 +79,11 @@ The app installs to the home screen on Android (Chrome install prompt) and iPhon
 
 ## Skills
 `.claude/skills/app-builder/SKILL.md` (APP BUILDER SKILL) describes how to build, test and ship features in this app. `.claude/skills/import-meal-plans/SKILL.md` covers importing meal plan sites.
+
+## Client archive (24 October 2026)
+
+The coach Clients page separates active clients at the top and archived clients at the bottom. Each active card has Archive client with confirmation. Archived cards have Restore client. Search covers both groups. Archiving preserves accounts, plans, history and sign-in; it does not delete or disable clients. Dashboard metrics and other client pickers are unchanged.
+
+Archive markers use public.client_archives with coach-only RLS. Clients cannot inspect or change these markers. Restore removes only the archive marker. For existing installs apply supabase/migrate_v7_client_archives.sql before deploying this app version; schema.sql includes the same definition for fresh installs.
+
+Database checks cover coach-only filing, denied client/anonymous access, preserving history and cascading marker cleanup. Browser checks cover cancellation, archive/restore persistence, search, section ordering and phone width. The test workflow is the release gate. Local package downloads are blocked in the ChatGPT environment, so full validation runs in GitHub Actions. Real-phone interaction still needs checking.

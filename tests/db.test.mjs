@@ -167,8 +167,27 @@ ok(await count(B, `select 1 from client_health where client_id = '${A}'`) === 0,
 ok(await count(C, `select 1 from client_health where client_id = '${A}'`) === 1, 'coach can read client health data')
 ok((await as(C, `update client_health set allergies = 'x' where client_id = '${A}' returning 1`)).rows?.length === 0, 'coach cannot change client health answers')
 
+// Archive markers are coach-only; restoring never deletes client history.
+ok((await as(A, `insert into client_archives (client_id) values ('${A}')`)).error, 'client cannot archive themselves')
+ok((await as(A, `insert into client_archives (client_id) values ('${B}')`)).error, 'client cannot archive someone else')
+ok((await as(null, `insert into client_archives (client_id) values ('${A}')`)).error, 'anon cannot archive clients')
+ok((await as(C, `insert into client_archives (client_id) values ('${C}')`)).error, 'coach cannot archive a coach profile')
+const beforeArchive = (await db.query(`select count(*)::int n from client_workouts where client_id = '${A}'`)).rows[0].n
+ok(!(await as(C, `insert into client_archives (client_id) values ('${A}')`)).error, 'coach archives client')
+ok(await count(C, 'select client_id from client_archives') === 1, 'coach can see archive marker')
+ok(await count(A, 'select client_id from client_archives') === 0, 'client cannot read archive markers')
+ok((await as(null, 'select client_id from client_archives')).error, 'anon cannot read archive markers')
+ok((await as(A, `delete from client_archives where client_id = '${A}' returning client_id`)).rows?.length === 0, 'client cannot restore themselves')
+ok((await as(B, `delete from client_archives where client_id = '${A}' returning client_id`)).rows?.length === 0, 'other client cannot restore client')
+ok((await as(A, `update client_archives set archived_at = now() where client_id = '${A}'`)).error, 'client cannot change archive metadata')
+ok(await count(A, `select id from profiles where id = '${A}'`) === 1, 'archived client retains their profile access')
+ok((await as(C, `delete from client_archives where client_id = '${A}' returning client_id`)).rows?.length === 1, 'coach restores client')
+ok((await db.query(`select count(*)::int n from client_workouts where client_id = '${A}'`)).rows[0].n === beforeArchive, 'archive and restore preserve workout history')
+await as(C, `insert into client_archives (client_id) values ('${A}')`)
+
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)
+ok((await db.query(`select count(*)::int n from client_archives where client_id = '${A}'`)).rows[0].n === 0, 'user deletion removes archive marker')
 const left = await db.query(`select (select count(*) from food_logs) f, (select count(*) from messages) m, (select count(*) from client_workouts) w, (select count(*) from workouts where created_by = '${A}') ow`)
 ok(Object.values(left.rows[0]).every(v => Number(v) === 0), 'deleting a user removes their data')
 
