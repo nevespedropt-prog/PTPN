@@ -4,6 +4,10 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App'
 import { AuthProvider } from './auth'
+import { refreshTabIcon } from './lib/branding'
+
+refreshTabIcon()
+window.addEventListener('pageshow', refreshTabIcon)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

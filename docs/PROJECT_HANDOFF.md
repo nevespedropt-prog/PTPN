@@ -100,3 +100,8 @@ No database changes. Full type, database and browser checks run on the release P
 ## Browser tab icon refresh
 
 index.html uses favicon-gold-v1-32.png plus a multi-size favicon-gold-v1.ico fallback. Both use the approved gold monogram. A new filename avoids old favicon.svg entries retained in browser favicon caches. No database changes.
+
+
+## Runtime browser icon replacement
+
+Brave retained the old red favicon after static links changed. src/lib/branding.ts now installs the approved 32px PNG as a bundled data URL at startup and on pageshow, removing old icon links. This avoids HTTP favicon cache lookups. Static gold PNG/ICO fallbacks remain, and public/favicon.ico covers conventional fallback requests. Service-worker version is ptpn-gold-v4. Regression checks cover exact image bytes and restoration of a page with stale icon links.
