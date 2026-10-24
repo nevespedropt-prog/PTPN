@@ -54,7 +54,7 @@ export function Empty({ icon, title, children }: { icon: IconName; title: string
   )
 }
 
-export function Ring({ value, max, size = 128, stroke = 11, color = 'var(--red)', label, sub }: { value: number; max: number; size?: number; stroke?: number; color?: string; label: ReactNode; sub?: ReactNode }) {
+export function Ring({ value, max, size = 128, stroke = 11, color = 'var(--gold)', label, sub }: { value: number; max: number; size?: number; stroke?: number; color?: string; label: ReactNode; sub?: ReactNode }) {
   const r = (size - stroke) / 2, c = 2 * Math.PI * r
   const p = max > 0 ? Math.min(1, value / max) : 0
   return (

@@ -279,7 +279,7 @@ function Nutrition({ id }: { id: string }) {
             return <div key={date} className="item"><span className="grow"><span className="title">{relDay(date)}</span><br /><span className="meta">{ls.length} entries</span></span><MacroChips m={s} /></div>
           })}
         </div>
-        {byDate.size > 0 && Number(t.kcal) > 0 && <><hr className="sep" /><MacroBar label="Average vs target" value={sum(logs).kcal / byDate.size} target={Number(t.kcal)} color="var(--red)" unit="kcal" /></>}
+        {byDate.size > 0 && Number(t.kcal) > 0 && <><hr className="sep" /><MacroBar label="Average vs target" value={sum(logs).kcal / byDate.size} target={Number(t.kcal)} color="var(--gold)" unit="kcal" /></>}
       </div>
     </>
   )

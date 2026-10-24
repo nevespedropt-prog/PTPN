@@ -1,6 +1,6 @@
 // PTPN service worker: keeps the app shell available offline.
 // Data calls (Supabase) are never cached, so nothing stale or private is stored.
-const VERSION = 'ptpn-v2'
+const VERSION = 'ptpn-gold-v3'
 const SHELL = VERSION + '-shell'
 const ASSETS = VERSION + '-assets'
 const IMAGES = VERSION + '-images'
@@ -39,8 +39,8 @@ self.addEventListener('fetch', e => {
     return
   }
 
-  // Built files have hashed names, so cache-first is safe.
-  if (url.origin === location.origin && url.pathname.includes('/assets/')) {
+  // Built files are hashed; brand assets are refreshed when VERSION changes.
+  if (url.origin === location.origin && (url.pathname.includes('/assets/') || url.pathname.includes('/brand/') || url.pathname.includes('/icons/') || url.pathname.endsWith('/favicon.svg'))) {
     e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
       const copy = res.clone(); caches.open(ASSETS).then(c => c.put(req, copy)); return res
     })))

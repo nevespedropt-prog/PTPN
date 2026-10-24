@@ -81,7 +81,7 @@ export default function Train() {
             const w = workouts[c.workout_id]
             return (
               <Link key={c.id} to={`/workout/${c.id}`} className="card click" style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)' }}>
-                <span className="avatar" style={{ width: 46, height: 46, borderRadius: 14, background: c.status === 'done' ? 'var(--green-soft)' : 'var(--red-soft)', color: c.status === 'done' ? 'var(--green)' : '#ff6b7c' }}>
+                <span className="avatar" style={{ width: 46, height: 46, borderRadius: 14, background: c.status === 'done' ? 'var(--green-soft)' : 'var(--gold-soft)', color: c.status === 'done' ? 'var(--green)' : 'var(--gold)' }}>
                   <Icon name={c.status === 'done' ? 'check' : 'train'} />
                 </span>
                 <span className="grow">
