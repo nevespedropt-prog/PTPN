@@ -3,12 +3,13 @@
 // Uses the Playwright Chromium from tests/ (set CHROMIUM_PATH to use another browser binary).
 import { chromium } from '../tests/node_modules/playwright/index.mjs'
 import fs from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
-const root = new URL('../', import.meta.url).pathname
+const root = fileURLToPath(new URL('../', import.meta.url))
 const svg = fs.readFileSync(root + 'branding/ptpn-logo.svg', 'utf8')
-const inner = svg.replace(/<svg[^>]*>/, '').replace('</svg>', '').replace(/<title>.*?<\/title>/, '')
+const inner = svg.replace(/<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<title>.*?<\/title>/, '')
 const art = inner.replace(/<rect width="120" height="120"[^>]*\/>/, '') // ring and letters only
-const DARK = '#0b0b0d'
+const DARK = '#111112'
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 async function png(file, size, { content, bg = null, scale = 1 }) {

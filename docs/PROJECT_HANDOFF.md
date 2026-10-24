@@ -87,3 +87,11 @@ The coach Clients page separates active clients at the top and archived clients 
 Archive markers use public.client_archives with coach-only RLS. Clients cannot inspect or change these markers. Restore removes only the archive marker. For existing installs apply supabase/migrate_v7_client_archives.sql before deploying this app version; schema.sql includes the same definition for fresh installs.
 
 Database checks cover coach-only filing, denied client/anonymous access, preserving history and cascading marker cleanup. Browser checks cover cancellation, archive/restore persistence, search, section ordering and phone width. The test workflow is the release gate. Local package downloads are blocked in the ChatGPT environment, so full validation runs in GitHub Actions. Real-phone interaction still needs checking.
+
+## Gold brand update (24 October 2026)
+
+Replaces the old red rising-bars identity with Pedro's approved gold PTPN Be fit artwork. Source: public/brand/ptpn-gold-approved.webp; Logo.tsx shows the same approved image using cropped SVG viewports. The original PNG remains in ChatGPT for future website use. The icon master is a raster-backed SVG wrapper, not a newly drawn vector logo.
+
+Theme tokens use warm charcoal, champagne gold and ivory. Primary controls, navigation, charts, avatars, cards, login and install assets are updated; errors, successes and nutrition categories remain distinct. The service-worker version is bumped to ptpn-gold-v3 and caches same-origin static brand files for offline use without caching Supabase data. See branding/README.md for palette and regeneration details.
+
+No database changes. Full type, database and browser checks run on the release PR before merge. Tests cover approved artwork on desktop, phone and login, plus existing functional flows. Installed icons may require a home-screen shortcut refresh on real devices.

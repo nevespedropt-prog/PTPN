@@ -1,12 +1,25 @@
-# PTPN logo
+# PTPN gold identity
 
-`ptpn-logo.svg` is the master logo, the "rising P": three bars climbing like a progress chart, the tallest one becomes a P with a red bowl. The PTPN wordmark is drawn from the same parts (see `Wordmark` in `src/components/Logo.tsx` and `pro/`). Palette: PTPN Red #E11D2E, Chalk #F4F4F5, Steel #8A8A93, Iron #0B0B0D.
+Approved 24 October 2026: gold angular monogram with particle halo, outlined PTPN wordmark and Be fit tagline. This replaces the rising-bars red identity. Previous explorations remain historical references.
 
-Where it is used:
-- `src/components/Logo.tsx` (app header, sidebar, login, loading screen, Get the app page) draws the same shapes inline.
-- `public/favicon.svg` (browser tab) is a copy of the master.
-- `public/icons/*.png` (install icons, iPhone Home Screen, notification icon) and `mobile/assets/*.png` (Android app icon) are generated.
+## Source and reuse
 
-To change the logo: edit `ptpn-logo.svg`, copy it to `public/favicon.svg`, mirror the shapes in `Logo.tsx`, then run `node branding/make-icons.mjs` (after `cd tests && npm ci`). Push to main; the Android app rebuilds itself when `mobile/**` changes.
+The approved image is saved in ChatGPT as Bronze PTPN Be Fit logo.png. The app copy is public/brand/ptpn-gold-approved.webp: the same composition, encoded for web delivery. It is not an editable vector drawing. No logo was re-created from text for this release.
 
-Earlier concepts are kept for reference: `logo-options/` (A grid, B progress ring, used until October 2026), `logo-options-2/` (C plate, D rising P, E kettlebell), `logo-options-3/` (F steps, G motion, H ring), `pro/` (the refined rising P system, upright and forward, with lockups and the brand sheet).
+src/components/Logo.tsx uses SVG viewports to display either the full lockup or the monogram from that approved image. The component respects the Vite base URL, including GitHub Pages /PTPN/. branding/ptpn-logo.svg is a self-contained icon wrapper with embedded artwork; public/favicon.svg uses the same wrapper. public/icons and mobile/assets contain the corresponding raster icons. Run node branding/make-icons.mjs after installing tests dependencies and Chromium to regenerate them.
+
+For the future website reuse the approved source and this palette, with the full lockup on large surfaces and the monogram at small sizes. Retain enough dark clear space around the particle halo. Avoid stretching the artwork or adding red accents.
+
+## Interface palette
+
+- Charcoal background: #111112
+- Surface: #171718; card: #1b1b1c
+- Champagne gold: #d7b978
+- Light gold: #f1dda9
+- Antique gold: #b98a42
+- Warm ivory text: #f4f0e8
+- Muted text: #a09c94
+
+Primary controls have dark text on a restrained gold gradient. Secondary controls use charcoal surfaces and fine warm borders. Error, success and nutrition colours keep their separate meanings. Touch controls remain at least 44px where applicable. Reduced-motion preferences are respected.
+
+Service-worker version ptpn-gold-v3 refreshes old brand assets. It caches static brand files, never Supabase data. Existing installed home-screen icons can take time to refresh; reinstalling the shortcut may be necessary on some phones. The Android workflow rebuilds when mobile assets change.

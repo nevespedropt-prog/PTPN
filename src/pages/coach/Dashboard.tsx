@@ -67,7 +67,7 @@ export default function Dashboard() {
       <div className="grid g4" style={{ marginBottom: 12 }}>
         <Tile label="Clients" value={clients.length} />
         <Tile label="Week compliance" value={compliance === null ? '–' : `${compliance}%`} accent={compliance !== null && compliance < 50 ? '#ff7a87' : undefined} foot={`${done} of ${due.length} due done`} />
-        <Tile label="Unread" value={d.msgs.length} foot="messages" accent={d.msgs.length ? 'var(--red)' : undefined} />
+        <Tile label="Unread" value={d.msgs.length} foot="messages" accent={d.msgs.length ? 'var(--gold)' : undefined} />
         <Tile label="Check-ins" value={new Set(d.checkins.filter(k => k.date >= addDays(today, -1)).map(k => k.client_id)).size} foot="in the last 2 days" />
       </div>
 

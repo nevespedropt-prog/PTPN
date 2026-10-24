@@ -27,6 +27,7 @@ export default function Login() {
     <main className="auth">
       <div className="hero">
         <Logo size={72} tagline />
+        <p className="auth-caption">Training. Nutrition. Progress.</p>
       </div>
       <div className="card">
         <div className="tabs" role="tablist">
