@@ -95,3 +95,8 @@ Replaces the old red rising-bars identity with Pedro's approved gold PTPN Be fit
 Theme tokens use warm charcoal, champagne gold and ivory. Primary controls, navigation, charts, avatars, cards, login and install assets are updated; errors, successes and nutrition categories remain distinct. The service-worker version is bumped to ptpn-gold-v3 and caches same-origin static brand files for offline use without caching Supabase data. See branding/README.md for palette and regeneration details.
 
 No database changes. Full type, database and browser checks run on the release PR before merge. Tests cover approved artwork on desktop, phone and login, plus existing functional flows. Installed icons may require a home-screen shortcut refresh on real devices.
+
+
+## Browser tab icon refresh
+
+index.html uses favicon-gold-v1-32.png plus a multi-size favicon-gold-v1.ico fallback. Both use the approved gold monogram. A new filename avoids old favicon.svg entries retained in browser favicon caches. No database changes.
