@@ -3,6 +3,7 @@ import { createDb, startServer, IDS } from './shim.mjs'
 import fs from 'node:fs'
 import { weeklyBrowserChecks } from './weekly-checkins.mjs'
 import { quickMealBrowserChecks } from './quick-meals.mjs'
+import { videoBrowserChecks } from './exercise-feedback.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -12,7 +13,7 @@ const REF = 'localhost' // supabase-js storage key: sb-<hostname first label>-au
 
 const db = await createDb()
 const { server } = await startServer(db, { port: PORT, dist: OUT + '/e2e-dist' })
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-fake-device-for-media-stream'] })
 
 let pass = 0, fail = 0
 const problems = []
@@ -675,6 +676,7 @@ console.log('Client flows')
 
 await weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await quickMealBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await videoBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 
 console.log(`\n${pass} passed, ${fail} failed`)
 await browser.close(); server.close()
