@@ -56,7 +56,7 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await form.getByLabel('Biggest win', { exact: true }).fill('More consistent this week.')
   await form.getByLabel('Difficulties or support needed').fill('Busy evenings.')
   await form.getByLabel('Average sleep (hours per night)', { exact: true }).fill('7.5')
-  await form.getByLabel('Average energy', { exact: true }).selectOption('4')
+  await form.getByLabel('Average energy').selectOption('4')
   // A failed save must preserve answers and allow a retry.
   await page.route('**/rest/v1/weekly_checkins*', route => route.request().method() === 'POST'
     ? route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"Temporarily unavailable"}' }) : route.continue())
@@ -64,6 +64,7 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await form.getByRole('alert').waitFor()
   ok(await form.getByLabel('Biggest win', { exact: true }).inputValue() === 'More consistent this week.', 'weekly: failed submission keeps answers')
   await page.unroute('**/rest/v1/weekly_checkins*')
+  errors.splice(0, errors.length, ...errors.filter(e => !/503/.test(e)))
   await shot(page, 'weekly-form-phone')
   await form.getByRole('button', { name: 'Submit weekly check-in', exact: true }).click()
   await weekly.getByText('Awaiting coach review', { exact: true }).waitFor()
