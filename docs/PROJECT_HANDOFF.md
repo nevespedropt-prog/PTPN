@@ -105,3 +105,11 @@ index.html uses favicon-gold-v1-32.png plus a multi-size favicon-gold-v1.ico fal
 ## Runtime browser icon replacement
 
 Brave retained the old red favicon after static links changed. src/lib/branding.ts now installs the approved 32px PNG as a bundled data URL at startup and on pageshow, removing old icon links. This avoids HTTP favicon cache lookups. Static gold PNG/ICO fallbacks remain, and public/favicon.ico covers conventional fallback requests. Service-worker version is ptpn-gold-v4. Regression checks cover exact image bytes and restoration of a page with stale icon links.
+
+## Weekly check-ins and coach reviews (25 October 2026)
+
+Clients have a fixed weekly form on Home alongside daily check-ins. Weeks run Monday to Sunday; Sunday is suggested, with submission available any day and the previous 12 weeks accessible. Answers cover training, nutrition, average sleep and energy, biggest win and difficulties. One immutable submission per client/week prevents answers changing underneath a coach review. The coach can submit or update separate feedback and next week's focus, visible to the client.
+
+The coach dashboard lists pending reviews among the latest 100 submissions, excluding archived clients. Each link opens the correct week in the client's Overview. Reviews show due workout completion, days with food entries (not nutrition adherence), and weight entries for that week. This feature adds no notifications, automated messages or new dependencies. Existing daily check-ins remain unchanged.
+
+Apply supabase/migrate_v8_weekly_checkins.sql before deploying. weekly_checkins permits only own-client inserts and own/coach reads; submitted answers cannot be updated or deleted through the API. weekly_reviews permits only coach inserts/updates, with feedback readable by the owning client and coach. Both tables use RLS and deny anonymous access. Tests in tests/weekly-checkins.mjs are integrated into the existing DB/browser release checks and cover permissions, validation, submission, save failure recovery, feedback, week selection and phone layout.

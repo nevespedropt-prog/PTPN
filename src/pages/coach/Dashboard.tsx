@@ -8,6 +8,7 @@ import { firstName, greeting } from '../../lib/util'
 import type { Checkin, ClientWorkout, Message, Session, Workout } from '../../types'
 import { Avatar, Empty, PageHead, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
+import { WeeklyReviewQueue } from '../../components/WeeklyCheckins'
 
 interface Data { cws: ClientWorkout[]; checkins: Checkin[]; msgs: Message[]; sessions: Session[]; workouts: Record<string, Workout> }
 
@@ -71,6 +72,7 @@ export default function Dashboard() {
         <Tile label="Check-ins" value={new Set(d.checkins.filter(k => k.date >= addDays(today, -1)).map(k => k.client_id)).size} foot="in the last 2 days" />
       </div>
 
+      <WeeklyReviewQueue clients={clients} />
       <div className="split">
         <div>
           <div className="section-title" style={{ marginTop: 6 }}><h2>Needs attention</h2></div>

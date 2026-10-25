@@ -1,6 +1,7 @@
 import { PGlite } from '@electric-sql/pglite'
 import { uuid_ossp } from '@electric-sql/pglite/contrib/uuid_ossp'
 import fs from 'node:fs'
+import { weeklyDbChecks } from './weekly-checkins.mjs'
 
 const repo = new URL('../supabase/', import.meta.url).pathname
 const db = new PGlite({ extensions: { uuid_ossp } })
@@ -184,6 +185,8 @@ ok(await count(A, `select id from profiles where id = '${A}'`) === 1, 'archived 
 ok((await as(C, `delete from client_archives where client_id = '${A}' returning client_id`)).rows?.length === 1, 'coach restores client')
 ok((await db.query(`select count(*)::int n from client_workouts where client_id = '${A}'`)).rows[0].n === beforeArchive, 'archive and restore preserve workout history')
 await as(C, `insert into client_archives (client_id) values ('${A}')`)
+
+await weeklyDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)

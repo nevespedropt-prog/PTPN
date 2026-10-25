@@ -10,6 +10,7 @@ import type { ClientWorkout, FoodLog, Message, Session, Targets, Workout } from 
 import { MacroBar, PageHead, Ring, Tile } from '../../components/ui'
 import { CheckinForm, Habits } from '../../components/Daily'
 import Icon from '../../components/Icon'
+import WeeklyCheckins from '../../components/WeeklyCheckins'
 
 export default function Home() {
   const { profile } = useAuth()
@@ -129,6 +130,7 @@ export default function Home() {
 
       <Habits today={today} />
       <CheckinForm today={today} />
+      {profile && <WeeklyCheckins clientId={profile.id} />}
     </>
   )
 }
