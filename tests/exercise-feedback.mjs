@@ -104,7 +104,14 @@ export async function videoBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok
   await review.getByLabel('Written feedback').waitFor()
   await review.getByLabel('Written feedback').fill('Good control. Keep the same depth and brace before each rep.')
   await review.getByRole('button', { name: 'Record voice note', exact: true }).click()
-  await review.getByText('Recording, up to 60 seconds...', { exact: true }).waitFor()
+  await review.getByText('Recording, up to 60 seconds...', { exact: true }).waitFor({ timeout: 10000 }).catch(async error => {
+    console.error('Recording diagnostic:', await review.ariaSnapshot())
+    console.error('Media capabilities:', await coach.page.evaluate(() => ({
+      secure: window.isSecureContext, mediaDevices: !!navigator.mediaDevices,
+      formats: ['audio/mp4','audio/webm','audio/ogg'].map(type => [type, MediaRecorder.isTypeSupported(type)])
+    })))
+    throw error
+  })
   await coach.page.waitForTimeout(600) // collect real audio from Chromium's fake microphone
   await review.getByRole('button', { name: 'Stop recording', exact: true }).click()
   await review.getByLabel('Voice note preview').waitFor()
