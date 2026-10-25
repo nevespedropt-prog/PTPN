@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
 import { demoUrl, fmtSeconds } from '../lib/util'
@@ -8,6 +8,7 @@ import { CARDIO_FIELDS, FORMAT_LABEL, cardioPrescription, fillCardio, groupItems
 import type { ClientWorkout, OneRepMax, SetLog, Workout, WorkoutItem, WorkoutLog } from '../types'
 import { Empty, Sheet, Skeleton, Stars } from '../components/ui'
 import Icon from '../components/Icon'
+import ExerciseFeedback, { type FeedbackExercise } from '../components/ExerciseFeedback'
 
 const emptySets = (it: WorkoutItem, load?: number | null): SetLog[] =>
   Array.from({ length: it.sets ?? 1 }, () => ({ reps: '', kg: load ? String(load) : '', done: false }))
@@ -18,6 +19,17 @@ const CARDIO_HEAD: Record<string, string> = { time: 'Time', distance: 'km', spee
 
 export default function WorkoutPlayer() {
   const { id } = useParams()
+  const [search] = useSearchParams()
+  const feedbackId = search.get('feedback')
+  const [feedbackExercise, setFeedbackExercise] = useState<FeedbackExercise | null>(null)
+  useEffect(() => {
+    if (!id || !feedbackId) return
+    let active = true
+    supabase.from('exercise_videos').select('workout_item_id,exercise_name').eq('id', feedbackId).eq('client_workout_id', id).maybeSingle().then(({ data }) => {
+      if (active && data) setFeedbackExercise({ id: data.workout_item_id, exercise_name: data.exercise_name })
+    })
+    return () => { active = false }
+  }, [id, feedbackId])
   const { profile } = useAuth()
   const nav = useNavigate()
   const [cw, setCw] = useState<ClientWorkout | null | undefined>(undefined)
@@ -234,6 +246,7 @@ export default function WorkoutPlayer() {
                     </div>
                   )}
                   {!simple && !readOnly && (!isCardio || CARDIO_FIELDS[w.format].includes('sets')) && <button className="link" style={{ marginTop: 8 }} onClick={() => addSet(it)}>{isCardio ? '+ Add round' : '+ Add set'}</button>}
+                  <button className="soft sm" style={{ marginTop: 8 }} onClick={() => setFeedbackExercise(it)} aria-label={`Technique feedback for ${it.exercise_name}`}>Technique feedback</button>
                   {prev?.items?.[it.id]?.some(s => s.done) && !simple && <div className="mute small" style={{ marginTop: 6 }}>Last time: {prev.items[it.id].filter(s => s.done).map(s => isCardio ? [s.time, s.distance && `${s.distance} km`, s.speed && `${s.speed} km/h`].filter(Boolean).join(' · ') || '–' : `${s.kg || '–'}×${s.reps || '–'}`).join(isCardio ? ' | ' : ', ')}</div>}
                 </div>
               )
@@ -269,6 +282,8 @@ export default function WorkoutPlayer() {
           <button className="sm ghost" style={{ color: '#0b0b0d', borderColor: '#d4d4d8' }} onClick={() => setRest(null)}>Skip</button>
         </div>
       )}
+
+      {cw && feedbackExercise && <ExerciseFeedback key={cw.id + feedbackExercise.id} clientId={cw.client_id} workoutId={cw.id} exercise={feedbackExercise} initialVideoId={feedbackId ?? undefined} coach={profile?.role === 'coach'} onClose={() => setFeedbackExercise(null)} />}
 
       <Sheet open={finishing} onClose={() => setFinishing(false)} title="Nice work">
         <div className="stack">

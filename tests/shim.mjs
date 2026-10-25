@@ -51,6 +51,7 @@ function decodeJwt(token) {
 export function startServer(db, { port = 4180, dist }) {
   let chain = Promise.resolve()
   const files = new Map() // storage bytes
+  const fileTypes = new Map(), signedFiles = new Map()
   const serial = fn => (chain = chain.then(fn, fn))
 
   async function asRole(claims, fn) {
@@ -189,21 +190,51 @@ export function startServer(db, { port = 4180, dist }) {
         return send(200, { id })
       }
       if (url.pathname.startsWith('/storage/v1/object/sign/')) {
-        const bucket = url.pathname.split('/')[5]
+        const [, , , , , bucket, ...rest] = url.pathname.split('/')
+        const name = decodeURIComponent(rest.join('/'))
+        if (req.method === 'GET') {
+          const signed = signedFiles.get(url.searchParams.get('token'))
+          const key = bucket + '/' + name
+          if (!signed || signed.key !== key || signed.expires < Date.now() || !files.has(key)) return send(403, { message: 'Invalid or expired signed URL' })
+          res.writeHead(200, { 'content-type': fileTypes.get(key), 'cache-control': 'no-store' })
+          return res.end(files.get(key))
+        }
         const b = JSON.parse(raw.toString())
-        return send(200, b.paths.map(p => ({ path: p, signedURL: `/storage/v1/object/sign/${bucket}/${p}?token=t`, error: null })))
+        const paths = b.paths ?? [name]
+        const links = []
+        for (const objectName of paths) {
+          const found = await asRole(claims, () => db.query('select id from storage.objects where bucket_id=$1 and name=$2', [bucket, objectName]))
+          if (!found.rows.length) return send(403, { message: 'Recording not accessible' })
+          const token = crypto.randomUUID()
+          signedFiles.set(token, { key: bucket + '/' + objectName, expires: Date.now() + Math.min(b.expiresIn ?? 900, 3600) * 1000 })
+          links.push({ path: objectName, signedURL: '/object/sign/' + bucket + '/' + objectName + '?token=' + token, error: null })
+        }
+        return send(200, b.paths ? links : { signedURL: links[0].signedURL })
       }
-      if (req.method === 'GET' && url.pathname.startsWith('/storage/v1/object/sign/')) { /* unreachable, handled below */ }
       if (url.pathname.startsWith('/storage/v1/object/') && req.method === 'POST') {
         const [, , , , bucket, ...rest] = url.pathname.split('/')
         const name = decodeURIComponent(rest.join('/'))
-        await asRole(claims, () => db.query(`insert into storage.objects (bucket_id, name, owner) values ($1, $2, auth.uid())`, [bucket, name]))
-        files.set(`${bucket}/${name}`, raw)
-        return send(200, { Key: `${bucket}/${name}`, Id: crypto.randomUUID() })
+        let bytes = raw, contentType = req.headers['content-type'] ?? 'application/octet-stream'
+        if (contentType.startsWith('multipart/form-data')) {
+          const form = await new Request('http://localhost/upload', { method: 'POST', headers: { 'content-type': contentType }, body: raw }).formData()
+          const file = [...form.values()].find(v => typeof v === 'object' && typeof v.arrayBuffer === 'function')
+          if (!file) return send(400, { message: 'Missing file' })
+          bytes = Buffer.from(await file.arrayBuffer()); contentType = file.type
+        }
+        const info = (await serial(() => db.query('select file_size_limit,allowed_mime_types from storage.buckets where id=$1', [bucket]))).rows[0]
+        if (!info || bytes.length > Number(info.file_size_limit) || (info.allowed_mime_types && !info.allowed_mime_types.includes(contentType.split(';')[0]))) {
+          return send(400, { message: 'File exceeds bucket restrictions' })
+        }
+        await asRole(claims, () => db.query('insert into storage.objects (bucket_id, name, owner) values ($1, $2, auth.uid())', [bucket, name]))
+        files.set(bucket + '/' + name, bytes); fileTypes.set(bucket + '/' + name, contentType)
+        return send(200, { Key: bucket + '/' + name, Id: crypto.randomUUID() })
       }
       if (url.pathname.startsWith('/storage/v1/object/') && req.method === 'DELETE') {
-        const b = JSON.parse(raw.toString())
-        for (const n of b.prefixes ?? []) await asRole(claims, () => db.query(`delete from storage.objects where bucket_id = $1 and name = $2`, [url.pathname.split('/')[4], n]))
+        const b = JSON.parse(raw.toString()), bucket = url.pathname.split('/')[4]
+        for (const name of b.prefixes ?? []) {
+          const removed = await asRole(claims, () => db.query('delete from storage.objects where bucket_id=$1 and name=$2 returning id', [bucket, name]))
+          if (removed.rows.length) { files.delete(bucket + '/' + name); fileTypes.delete(bucket + '/' + name) }
+        }
         return send(200, [])
       }
       if (url.pathname.startsWith('/realtime')) return send(404, {})

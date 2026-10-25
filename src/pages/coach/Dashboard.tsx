@@ -8,6 +8,7 @@ import { firstName, greeting } from '../../lib/util'
 import type { Checkin, ClientWorkout, Message, Session, Workout } from '../../types'
 import { Avatar, Empty, PageHead, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
+import { TechniqueReviewQueue } from '../../components/ExerciseFeedback'
 import { WeeklyReviewQueue } from '../../components/WeeklyCheckins'
 
 interface Data { cws: ClientWorkout[]; checkins: Checkin[]; msgs: Message[]; sessions: Session[]; workouts: Record<string, Workout> }
@@ -73,6 +74,7 @@ export default function Dashboard() {
       </div>
 
       <WeeklyReviewQueue clients={clients} />
+      <TechniqueReviewQueue clients={clients} />
       <div className="split">
         <div>
           <div className="section-title" style={{ marginTop: 6 }}><h2>Needs attention</h2></div>
