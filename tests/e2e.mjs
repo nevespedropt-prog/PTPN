@@ -47,6 +47,8 @@ const tab = (page, name) => page.locator('nav a', { hasText: new RegExp('^\\s*' 
 const today = new Date().toLocaleDateString('en-CA')
 const addDaysISO = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA') }
 
+await videoBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
+
 // ================= COACH (desktop) =================
 console.log('Coach flows')
 {
@@ -676,7 +678,6 @@ console.log('Client flows')
 
 await weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await quickMealBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
-await videoBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 
 console.log(`\n${pass} passed, ${fail} failed`)
 await browser.close(); server.close()

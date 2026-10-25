@@ -56,6 +56,7 @@ export async function videoDbChecks(db, ids, ok) {
 }
 
 export async function videoBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok }) {
+  await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
   const w = (await sql("insert into workouts(name,created_by) values('Technique review test',$1) returning id", [IDS.coach]))[0].id
   const item = (await sql("insert into workout_items(workout_id,exercise_name,sets,reps) values($1,'Technique squat test',1,'5') returning id", [w]))[0].id
   const cw = (await sql("insert into client_workouts(client_id,workout_id,date,status) values($1,$2,current_date,'done') returning id", [IDS.ana, w]))[0].id
@@ -106,10 +107,22 @@ export async function videoBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok
   await review.getByRole('button', { name: 'Record voice note', exact: true }).click()
   await review.getByText('Recording, up to 60 seconds...', { exact: true }).waitFor({ timeout: 10000 }).catch(async error => {
     console.error('Recording diagnostic:', await review.ariaSnapshot())
-    console.error('Media capabilities:', await coach.page.evaluate(() => ({
-      secure: window.isSecureContext, mediaDevices: !!navigator.mediaDevices,
-      formats: ['audio/mp4','audio/webm','audio/ogg'].map(type => [type, MediaRecorder.isTypeSupported(type)])
-    })))
+    console.error('Recorder probe:', await coach.page.evaluate(async () => {
+      const result = { stage: 'microphone', attempts: [] }
+      let stream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        result.stage = 'encoder'; result.tracks = stream.getTracks().map(t => ({ kind: t.kind, readyState: t.readyState }))
+        for (const type of ['audio/mp4','audio/webm','audio/ogg']) {
+          try {
+            const recorder = new MediaRecorder(stream, { mimeType: type })
+            recorder.start(); result.attempts.push({ type, state: recorder.state }); recorder.stop()
+          } catch (e) { result.attempts.push({ type, name: e.name, error: e.message }) }
+        }
+      } catch (e) { result.name = e.name; result.error = e.message }
+      finally { stream?.getTracks().forEach(t => t.stop()) }
+      return result
+    }))
     throw error
   })
   await coach.page.waitForTimeout(600) // collect real audio from Chromium's fake microphone
@@ -140,4 +153,8 @@ export async function videoBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok
   await shot(feedback.page, 'technique-client-feedback-phone')
   clean('technique client feedback', feedback.errors)
   await feedback.ctx.close()
+  await sql('delete from client_workouts where id=$1', [cw])
+  await sql('delete from workouts where id=$1', [w])
+  await sql('delete from client_health where client_id=$1', [IDS.ana])
+  await sql("delete from storage.objects where bucket_id in ('exercise-videos','exercise-voice')")
 }
