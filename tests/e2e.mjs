@@ -496,6 +496,65 @@ console.log('Client flows')
   ok(await page.getByText('Push-up').count() >= 1, 'client-built workout opens in the player after saving')
   clean('client builder', errors)
 
+  // Personal sessions can be removed after an accidental Build my own.
+  {
+    const personalSessionId = new URL(page.url()).pathname.split('/').pop()
+    const personalSession = (await sql('select * from client_workouts where id=$1', [personalSessionId]))[0]
+    await page.goto(BASE + '/train', { waitUntil: 'networkidle' })
+    const removePersonal = page.getByRole('button', { name: 'Remove My workout from schedule', exact: true })
+    await removePersonal.first().click()
+    const removal = page.getByRole('dialog', { name: 'Remove workout', exact: true })
+    await removal.getByRole('button', { name: 'Cancel', exact: true }).click()
+    ok((await sql('select id from client_workouts where id=$1', [personalSessionId])).length === 1, 'personal workout: cancellation keeps session')
+    await sql("update client_workouts set status='done' where id=$1", [personalSessionId])
+    await page.reload({ waitUntil: 'networkidle' })
+    ok(await removePersonal.count() === 0, 'personal workout: completed sessions have no remove control')
+    await sql("update client_workouts set status='scheduled' where id=$1", [personalSessionId])
+    await sql('update workouts set created_by=$1 where id=$2', [IDS.coach, personalSession.workout_id])
+    await page.reload({ waitUntil: 'networkidle' })
+    ok(await removePersonal.count() === 0, 'personal workout: coach-created sessions have no remove control')
+    await sql('update workouts set created_by=$1 where id=$2', [IDS.ana, personalSession.workout_id])
+    await page.reload({ waitUntil: 'networkidle' })
+    await removePersonal.first().click()
+    await page.route('**/rest/v1/client_workouts*', route => route.request().method() === 'DELETE'
+      ? route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"Unavailable"}' }) : route.continue())
+    await removal.getByRole('button', { name: 'Confirm removal', exact: true }).click()
+    await removal.getByText('Could not remove this workout. Please check your connection and try again.', { exact: true }).waitFor()
+    ok((await sql('select id from client_workouts where id=$1', [personalSessionId])).length === 1, 'personal workout: failed removal keeps session and allows retry')
+    await page.unroute('**/rest/v1/client_workouts*')
+    errors.splice(0, errors.length, ...errors.filter(e => !/503/.test(e)))
+    await shot(page, 'personal-workout-remove-phone')
+    await removal.getByRole('button', { name: 'Confirm removal', exact: true }).click()
+    await page.getByText('Workout removed from your schedule.', { exact: true }).waitFor()
+    ok((await sql('select id from client_workouts where id=$1', [personalSessionId])).length === 0, 'personal workout: confirmed removal deletes only selected session')
+    ok((await sql('select id from workouts where id=$1', [personalSession.workout_id])).length === 1, 'personal workout: reusable workout definition preserved')
+    await page.reload({ waitUntil: 'networkidle' })
+    ok(await removePersonal.count() === 0, 'personal workout: removal persists after reload')
+    ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'personal workout: schedule controls fit phone width')
+    // An empty session left by opening the builder can also be removed.
+    await page.getByRole('button', { name: 'Build my own', exact: true }).click()
+    await page.getByRole('button', { name: /Add exercise/ }).waitFor()
+    const accidentalId = new URL(page.url()).searchParams.get('cw')
+    await page.goto(BASE + '/train', { waitUntil: 'networkidle' })
+    await removePersonal.first().click()
+    await removal.getByRole('button', { name: 'Confirm removal', exact: true }).click()
+    await page.getByText('Workout removed from your schedule.', { exact: true }).waitFor()
+    ok((await sql('select id from client_workouts where id=$1', [accidentalId])).length === 0, 'personal workout: accidental empty build can be removed')
+    // Keep uploaded technique feedback intact.
+    const protectedId = (await sql("insert into client_workouts(client_id,workout_id,date) values($1,$2,$3) returning id", [IDS.ana, personalSession.workout_id, today]))[0].id
+    const protectedItem = (await sql('select id,exercise_name from workout_items where workout_id=$1 limit 1', [personalSession.workout_id]))[0]
+    const videoId = crypto.randomUUID()
+    await sql('insert into exercise_videos(id,client_id,client_workout_id,workout_item_id,exercise_name,video_path) values($1,$2,$3,$4,$5,$6)', [videoId, IDS.ana, protectedId, protectedItem.id, protectedItem.exercise_name, IDS.ana + '/' + videoId + '/clip.webm'])
+    await page.reload({ waitUntil: 'networkidle' })
+    await removePersonal.first().click()
+    await removal.getByRole('button', { name: 'Confirm removal', exact: true }).click()
+    await removal.getByText('This session has technique feedback. It cannot be removed here.', { exact: true }).waitFor()
+    ok((await sql('select id from client_workouts where id=$1', [protectedId])).length === 1, 'personal workout: technique feedback prevents destructive session removal')
+    await removal.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await sql('delete from client_workouts where id=$1', [protectedId])
+    clean('personal workout removal', errors)
+  }
+
   // privacy: Ana cannot read Bo or the coach data through the API
   const leak = await page.evaluate(async () => {
     const t = JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k => k.includes('auth-token')))).access_token

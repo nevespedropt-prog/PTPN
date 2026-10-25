@@ -5,7 +5,7 @@ import { useAuth } from '../../auth'
 import { addDays, localDate, longDay, niceDate, relDay, weekOf, DAY_NAMES } from '../../lib/dates'
 import { FORMAT_LABEL, setsDone, volumeKg } from '../../lib/training'
 import type { ClientWorkout, Workout } from '../../types'
-import { Empty, PageHead, Seg, Skeleton } from '../../components/ui'
+import { Empty, PageHead, Seg, Sheet, Skeleton } from '../../components/ui'
 import Icon from '../../components/Icon'
 
 export default function Train() {
@@ -17,6 +17,10 @@ export default function Train() {
   const [cws, setCws] = useState<ClientWorkout[] | null>(null)
   const [workouts, setWorkouts] = useState<Record<string, Workout>>({})
   const [busy, setBusy] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<ClientWorkout | null>(null)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState('')
+  const [notice, setNotice] = useState('')
 
   const load = useCallback(async () => {
     if (!profile) return
@@ -41,6 +45,37 @@ export default function Train() {
     nav(`/build/${w.id}${cw ? `?cw=${cw.id}` : ''}`)
   }
 
+  const canRemove = (c: ClientWorkout) => c.status !== 'done' && workouts[c.workout_id]?.created_by === profile?.id
+  function askRemove(c: ClientWorkout) {
+    setRemoveError(''); setNotice(''); setRemoveTarget(c)
+  }
+  async function removeOwn() {
+    if (!removeTarget || !profile || !canRemove(removeTarget)) return
+    setRemoving(true); setRemoveError('')
+    try {
+      const clips = await supabase.from('exercise_videos').select('id').eq('client_workout_id', removeTarget.id).limit(1)
+      if (clips.error) throw clips.error
+      if (clips.data?.length) {
+        setRemoveError('This session has technique feedback. It cannot be removed here.')
+        return
+      }
+      // Delete only this personal session, preserving the saved workout and other history.
+      const result = await supabase.from('client_workouts').delete().eq('id', removeTarget.id)
+        .eq('client_id', profile.id).neq('status', 'done').select('id')
+      if (result.error) throw result.error
+      if (!result.data?.length) {
+        setRemoveError('This session has changed or is no longer available. Close and refresh your plan.')
+        return
+      }
+      const removedId = removeTarget.id
+      setCws(list => list?.filter(c => c.id !== removedId) ?? null)
+      setRemoveTarget(null); setNotice('Workout removed from your schedule.')
+    } catch { setRemoveError('Could not remove this workout. Please check your connection and try again.') }
+    finally { setRemoving(false) }
+  }
+  const removeButton = (c: ClientWorkout) => canRemove(c) && <button className="soft sm" disabled={busy || removing}
+    aria-label={`Remove ${workouts[c.workout_id]?.name ?? 'workout'} from schedule`} onClick={() => askRemove(c)}>Remove workout</button>
+
   const days = weekOf(sel)
   const byDate = (d: string) => (cws ?? []).filter(c => c.date === d)
   const selected = byDate(sel)
@@ -51,8 +86,9 @@ export default function Train() {
   return (
     <>
       <PageHead eyebrow="Training" title="Your plan" sub={`${history.length} workouts completed`}>
-        <button className="soft sm" onClick={buildOwn} disabled={busy}><Icon name="plus" size={16} />Build my own</button>
+        <button className="soft sm" onClick={buildOwn} disabled={busy || removing}><Icon name="plus" size={16} />Build my own</button>
       </PageHead>
+      {notice && <p className="ok" role="status">{notice}</p>}
       <Seg value={tab} onChange={setTab} options={[{ value: 'plan', label: 'Schedule' }, { value: 'history', label: 'History' }]} />
 
       {!cws && <Skeleton n={3} />}
@@ -80,7 +116,8 @@ export default function Train() {
           {selected.map(c => {
             const w = workouts[c.workout_id]
             return (
-              <Link key={c.id} to={`/workout/${c.id}`} className="card click" style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)' }}>
+              <div key={c.id} className="card">
+              <Link to={`/workout/${c.id}`} style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)' }}>
                 <span className="avatar" style={{ width: 46, height: 46, borderRadius: 14, background: c.status === 'done' ? 'var(--green-soft)' : 'var(--gold-soft)', color: c.status === 'done' ? 'var(--green)' : 'var(--gold)' }}>
                   <Icon name={c.status === 'done' ? 'check' : 'train'} />
                 </span>
@@ -90,6 +127,8 @@ export default function Train() {
                 </span>
                 <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' ? '' : 'red')}>{c.status === 'done' ? 'Done' : c.status === 'skipped' ? 'Skipped' : 'Start'}</span>
               </Link>
+              {canRemove(c) && <div style={{ marginTop: 10 }}>{removeButton(c)}</div>}
+              </div>
             )
           })}
 
@@ -98,10 +137,10 @@ export default function Train() {
             <div className="card tight">
               <div className="list">
                 {upcoming.map(c => (
-                  <Link key={c.id} to={`/workout/${c.id}`} className="item">
-                    <span className="grow"><span className="title">{name(c)}</span><br /><span className="meta">{relDay(c.date)}</span></span>
-                    <Icon name="chev" />
-                  </Link>
+                  <div key={c.id} className="item">
+                    <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{name(c)}</span><br /><span className="meta">{relDay(c.date)}</span></Link>
+                    {canRemove(c) ? removeButton(c) : <Icon name="chev" />}
+                  </div>
                 ))}
               </div>
             </div>
@@ -127,6 +166,16 @@ export default function Train() {
           </div>
         )
       )}
+      <Sheet open={!!removeTarget} onClose={() => { if (!removing) setRemoveTarget(null) }} title="Remove workout">
+        <div className="stack">
+          <p>Remove {removeTarget ? name(removeTarget) : 'this workout'} from your schedule? This removes this session and any unfinished set entries.</p>
+          {removeError && <p className="err" role="alert">{removeError}</p>}
+          <div className="row" style={{ flexWrap: 'wrap' }}>
+            <button className="soft" disabled={removing} onClick={() => setRemoveTarget(null)}>Cancel</button>
+            <button disabled={removing} onClick={removeOwn}>{removing ? 'Removing...' : 'Confirm removal'}</button>
+          </div>
+        </div>
+      </Sheet>
     </>
   )
 }
