@@ -1,6 +1,7 @@
 import { chromium } from 'playwright'
 import { createDb, startServer, IDS } from './shim.mjs'
 import fs from 'node:fs'
+import { weeklyBrowserChecks } from './weekly-checkins.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -670,6 +671,8 @@ console.log('Client flows')
   ok(true, 'login page links to Get the app')
   await c.close()
 }
+
+await weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 
 console.log(`\n${pass} passed, ${fail} failed`)
 await browser.close(); server.close()
