@@ -75,9 +75,19 @@ export default function VoiceFeedback({ videoId, clientId, initial, onSaved, onS
       const media = await navigator.mediaDevices.getUserMedia({ audio: true })
       if (!live.current) { media.getTracks().forEach(t => t.stop()); return }
       stream.current = media
-      const mime = ['audio/mp4', 'audio/webm', 'audio/ogg'].find(t => MediaRecorder.isTypeSupported(t))
-      if (!mime) throw new Error('This browser cannot record a supported format. Upload an audio file instead.')
-      const rec = new MediaRecorder(media, { mimeType: mime })
+      // Some browsers report MP4 support but cannot start its encoder.
+      let working: MediaRecorder | undefined
+      for (const mime of ['audio/mp4', 'audio/webm', 'audio/ogg']) {
+        if (!MediaRecorder.isTypeSupported(mime)) continue
+        try {
+          const candidate = new MediaRecorder(media, { mimeType: mime })
+          candidate.start()
+          working = candidate
+          break
+        } catch { /* Try the next supported encoder on the same microphone stream. */ }
+      }
+      const rec = working
+      if (!rec) throw new Error('This browser could not start recording. Upload an audio file instead.')
       recorder.current = rec
       const parts: Blob[] = []
       rec.ondataavailable = e => { if (e.data.size) parts.push(e.data) }
@@ -91,7 +101,7 @@ export default function VoiceFeedback({ videoId, clientId, initial, onSaved, onS
         media.getTracks().forEach(t => t.stop())
         if (live.current) { setRecording(false); setError('Recording failed. Try again or upload an audio file.') }
       }
-      rec.start(); setRecording(true); setBlob(null)
+      setRecording(true); setBlob(null)
       timer.current = setTimeout(stop, 60000)
     } catch (e) {
       stream.current?.getTracks().forEach(t => t.stop())
