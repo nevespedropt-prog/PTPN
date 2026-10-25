@@ -13,7 +13,7 @@ const REF = 'localhost' // supabase-js storage key: sb-<hostname first label>-au
 
 const db = await createDb()
 const { server } = await startServer(db, { port: PORT, dist: OUT + '/e2e-dist' })
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-fake-device-for-media-stream'] })
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined })
 
 let pass = 0, fail = 0
 const problems = []

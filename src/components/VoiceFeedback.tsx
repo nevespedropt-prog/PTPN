@@ -105,7 +105,13 @@ export default function VoiceFeedback({ videoId, clientId, initial, onSaved, onS
       timer.current = setTimeout(stop, 60000)
     } catch (e) {
       stream.current?.getTracks().forEach(t => t.stop())
-      if (live.current) setError((e as Error).name === 'NotAllowedError' ? 'Microphone access was denied. Allow it in your browser or upload an audio file.' : (e as Error).message)
+      if (live.current) {
+        const name = (e as Error).name
+        setError(name === 'NotAllowedError' ? 'Microphone access was denied. Allow it in your browser or upload an audio file.'
+          : name === 'NotFoundError' ? 'No microphone was found. Connect one or upload an audio file.'
+          : name === 'NotSupportedError' ? 'Microphone recording is unavailable on this device. Upload an audio file instead.'
+          : 'Could not record a voice note. Try again or upload an audio file.')
+      }
     } finally { if (live.current) setStarting(false) }
   }
   async function save(e: React.FormEvent) {

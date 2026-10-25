@@ -98,34 +98,35 @@ export async function videoBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok
   await client.ctx.close()
 
   const coach = await open('coach')
-  await coach.ctx.grantPermissions(['microphone'])
   const queue = coach.page.getByRole('region', { name: 'Technique reviews', exact: true })
   await queue.getByRole('link', { name: /Technique squat test/ }).click()
   const review = coach.page.getByRole('dialog', { name: 'Technique feedback: Technique squat test', exact: true })
   await review.getByLabel('Written feedback').waitFor()
   await review.getByLabel('Written feedback').fill('Good control. Keep the same depth and brace before each rep.')
-  await review.getByRole('button', { name: 'Record voice note', exact: true }).click()
-  await review.getByText('Recording, up to 60 seconds...', { exact: true }).waitFor({ timeout: 10000 }).catch(async error => {
-    console.error('Recording diagnostic:', await review.ariaSnapshot())
-    console.error('Recorder probe:', await coach.page.evaluate(async () => {
-      const result = { stage: 'microphone', attempts: [] }
-      let stream
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        result.stage = 'encoder'; result.tracks = stream.getTracks().map(t => ({ kind: t.kind, readyState: t.readyState }))
-        for (const type of ['audio/mp4','audio/webm','audio/ogg']) {
-          try {
-            const recorder = new MediaRecorder(stream, { mimeType: type })
-            recorder.start(); result.attempts.push({ type, state: recorder.state }); recorder.stop()
-          } catch (e) { result.attempts.push({ type, name: e.name, error: e.message }) }
-        }
-      } catch (e) { result.name = e.name; result.error = e.message }
-      finally { stream?.getTracks().forEach(t => t.stop()) }
-      return result
-    }))
-    throw error
+  await coach.page.evaluate(() => {
+    navigator.mediaDevices.getUserMedia = async () => { throw new DOMException('Denied', 'NotAllowedError') }
   })
-  await coach.page.waitForTimeout(600) // collect real audio from Chromium's fake microphone
+  await review.getByRole('button', { name: 'Record voice note', exact: true }).click()
+  await review.getByText('Microphone access was denied. Allow it in your browser or upload an audio file.', { exact: true }).waitFor()
+  ok(true, 'technique: denied microphone permission offers audio upload fallback')
+  // Synthetic microphone input exercises real recording/encoding without CI audio hardware.
+  await coach.page.evaluate(() => {
+    navigator.mediaDevices.getUserMedia = async () => {
+      const audio = new AudioContext()
+      const oscillator = audio.createOscillator()
+      const destination = audio.createMediaStreamDestination()
+      oscillator.connect(destination); oscillator.start()
+      await audio.resume()
+      const track = destination.stream.getAudioTracks()[0]
+      const originalStop = track.stop.bind(track)
+      let stopped = false
+      track.stop = () => { if (stopped) return; stopped = true; originalStop(); oscillator.stop(); void audio.close() }
+      return destination.stream
+    }
+  })
+  await review.getByRole('button', { name: 'Record voice note', exact: true }).click()
+  await review.getByText('Recording, up to 60 seconds...', { exact: true }).waitFor({ timeout: 10000 })
+  await coach.page.waitForTimeout(600) // collect enough synthetic audio for a playable recording
   await review.getByRole('button', { name: 'Stop recording', exact: true }).click()
   await review.getByLabel('Voice note preview').waitFor()
   await coach.page.waitForFunction(() => (document.querySelector('audio[aria-label="Voice note preview"]')?.readyState ?? 0) >= 1)
