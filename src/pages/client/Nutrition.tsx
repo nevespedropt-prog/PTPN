@@ -10,9 +10,10 @@ import Icon from '../../components/Icon'
 import { RecipePicker } from '../../components/Pickers'
 import RecipeView from '../../components/RecipeView'
 import RecipeArt from '../../components/RecipeArt'
+import { MealShortcuts, SavedMealsPicker } from '../../components/QuickMeals'
 import { Detail as PlanDetail } from '../MealPlans'
 
-type AddTab = 'foods' | 'recipes' | 'quick'
+type AddTab = 'foods' | 'recipes' | 'quick' | 'saved'
 
 function AddFood({ meal, date, onDone, onClose }: { meal: MealType; date: string; onDone: () => void; onClose: () => void }) {
   const { profile } = useAuth()
@@ -37,7 +38,7 @@ function AddFood({ meal, date, onDone, onClose }: { meal: MealType; date: string
 
   return (
     <>
-      <Seg value={tab} onChange={setTab} options={[{ value: 'foods', label: 'Foods' }, { value: 'recipes', label: 'Recipes' }, { value: 'quick', label: 'Quick add' }]} />
+      <Seg value={tab} onChange={setTab} options={[{ value: 'foods', label: 'Foods' }, { value: 'recipes', label: 'Recipes' }, { value: 'quick', label: 'Quick add' }, { value: 'saved', label: 'Saved meals' }]} />
       {tab === 'foods' && (food ? (
         <div className="stack">
           <button className="link" onClick={() => setFood(null)}>← Back to search</button>
@@ -82,6 +83,7 @@ function AddFood({ meal, date, onDone, onClose }: { meal: MealType; date: string
           <button>Add entry</button>
         </form>
       )}
+      {tab === 'saved' && profile && <SavedMealsPicker clientId={profile.id} date={date} meal={meal} onDone={onDone} onClose={onClose} />}
       {err && <p className="err">{err}</p>}
     </>
   )
@@ -201,6 +203,7 @@ export default function Nutrition() {
                 {!isFuture && <button className="sm soft" onClick={() => logPlanned(p)}>Log</button>}
               </div>
             ))}
+            {!isFuture && profile && <MealShortcuts key={date + meal} clientId={profile.id} date={date} meal={meal} rows={rows} onDone={load} />}
           </div>
         )
       })}
