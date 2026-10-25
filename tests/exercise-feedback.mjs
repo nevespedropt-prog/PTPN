@@ -11,12 +11,14 @@ export async function videoDbChecks(db, ids, ok) {
   const cw = (await db.query('select id,workout_id from client_workouts where client_id=$1 limit 1', [A])).rows[0]
   const item = (await db.query("insert into workout_items(workout_id,exercise_name) values($1,'Technique test') returning id", [cw.workout_id])).rows[0].id
   const id = '55555555-5555-5555-5555-555555555555', path = A + '/' + id + '/clip.webm'
-  const insert = (who, client = A, wi = item, name = 'Technique test') => as(who,
+  const insert = (who, client = A, wi = item, name = 'Technique test', rowId = crypto.randomUUID()) => as(who,
     'insert into exercise_videos(id,client_id,client_workout_id,workout_item_id,exercise_name,video_path) values($1,$2,$3,$4,$5,$6) returning id',
-    [id, client, cw.id, wi, name, client + '/' + id + '/clip.webm'])
-  ok(!(await insert(A)).error, 'technique: client attaches clip to own assigned exercise')
+    [rowId, client, cw.id, wi, name, client + '/' + rowId + '/clip.webm'])
+  ok(!(await insert(A, A, item, 'Technique test', id)).error, 'technique: client attaches clip to own assigned exercise')
   ok(!!(await insert(B, B)).error, 'technique: cannot attach to another client workout')
   ok(!!(await insert(B)).error, 'technique: cannot spoof owner')
+  ok(!!(await insert(A, A, crypto.randomUUID())).error, 'technique: item must belong to assigned workout')
+  ok(!!(await insert(A, A, item, 'Fake exercise')).error, 'technique: exercise snapshot must match assigned item')
   ok((await as(B, 'select * from exercise_videos where id=$1', [id])).rows.length === 0, 'technique: other client cannot read request')
   ok((await as(C, 'select * from exercise_videos where id=$1', [id])).rows.length === 1, 'technique: coach reads request')
   ok(!!(await as(null, 'select * from exercise_videos')).error, 'technique: anonymous cannot read requests')
