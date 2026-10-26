@@ -11,6 +11,7 @@ import { MacroBar, PageHead, Ring, Tile } from '../../components/ui'
 import { CheckinForm, Habits } from '../../components/Daily'
 import Icon from '../../components/Icon'
 import WeeklyCheckins from '../../components/WeeklyCheckins'
+import ClientOnboarding from '../../components/ClientOnboarding'
 
 export default function Home() {
   const { profile } = useAuth()
@@ -66,6 +67,8 @@ export default function Home() {
   return (
     <>
       <PageHead eyebrow={longDay(today)} title={`${greeting()}, ${firstName(profile?.full_name ?? '')}`} />
+
+      {profile && <ClientOnboarding key={profile.id} clientId={profile.id} />}
 
       {todays.length > 0 ? todays.map(cw => {
         const w = workouts[cw.workout_id]
