@@ -430,7 +430,12 @@ console.log('Client flows')
   await page.getByPlaceholder('kg').fill('100')
   await page.locator('.card', { hasText: 'Max lifts' }).getByRole('button', { name: 'Add' }).click()
   await page.getByText('Barbell bench press').first().waitFor()
-  await page.getByText(/60 kg x 8/).first().waitFor()
+  await page.getByText(/60 kg x 8/).first().waitFor({ timeout: 10000 }).catch(async error => {
+    console.error('PR screen:', await page.locator('main').innerText())
+    console.error('PR stored workouts:', JSON.stringify(await sql('select id,workout_id,status,log from client_workouts where client_id=$1 and status=$2', [IDS.ana, 'done'])))
+    console.error('PR exercise items:', JSON.stringify(await sql('select id,workout_id,exercise_name from workout_items where workout_id in (select workout_id from client_workouts where client_id=$1 and status=$2)', [IDS.ana, 'done'])))
+    throw error
+  })
   ok(await page.getByText('Personal records').count() === 1 && await page.getByText(/60 kg � 8/).count() >= 1, 'personal record from the logged set (60 kg � 8)')
   const metricCard = page.locator('.card', { hasText: 'Vertical jump' })
   await metricCard.getByPlaceholder('cm').fill('42')
