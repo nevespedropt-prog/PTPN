@@ -94,7 +94,16 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   ok(!(await training.isChecked()), 'onboarding: failed checklist save keeps previous progress')
   await page.unroute('**/rest/v1/client_onboarding*')
   await training.click()
-  await setup.getByText('Your first week · 1/3 complete', { exact: true }).waitFor()
+  try {
+    await setup.getByText('Your first week · 1/3 complete', { exact: true }).waitFor()
+  } catch (error) {
+    console.log('ONBOARDING_RETRY_DIAGNOSTIC', JSON.stringify({
+      stored: await sql('select * from client_onboarding where client_id=$1', [IDS.ana]),
+      rendered: await setup.innerText(), checked: await training.isChecked(), errors: client.errors,
+    }))
+    await shot(page, 'onboarding-retry-failure')
+    throw error
+  }
   await setup.getByRole('button', { name: 'Update coaching profile', exact: true }).click()
   await form.getByLabel('What would you like to achieve?', { exact: true }).fill('Build lasting strength and consistency.')
   await form.getByRole('button', { name: 'Continue', exact: true }).click()
