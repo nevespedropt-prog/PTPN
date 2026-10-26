@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import { weeklyDbChecks } from './weekly-checkins.mjs'
 import { quickMealDbChecks } from './quick-meals.mjs'
 import { videoDbChecks } from './exercise-feedback.mjs'
+import { onboardingDbChecks } from './onboarding.mjs'
 
 const repo = new URL('../supabase/', import.meta.url).pathname
 const db = new PGlite({ extensions: { uuid_ossp } })
@@ -191,6 +192,7 @@ await as(C, `insert into client_archives (client_id) values ('${A}')`)
 await weeklyDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 await quickMealDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 await videoDbChecks(db, { coach: C, ana: A, bo: B }, ok)
+await onboardingDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)

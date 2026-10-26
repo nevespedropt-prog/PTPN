@@ -10,6 +10,7 @@ import type { ClientHealth, Checkin, ClientWorkout, FoodLog, MealPlanItem, Measu
 import { Avatar, Empty, MacroBar, MacroChips, Seg, Sheet, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
 import WeeklyCheckins from '../../components/WeeklyCheckins'
+import ClientOnboarding from '../../components/ClientOnboarding'
 import { RecipePicker, WorkoutPicker } from '../../components/Pickers'
 import CoachHabits from '../CoachHabits'
 import Progress from '../Progress'
@@ -76,6 +77,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
       )}
       {checkin?.note && <div className="card tight"><span className="eyebrow">Latest check-in note</span><p style={{ margin: 0 }}>{checkin.note}</p></div>}
       <WeeklyCheckins key={id} clientId={id} coach />
+      <ClientOnboarding key={`onboarding-${id}`} clientId={id} coach />
       <div className="section-title"><h2>Recent workouts</h2><button className="link red" onClick={() => go('training')}>Manage</button></div>
       <div className="card tight">
         {cws.length === 0 && <Empty icon="train" title="No workouts assigned">Open Training to schedule one.</Empty>}

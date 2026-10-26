@@ -151,3 +151,14 @@ Nutrition quick-add submissions have a synchronous duplicate-write guard. Planne
 Progress photo reads expose failures, preserve existing rows on retry errors and hide false empty states. Upload metadata failures confirm write outcome before cleaning up uploaded files. Deletion checks file and metadata responses independently: a failed file delete keeps its record, while a partial deletion explicitly asks the client to retry cleanup. These two API calls remain non-atomic; real storage/network/device behaviour still requires checking.
 
 No schema, dependency or design-system changes. tests/bug-review.mjs covers injected GET/POST/DELETE failures, invalid values, rapid submissions, cancellation, cleanup, slow date-response races and phone width. No real client records are used for these tests. Existing security advisor findings remain unchanged, including disabled leaked-password protection.
+
+
+## Guided client onboarding (26 October 2026)
+
+An optional Coaching setup card on client Home follows the existing health/consent gate. Three steps collect goals, experience, training location/equipment, preferred days and optional food preferences. Clients submit all steps together and can update their answers later. Save failures retain answers while the sheet stays open. Closing before saving discards the draft; no sensitive draft is put into local storage. No automatic assignment, target change or outgoing message.
+
+The client confirms three first-week steps: review training, explore nutrition, and know how to contact the coach. Links open the existing pages. These are self-reported orientation steps, not workout or nutrition adherence. Each checkbox saves independently and the checklist collapses at 3/3 while remaining expandable. Editing answers preserves checklist progress. The coach sees read-only answers and checklist completion in each client's Overview.
+
+Apply supabase/migrate_v11_client_onboarding.sql before deploying. client_onboarding has one row per client, RLS, own-client insert/update and owner/coach reads; anonymous access and API deletion are denied. Account deletion cascades onboarding. Existing clients are invited to complete setup too, without blocking access. No new dependencies, design tokens or changes to consent.
+
+Focused tests in tests/onboarding.mjs cover role isolation, ownership changes, invalid values, account cleanup, optional entry, read failures, cancelled setup, failed saves, duplicate submits, persistence, checklist failures/retry, edits preserving checklist, coach read-only summary and phone width. Release checks run through the existing GitHub workflow. Manual visual and real-phone review of this new feature remain outstanding. Pedro confirmed the previous priority bug fixes work on his phone.
