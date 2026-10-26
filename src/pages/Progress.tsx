@@ -8,6 +8,7 @@ import { Empty, PageHead, Seg, Sheet, Tile } from '../components/ui'
 import Photos from '../components/Photos'
 import Metrics from './Metrics'
 import MaxLifts from './MaxLifts'
+import MonthlyReport from '../components/MonthlyReport'
 
 function Body({ clientId, readOnly }: { clientId: string; readOnly: boolean }) {
   const [rows, setRows] = useState<Measurement[]>([])
@@ -137,11 +138,11 @@ function Records({ clientId }: { clientId: string }) {
 }
 
 export default function Progress({ clientId, readOnly = false }: { clientId: string; readOnly?: boolean }) {
-  const [tab, setTab] = useState<'body' | 'strength' | 'photos'>('body')
+  const [tab, setTab] = useState<'body' | 'strength' | 'photos' | 'monthly'>('body')
   return (
     <>
       {!readOnly && <PageHead eyebrow="Progress" title="Your results" />}
-      <Seg value={tab} onChange={setTab} options={[{ value: 'body', label: 'Body' }, { value: 'strength', label: 'Strength' }, { value: 'photos', label: 'Photos' }]} />
+      <Seg value={tab} onChange={setTab} options={[{ value: 'body', label: 'Body' }, { value: 'strength', label: 'Strength' }, { value: 'photos', label: 'Photos' }, { value: 'monthly', label: 'Monthly' }]} />
       {tab === 'body' && <Body clientId={clientId} readOnly={readOnly} />}
       {tab === 'strength' && <>
         <Records clientId={clientId} />
@@ -149,6 +150,7 @@ export default function Progress({ clientId, readOnly = false }: { clientId: str
         <Metrics clientId={clientId} coach={readOnly} />
       </>}
       {tab === 'photos' && <Photos clientId={clientId} canUpload={!readOnly} />}
+      {tab === 'monthly' && <MonthlyReport key={clientId} clientId={clientId} coach={readOnly} onPhotos={() => setTab('photos')} />}
     </>
   )
 }
