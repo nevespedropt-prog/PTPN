@@ -150,7 +150,10 @@ export function startServer(db, { port = 4180, dist }) {
       const set = keys.map(k => `${ident(k)} = (jsonb_populate_record(null::${t}, $1::jsonb)).${ident(k)}`).join(', ')
       const stmt = `update ${t} set ${set}${filters(url, params)}`
       const r = await asRole(claims, () => db.query(wantRows ? wrap(stmt) : stmt, params))
-      return wantRows ? [200, r.rows[0].j] : [204, null]
+      if (!wantRows) return [204, null]
+      const out = r.rows[0].j
+      if (accept.includes('pgrst.object') && out.length !== 1) return [406, { code: 'PGRST116', message: 'JSON object requested, multiple (or no) rows returned', details: `The result contains ${out.length} rows`, hint: null }]
+      return [200, accept.includes('pgrst.object') ? out[0] : out]
     }
     if (req.method === 'DELETE') {
       const stmt = `delete from ${t}${filters(url, params)}`
