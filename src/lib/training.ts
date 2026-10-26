@@ -126,8 +126,9 @@ export function personalRecords(done: ClientWorkout[], itemsById: Map<string, Wo
   const best = new Map<string, PR>()
   for (const cw of done) {
     for (const [itemId, sets] of Object.entries(cw.log?.items ?? {})) {
-      const it = itemsById.get(itemId)
-      if (!it) continue
+      const choice = cw.log?.exercise_choices?.[itemId]
+      const it = choice?.item ?? itemsById.get(itemId)
+      if (!it || choice?.is_cardio) continue
       for (const s of sets) {
         const kg = parseFloat(s.kg), reps = parseInt(s.reps)
         if (!s.done || !(kg > 0) || !(reps > 0)) continue

@@ -94,7 +94,7 @@ export default function ExerciseFeedback({ clientId, workoutId, exercise, coach,
         {!clips.length && !error && <p>No clips shared for this exercise yet.</p>}
         {clips.map(clip => <article key={clip.id} className="card tight" aria-label="Technique clip">
           <span className={'badge ' + (reviews[clip.id] ? 'green' : 'amber')}>{reviews[clip.id] ? 'Coach feedback available' : 'Awaiting technique review'}</span>
-          <p className="mute small">Shared {niceDate(clip.created_at.slice(0, 10))}</p>
+          <p className="mute small">{clip.exercise_name}. Shared {niceDate(clip.created_at.slice(0, 10))}</p>
           {clip.question && <p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{clip.question}</p>}
           <PrivateFeedbackMedia bucket={VIDEO_BUCKET} path={clip.video_path} />
           {reviews[clip.id] && <div>
