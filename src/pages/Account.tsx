@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
 import { HealthForm } from '../components/Consent'
@@ -20,12 +20,36 @@ export default function Account() {
   }, [profile])
   const [ps, setPs] = useState<PushState | null>(null)
   const [pushMsg, setPushMsg] = useState('')
-  useEffect(() => { pushState().then(setPs) }, [])
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushRetry, setPushRetry] = useState(0)
+  const pushing = useRef(false)
+  const pushCheckVersion = useRef(0)
+  const userId = session?.user.id
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+    async function check() {
+      if (pushing.current) return
+      const version = ++pushCheckVersion.current
+      setPs(null); setPushMsg('')
+      try { const state = await pushState(userId!); if (active && version === pushCheckVersion.current) setPs(state) }
+      catch { if (active && version === pushCheckVersion.current) { setPs('error'); setPushMsg('Could not check notification settings. Please retry when connected.') } }
+    }
+    void check()
+    const resume = () => { if (document.visibilityState === 'visible') void check() }
+    document.addEventListener('visibilitychange', resume)
+    return () => { active = false; document.removeEventListener('visibilitychange', resume) }
+  }, [userId, pushRetry])
   async function togglePush() {
-    setPushMsg(''); setBusy(true)
-    if (ps === 'on') await disablePush()
-    else { const err = await enablePush(session!.user.id); if (err) setPushMsg(err) }
-    setPs(await pushState()); setBusy(false)
+    if (!userId || pushing.current || (ps !== 'on' && ps !== 'off')) return
+    pushing.current = true; pushCheckVersion.current++; setPushMsg(''); setPushBusy(true)
+    try {
+      const error = ps === 'on' ? await disablePush(userId) : await enablePush(userId)
+      if (error) setPushMsg(error)
+      setPs(await pushState(userId))
+    } catch {
+      setPs('error'); setPushMsg(previous => previous || 'Could not confirm notification settings. Please retry when connected.')
+    } finally { pushing.current = false; setPushBusy(false) }
   }
 
   async function change(e: React.FormEvent) {
@@ -60,16 +84,18 @@ export default function Account() {
             : <button className="soft" onClick={() => setEditHealth(true)}>Update health information</button>}
         </div>
       )}
-      {ps && ps !== 'unsupported' && (
-        <div className="card col">
+      {ps !== 'unsupported' && (
+        <section className="card col" aria-label="Notifications">
           <h2>Notifications</h2>
           <span className="mute small">{profile?.role === 'coach' ? 'Get a message when a client writes to you.' : 'Get a message when your coach writes, a workout is due today, or there is a new announcement.'}</span>
+          {ps === null && <span className="mute small" role="status">Checking notification settings...</span>}
           {ps === 'needs-install' && <span className="small">On iPhone and iPad, add the app to your Home Screen first (More page, Install the app), then open it from there to turn notifications on.</span>}
           {ps === 'denied' && <span className="small">Notifications are blocked for this app. Allow them in your phone or browser settings, then come back.</span>}
-          {(ps === 'on' || ps === 'off') && <button className={ps === 'on' ? 'soft' : ''} disabled={busy} onClick={togglePush}>{ps === 'on' ? 'Turn off on this device' : 'Turn on notifications'}</button>}
+          {(ps === 'on' || ps === 'off') && <button className={ps === 'on' ? 'soft' : ''} disabled={pushBusy} onClick={togglePush}>{pushBusy ? 'Updating notifications...' : ps === 'on' ? 'Turn off on this device' : 'Turn on notifications'}</button>}
+          {ps === 'error' && <button className="soft" disabled={pushBusy} onClick={() => setPushRetry(v => v + 1)}>Retry notification settings</button>}
           {ps === 'on' && <span className="ok small">Notifications are on for this device.</span>}
-          {pushMsg && <span className="err">{pushMsg}</span>}
-        </div>
+          {pushMsg && <span className="err" role="alert">{pushMsg}</span>}
+        </section>
       )}
       <form className="card col" onSubmit={change}>
         <h2>Change password</h2>
