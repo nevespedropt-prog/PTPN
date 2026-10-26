@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import { weeklyBrowserChecks } from './weekly-checkins.mjs'
 import { quickMealBrowserChecks } from './quick-meals.mjs'
 import { videoBrowserChecks } from './exercise-feedback.mjs'
+import { bugReviewChecks } from './bug-review.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -401,6 +402,7 @@ console.log('Client flows')
   // next days: planned meals visible, read-only
   await page.getByRole('button', { name: 'Next day' }).click()
   await page.getByText('Tomorrow').first().waitFor()
+  await page.getByText('Upcoming', { exact: true }).nth(2).waitFor()
   ok(await page.getByText('Upcoming').count() >= 3, 'tomorrow shows the planned meals')
   ok(await page.getByRole('button', { name: 'Log', exact: true }).count() === 0, 'no logging on future days')
   await page.getByText('tap for recipe').first().click()
@@ -428,8 +430,8 @@ console.log('Client flows')
   await page.getByPlaceholder('kg').fill('100')
   await page.locator('.card', { hasText: 'Max lifts' }).getByRole('button', { name: 'Add' }).click()
   await page.getByText('Barbell bench press').first().waitFor()
-  await page.waitForTimeout(500)
-  ok(await page.getByText('Personal records').count() === 1 && await page.getByText(/60 kg × 8/).count() >= 1, 'personal record from the logged set (60 kg × 8)')
+  await page.getByText(/60 kg [x\u00d7] 8/).first().waitFor()
+  ok(await page.getByText('Personal records').count() === 1 && await page.getByText(/60 kg [x\u00d7] 8/).count() >= 1, 'personal record from the logged set (60 kg × 8)')
   const metricCard = page.locator('.card', { hasText: 'Vertical jump' })
   await metricCard.getByPlaceholder('cm').fill('42')
   await metricCard.getByRole('button', { name: 'Log' }).click()
@@ -737,6 +739,7 @@ console.log('Client flows')
 
 await weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await quickMealBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await bugReviewChecks({ open, sql, IDS, BASE, shot, clean, ok })
 
 console.log(`\n${pass} passed, ${fail} failed`)
 await browser.close(); server.close()

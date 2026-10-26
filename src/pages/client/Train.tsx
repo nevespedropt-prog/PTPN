@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
@@ -17,6 +17,8 @@ export default function Train() {
   const [cws, setCws] = useState<ClientWorkout[] | null>(null)
   const [workouts, setWorkouts] = useState<Record<string, Workout>>({})
   const [busy, setBusy] = useState(false)
+  const building = useRef(false)
+  const [buildError, setBuildError] = useState('')
   const [removeTarget, setRemoveTarget] = useState<ClientWorkout | null>(null)
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState('')
@@ -36,13 +38,31 @@ export default function Train() {
   useEffect(() => { load() }, [load])
 
   async function buildOwn() {
-    if (!profile) return
-    setBusy(true)
-    const { data: w, error } = await supabase.from('workouts').insert({ name: 'My workout', created_by: profile.id }).select().single()
-    if (error || !w) { setBusy(false); return alert(error?.message ?? 'Could not create workout') }
-    const { data: cw } = await supabase.from('client_workouts').insert({ client_id: profile.id, workout_id: w.id, date: sel }).select().single()
-    setBusy(false)
-    nav(`/build/${w.id}${cw ? `?cw=${cw.id}` : ''}`)
+    if (!profile || building.current) return
+    building.current = true; setBusy(true); setBuildError('')
+    try {
+      const created = await supabase.from('workouts').insert({ name: 'My workout', created_by: profile.id }).select().single()
+      if (created.error || !created.data) throw created.error
+      const workoutId = created.data.id
+      const scheduled = await supabase.from('client_workouts').insert({ client_id: profile.id, workout_id: workoutId, date: sel }).select().single()
+      let sessionId = scheduled.data?.id
+      if (scheduled.error || !sessionId) {
+        // Confirm whether an interrupted response nevertheless created the session.
+        const check = await supabase.from('client_workouts').select('id').eq('client_id', profile.id).eq('workout_id', workoutId).maybeSingle()
+        if (check.error) {
+          setBuildError('Could not confirm the new workout. Refresh your plan before trying again.')
+          return
+        }
+        sessionId = check.data?.id
+        if (!sessionId) {
+          await supabase.from('workouts').delete().eq('id', workoutId).eq('created_by', profile.id)
+          setBuildError('Could not schedule your workout. Please try again when connected.')
+          return
+        }
+      }
+      nav(`/build/${workoutId}?cw=${sessionId}`)
+    } catch { setBuildError('Could not create your workout. Please try again when connected.') }
+    finally { building.current = false; setBusy(false) }
   }
 
   const canRemove = (c: ClientWorkout) => c.status !== 'done' && workouts[c.workout_id]?.created_by === profile?.id
@@ -88,6 +108,7 @@ export default function Train() {
       <PageHead eyebrow="Training" title="Your plan" sub={`${history.length} workouts completed`}>
         <button className="soft sm" onClick={buildOwn} disabled={busy || removing}><Icon name="plus" size={16} />Build my own</button>
       </PageHead>
+      {buildError && <p className="err" role="alert">{buildError}</p>}
       {notice && <p className="ok" role="status">{notice}</p>}
       <Seg value={tab} onChange={setTab} options={[{ value: 'plan', label: 'Schedule' }, { value: 'history', label: 'History' }]} />
 
