@@ -28,7 +28,13 @@ export interface WorkoutItem {
 export interface Program { id: string; name: string; description: string; goal: string; level: string; weeks: number; created_by: string | null }
 export interface ProgramDay { id: string; program_id: string; week: number; day: number; workout_id: string }
 export interface SetLog { reps: string; kg: string; done: boolean; time?: string; distance?: string; speed?: string }
-export interface WorkoutLog { items?: Record<string, SetLog[]>; rounds?: number; seconds?: number }
+export interface WorkoutAlternative {
+  id: string; workout_item_id: string; exercise_id: string; exercise_name: string; is_cardio: boolean
+  sets: number; reps: string; rest_sec: number; notes: string
+  cardio_time: string; cardio_distance_km: number | null; cardio_speed_kmh: number | null
+}
+export interface ExerciseChoice { alternative_id: string; item: WorkoutItem; is_cardio: boolean }
+export interface WorkoutLog { items?: Record<string, SetLog[]>; exercise_choices?: Record<string, ExerciseChoice>; rounds?: number; seconds?: number }
 export interface ClientWorkout {
   id: string; client_id: string; workout_id: string; date: string; program_id: string | null; status: 'scheduled' | 'done' | 'skipped'
   log: WorkoutLog; rating: number | null; client_note: string; completed_at: string | null

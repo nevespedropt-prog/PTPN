@@ -9,6 +9,7 @@ import { useClients } from '../../hooks'
 import { AssignWorkout } from './Assign'
 import Icon from '../../components/Icon'
 import { ExercisePicker } from '../../components/Pickers'
+import AlternativeEditor from '../../components/AlternativeEditor'
 
 type Row = Omit<WorkoutItem, 'workout_id' | 'load' | 'tempo'> & { load: string; tempo: string; isNew?: boolean; cardio?: boolean }
 const LABELS = ['', 'A', 'B', 'C', 'D', 'E']
@@ -26,6 +27,7 @@ export default function WorkoutBuilder() {
   const [msg, setMsg] = useState('')
   const [dirty, setDirty] = useState(false)
   const [sched, setSched] = useState(false)
+  const [alternativeItem, setAlternativeItem] = useState<Row | null>(null)
   const { clients } = useClients()
   const coach = profile?.role === 'coach'
   const assignTo = coach ? sp.get('assignTo') : null
@@ -164,6 +166,8 @@ export default function WorkoutBuilder() {
               </div>
             )}
             <input style={{ marginTop: 8 }} placeholder="Coaching notes" value={r.notes} onChange={e => updRow(i, { notes: e.target.value })} />
+            {coach && <button type="button" className="soft sm" style={{ marginTop: 10 }} disabled={r.isNew || busy} onClick={() => setAlternativeItem(r)} aria-label={`Manage alternatives for ${r.exercise_name}`}>Approved alternatives</button>}
+            {coach && r.isNew && <p className="mute small">Save this exercise before approving alternatives.</p>}
           </div>
         ))}
         {editable && <button type="button" className="soft block" onClick={() => setPicker(true)}><Icon name="plus" size={18} />Add exercise</button>}
@@ -179,6 +183,7 @@ export default function WorkoutBuilder() {
         {target && <AssignWorkout workout={w} clients={[target]} presetClient={target.id} onClose={() => nav(`/clients/${target.id}?tab=training`)} />}
       </Sheet>
       <ExercisePicker open={picker} onClose={() => setPicker(false)} onPick={add} />
+      {alternativeItem && <AlternativeEditor key={alternativeItem.id} item={{ ...alternativeItem, workout_id: w.id }} format={w.format} onClose={() => setAlternativeItem(null)} />}
     </>
   )
 }

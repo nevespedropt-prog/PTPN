@@ -6,6 +6,7 @@ import { quickMealDbChecks } from './quick-meals.mjs'
 import { videoDbChecks } from './exercise-feedback.mjs'
 import { onboardingDbChecks } from './onboarding.mjs'
 import { monthlyUnitChecks, monthlyDbChecks } from './monthly.mjs'
+import { alternativeUnitChecks, alternativeDbChecks } from './alternatives.mjs'
 
 const repo = new URL('../supabase/', import.meta.url).pathname
 const db = new PGlite({ extensions: { uuid_ossp } })
@@ -196,6 +197,8 @@ await videoDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 await onboardingDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 monthlyUnitChecks(ok)
 await monthlyDbChecks(db, { coach: C, ana: A, bo: B }, ok)
+alternativeUnitChecks(ok)
+await alternativeDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)

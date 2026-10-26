@@ -5,10 +5,12 @@ import { useAuth } from '../auth'
 import { demoUrl, fmtSeconds } from '../lib/util'
 import { niceDate } from '../lib/dates'
 import { CARDIO_FIELDS, FORMAT_LABEL, cardioPrescription, fillCardio, groupItems, prescription, setsDone, volumeKg, workingLoad } from '../lib/training'
-import type { ClientWorkout, OneRepMax, SetLog, Workout, WorkoutItem, WorkoutLog } from '../types'
+import type { ClientWorkout, OneRepMax, SetLog, Workout, WorkoutAlternative, WorkoutItem, WorkoutLog } from '../types'
 import { Empty, Sheet, Skeleton, Stars } from '../components/ui'
 import Icon from '../components/Icon'
 import ExerciseFeedback, { type FeedbackExercise } from '../components/ExerciseFeedback'
+import AlternativePicker from '../components/AlternativePicker'
+import { alternativeChoice, performedItems, samePreviousExercise } from '../lib/alternatives'
 
 const emptySets = (it: WorkoutItem, load?: number | null): SetLog[] =>
   Array.from({ length: it.sets ?? 1 }, () => ({ reps: '', kg: load ? String(load) : '', done: false }))
@@ -48,8 +50,19 @@ export default function WorkoutPlayer() {
   const [note, setNote] = useState('')
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dirty = useRef(false)
+  const saveQueue = useRef<Promise<unknown>>(Promise.resolve())
+  const saveVersion = useRef(0)
+  const changingExercise = useRef(false)
+  const finishingWrite = useRef(false)
+  const [switchItem, setSwitchItem] = useState<WorkoutItem | null>(null)
+  const [switchBusy, setSwitchBusy] = useState(false)
+  const [switchError, setSwitchError] = useState('')
+  const [uncertainChoice, setUncertainChoice] = useState(false)
+  const [finishBusy, setFinishBusy] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const readOnly = profile?.role === 'coach' || cw?.status !== 'scheduled'
+  const locked = readOnly || switchBusy || finishBusy || uncertainChoice
 
   useEffect(() => {
     if (!id) return
@@ -76,9 +89,10 @@ export default function WorkoutPlayer() {
       const rounds = CARDIO_FIELDS[(wk.data as Workout | null)?.format ?? 'standard'].includes('sets')
       const have = row.log?.items ?? {}
       const init: Record<string, SetLog[]> = {}
-      for (const i of list) {
+      for (const i of performedItems(list, row.log ?? {})) {
         const wl = workingLoad(i, maxList)
-        init[i.id] = have[i.id]?.length ? have[i.id] : cardioItems.has(i.id) ? emptyCardio(i, rounds) : emptySets(i, wl)
+        const isCardio = row.log?.exercise_choices?.[i.id]?.is_cardio ?? cardioItems.has(i.id)
+        init[i.id] = have[i.id]?.length ? have[i.id] : isCardio ? emptyCardio(i, rounds) : emptySets(i, wl)
       }
       setLog({ ...row.log, items: init })
     })()
@@ -103,14 +117,27 @@ export default function WorkoutPlayer() {
     if (rest && now >= rest.end) { setRest(null); try { navigator.vibrate?.([200, 100, 200]) } catch { /* unsupported */ } }
   }, [now, rest])
 
-  const persist = useCallback(async (next: WorkoutLog) => {
-    if (!cw || readOnly) return
-    setSaved('saving')
-    const { error } = await supabase.from('client_workouts').update({ log: next }).eq('id', cw.id)
-    setSaved(error ? 'idle' : 'saved')
+  const persist = useCallback((next: WorkoutLog): Promise<boolean> => {
+    if (!cw || readOnly) return Promise.resolve(false)
+    const version = ++saveVersion.current
+    setSaved('saving'); setSaveError('')
+    const task = saveQueue.current.then(async () => {
+      try {
+        const result = await supabase.from('client_workouts').update({ log: next }).eq('id', cw.id).eq('status', 'scheduled').select('id')
+        if (result.error || !result.data?.length) throw new Error('save')
+        if (version === saveVersion.current) setSaved('saved')
+        return true
+      } catch {
+        if (version === saveVersion.current) { setSaved('idle'); setSaveError('Could not save workout changes. Retry before leaving this workout.') }
+        return false
+      }
+    })
+    saveQueue.current = task
+    return task
   }, [cw, readOnly])
 
   function change(next: WorkoutLog) {
+    if (readOnly || changingExercise.current || finishingWrite.current || uncertainChoice) return
     setLog(next); dirty.current = true; setSaved('idle')
     if (timer.current) clearTimeout(timer.current)
     timer.current = setTimeout(() => persist(next), 700)
@@ -127,28 +154,62 @@ export default function WorkoutPlayer() {
   const addSet = (it: WorkoutItem) => {
     const sets = log.items?.[it.id] ?? []
     const last = sets[sets.length - 1]
-    change({ ...log, items: { ...log.items, [it.id]: [...sets, cardio.has(it.id) ? { reps: '', kg: '', done: false, time: '', distance: '', speed: '' } : { reps: '', kg: last?.kg ?? '', done: false }] } })
+    change({ ...log, items: { ...log.items, [it.id]: [...sets, (log.exercise_choices?.[it.id]?.is_cardio ?? cardio.has(it.id)) ? { reps: '', kg: '', done: false, time: '', distance: '', speed: '' } : { reps: '', kg: last?.kg ?? '', done: false }] } })
+  }
+
+  async function chooseAlternative(alternative: WorkoutAlternative | null) {
+    if (!cw || !switchItem || readOnly || changingExercise.current || finishingWrite.current || uncertainChoice) return
+    if (log.items?.[switchItem.id]?.some(s => s.done)) { setSwitchError('This exercise already has completed sets.'); return }
+    if (!confirm('Change exercise and clear unfinished entries in this block? Other exercises are preserved.')) return
+    changingExercise.current = true; setSwitchBusy(true); setSwitchError('')
+    if (timer.current) { clearTimeout(timer.current); timer.current = null }
+    try {
+      // Flush edits first, then queue the choice after all older autosaves.
+      if (!(await persist(log))) { setSwitchError('Could not save your current entries. Please retry before switching.'); return }
+      const choices = { ...log.exercise_choices }
+      if (alternative) choices[switchItem.id] = alternativeChoice(switchItem, alternative)
+      else delete choices[switchItem.id]
+      const effective = choices[switchItem.id]?.item ?? switchItem
+      const isCardio = choices[switchItem.id]?.is_cardio ?? cardio.has(switchItem.id)
+      const sets = isCardio ? emptyCardio(effective, CARDIO_FIELDS[w?.format ?? 'standard'].includes('sets')) : emptySets(effective, alternative ? null : workingLoad(effective, maxes))
+      const next: WorkoutLog = { ...log, exercise_choices: choices, items: { ...log.items, [switchItem.id]: sets } }
+      if (await persist(next)) { setLog(next); setRest(null); setSwitchItem(null); return }
+      // Interrupted responses may follow a committed write. Confirm before allowing more edits.
+      const check = await supabase.from('client_workouts').select('log,status').eq('id', cw.id).maybeSingle()
+      if (check.error || !check.data) { setUncertainChoice(true); setSwitchError('Could not confirm the exercise change. Reload this workout before continuing.'); return }
+      const confirmed = check.data.log as WorkoutLog
+      setLog(confirmed); setCw({ ...cw, log: confirmed, status: check.data.status as ClientWorkout['status'] })
+      if ((confirmed.exercise_choices?.[switchItem.id]?.alternative_id ?? null) === (alternative?.id ?? null)) { setSwitchItem(null); setSaveError(''); setSaved('saved') }
+      else setSwitchError('Could not change exercise. Your saved entries are preserved. Retry or reload to check the latest approval.')
+    } catch { setUncertainChoice(true); setSwitchError('Could not confirm the exercise change. Reload this workout before continuing.') }
+    finally { changingExercise.current = false; setSwitchBusy(false) }
   }
 
   async function finish(status: 'done' | 'skipped') {
-    if (!cw) return
-    const final: WorkoutLog = { ...log, seconds: Math.round((Date.now() - start) / 1000) }
-    const { error } = await supabase.from('client_workouts').update({
-      status, log: final, rating: status === 'done' ? rating : null, client_note: note, completed_at: status === 'done' ? new Date().toISOString() : null,
-    }).eq('id', cw.id)
-    if (error) return alert(error.message)
-    nav('/', { replace: true })
+    if (!cw || readOnly || changingExercise.current || finishingWrite.current || uncertainChoice) return
+    finishingWrite.current = true; setFinishBusy(true); setSaveError('')
+    if (timer.current) { clearTimeout(timer.current); timer.current = null }
+    try {
+      await saveQueue.current
+      const final: WorkoutLog = { ...log, seconds: Math.round((Date.now() - start) / 1000) }
+      const result = await supabase.from('client_workouts').update({
+        status, log: final, rating: status === 'done' ? rating : null, client_note: note, completed_at: status === 'done' ? new Date().toISOString() : null,
+      }).eq('id', cw.id).eq('status', 'scheduled').select('id')
+      if (result.error || !result.data?.length) throw new Error('finish')
+      nav('/', { replace: true })
+    } catch { setSaveError('Could not finish this workout. Your entries are still here. Please retry when connected.') }
+    finally { finishingWrite.current = false; setFinishBusy(false) }
   }
 
   if (cw === undefined) return <Skeleton n={4} />
   if (!cw || !w) return <div className="card"><Empty icon="train" title="Workout not found"><Link to="/">Back to home</Link></Empty></div>
 
-  const groups = groupItems(items)
+  const groups = groupItems(performedItems(items, log))
   const totalSets = Object.values(log.items ?? {}).reduce((n, s) => n + s.length, 0)
   const done = setsDone({ ...cw, log })
   const isRounds = w.format !== 'standard' && w.format !== 'intervals'
   const elapsed = Math.round((now - start) / 1000)
-  const prevOf = (it: WorkoutItem, i: number) => prev?.items?.[it.id]?.[i]
+  const prevOf = (it: WorkoutItem, i: number) => samePreviousExercise(it, items.find(original => original.id === it.id), prev) ? prev?.items?.[it.id]?.[i] : undefined
 
   return (
     <>
@@ -165,12 +226,14 @@ export default function WorkoutPlayer() {
         {!readOnly && <div className="clock" aria-label="Elapsed time">{fmtSeconds(elapsed)}</div>}
       </div>
 
+      {saveError && <div className="card tight"><p className="err" role="alert">{saveError}</p><button className="soft" disabled={locked} onClick={() => void persist(log)}>Retry workout save</button></div>}
+
       {totalSets > 0 && <div className="bar" aria-hidden="true"><i style={{ width: `${(done / totalSets) * 100}%` }} /></div>}
 
       {isRounds && (
         <div className="card row between nowrap">
           <div><b>{w.format === 'amrap' ? 'Rounds completed' : 'Rounds'}</b><br /><span className="mute small">{w.rounds ? `Target: ${w.rounds}` : 'Log how many you finished'}</span></div>
-          <input type="number" min="0" inputMode="numeric" style={{ width: 90, textAlign: 'center' }} disabled={readOnly}
+          <input type="number" min="0" inputMode="numeric" style={{ width: 90, textAlign: 'center' }} disabled={locked}
             value={log.rounds ?? ''} onChange={e => change({ ...log, rounds: e.target.value === '' ? undefined : Number(e.target.value) })} aria-label="Rounds completed" />
         </div>
       )}
@@ -180,7 +243,7 @@ export default function WorkoutPlayer() {
           <div key={gi} style={g.label ? { borderLeft: '3px solid var(--violet)', paddingLeft: 12, margin: '4px 0' } : undefined}>
             {g.label && g.items.length > 1 && <div className="group-label"><Icon name="link" size={13} />{g.items.length === 2 ? 'Superset' : 'Circuit'} {g.label}</div>}
             {g.items.map(it => {
-              const isCardio = cardio.has(it.id)
+              const isCardio = log.exercise_choices?.[it.id]?.is_cardio ?? cardio.has(it.id)
               const load = isCardio ? null : workingLoad(it, maxes)
               const sets = log.items?.[it.id] ?? []
               const simple = !it.sets && !isCardio
@@ -197,10 +260,12 @@ export default function WorkoutPlayer() {
                     </div>
                     <a className="btn icon" href={demoUrl(it.exercise_name)} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${it.exercise_name} demo`}><Icon name="play" size={16} /></a>
                   </div>
+                  {log.exercise_choices?.[it.id] && <p className="mute small">Selected alternative for this session. Original: {items.find(original => original.id === it.id)?.exercise_name ?? 'Retired exercise'}.</p>}
+                  {!readOnly && items.some(original => original.id === it.id) && <button className="soft sm" style={{ marginTop: 8 }} disabled={locked || sets.some(s => s.done)} onClick={() => { setSwitchError(''); setSwitchItem(items.find(original => original.id === it.id) ?? null) }} aria-label={`Choose alternative for ${it.exercise_name}`}>Choose alternative</button>}
                   {simple ? (
                     <div className="row between nowrap" style={{ marginTop: 8 }}>
                       <span className="mute">{it.reps}</span>
-                      <button className={'set-check' + (sets[0]?.done ? ' on' : '')} disabled={readOnly} onClick={() => setField(it.id, 0, { done: !sets[0]?.done }, it.rest_sec)} aria-pressed={!!sets[0]?.done} aria-label="Mark done"><Icon name="check" size={20} /></button>
+                      <button className={'set-check' + (sets[0]?.done ? ' on' : '')} disabled={locked} onClick={() => setField(it.id, 0, { done: !sets[0]?.done }, it.rest_sec)} aria-pressed={!!sets[0]?.done} aria-label="Mark done"><Icon name="check" size={20} /></button>
                     </div>
                   ) : isCardio ? (
                     <div className="set-grid" style={{ gridTemplateColumns: `34px repeat(${cf.length}, 1fr) 52px` }}>
@@ -214,12 +279,12 @@ export default function WorkoutPlayer() {
                             <span className="n">{CARDIO_FIELDS[w.format].includes('sets') ? i + 1 : ''}</span>
                             {cf.map(f => {
                               const k = fieldKey(f)
-                              return <input key={f} type={f === 'time' ? 'text' : 'number'} inputMode={f === 'time' ? 'numeric' : 'decimal'} step="any" min="0" placeholder={p?.[k] || target(f) || '–'} value={s[k] ?? ''} disabled={readOnly}
+                              return <input key={f} type={f === 'time' ? 'text' : 'number'} inputMode={f === 'time' ? 'numeric' : 'decimal'} step="any" min="0" placeholder={p?.[k] || target(f) || '–'} value={s[k] ?? ''} disabled={locked}
                                 onChange={e => setField(it.id, i, { [k]: e.target.value })}
                                 onBlur={() => { const filled = fillCardio(s); const patch: Partial<SetLog> = {}; for (const key of ['time', 'distance', 'speed'] as const) if (filled[key] !== s[key]) patch[key] = filled[key]; if (Object.keys(patch).length) setField(it.id, i, patch) }}
                                 aria-label={`${CARDIO_HEAD[f] === 'Time' ? 'Time' : f === 'distance' ? 'Distance in kilometres' : 'Speed in kilometres per hour'}${CARDIO_FIELDS[w.format].includes('sets') ? `, round ${i + 1}` : ''}`} />
                             })}
-                            <button className={'set-check' + (s.done ? ' on' : '')} disabled={readOnly}
+                            <button className={'set-check' + (s.done ? ' on' : '')} disabled={locked}
                               onClick={() => {
                                 // Marking done keeps what was typed and fills the rest from the plan, then works out the missing one.
                                 const base = s.done ? s : fillCardio({ ...s, time: s.time || (cf.includes('time') ? it.cardio_time : ''), distance: s.distance || (cf.includes('distance') ? target('distance') : ''), speed: s.speed || (cf.includes('speed') ? target('speed') : '') })
@@ -237,17 +302,17 @@ export default function WorkoutPlayer() {
                         return (
                           <div key={i} style={{ display: 'contents' }}>
                             <span className="n">{i + 1}</span>
-                            <input type="number" inputMode="decimal" step="any" min="0" placeholder={p?.kg || '–'} value={s.kg} disabled={readOnly} onChange={e => setField(it.id, i, { kg: e.target.value })} aria-label={`Set ${i + 1} weight`} />
-                            <input type="number" inputMode="numeric" min="0" placeholder={p?.reps || it.reps || '–'} value={s.reps} disabled={readOnly} onChange={e => setField(it.id, i, { reps: e.target.value })} aria-label={`Set ${i + 1} reps`} />
-                            <button className={'set-check' + (s.done ? ' on' : '')} disabled={readOnly} onClick={() => setField(it.id, i, { done: !s.done, reps: s.reps || (!s.done ? (it.reps.match(/^\d+/)?.[0] ?? '') : s.reps) }, it.rest_sec)} aria-pressed={s.done} aria-label={`Complete set ${i + 1}`}><Icon name="check" size={20} /></button>
+                            <input type="number" inputMode="decimal" step="any" min="0" placeholder={p?.kg || '–'} value={s.kg} disabled={locked} onChange={e => setField(it.id, i, { kg: e.target.value })} aria-label={`Set ${i + 1} weight`} />
+                            <input type="number" inputMode="numeric" min="0" placeholder={p?.reps || it.reps || '–'} value={s.reps} disabled={locked} onChange={e => setField(it.id, i, { reps: e.target.value })} aria-label={`Set ${i + 1} reps`} />
+                            <button className={'set-check' + (s.done ? ' on' : '')} disabled={locked} onClick={() => setField(it.id, i, { done: !s.done, reps: s.reps || (!s.done ? (it.reps.match(/^\d+/)?.[0] ?? '') : s.reps) }, it.rest_sec)} aria-pressed={s.done} aria-label={`Complete set ${i + 1}`}><Icon name="check" size={20} /></button>
                           </div>
                         )
                       })}
                     </div>
                   )}
-                  {!simple && !readOnly && (!isCardio || CARDIO_FIELDS[w.format].includes('sets')) && <button className="link" style={{ marginTop: 8 }} onClick={() => addSet(it)}>{isCardio ? '+ Add round' : '+ Add set'}</button>}
-                  <button className="soft sm" style={{ marginTop: 8 }} onClick={() => setFeedbackExercise(it)} aria-label={`Technique feedback for ${it.exercise_name}`}>Technique feedback</button>
-                  {prev?.items?.[it.id]?.some(s => s.done) && !simple && <div className="mute small" style={{ marginTop: 6 }}>Last time: {prev.items[it.id].filter(s => s.done).map(s => isCardio ? [s.time, s.distance && `${s.distance} km`, s.speed && `${s.speed} km/h`].filter(Boolean).join(' · ') || '–' : `${s.kg || '–'}×${s.reps || '–'}`).join(isCardio ? ' | ' : ', ')}</div>}
+                  {!simple && !locked && (!isCardio || CARDIO_FIELDS[w.format].includes('sets')) && <button className="link" style={{ marginTop: 8 }} onClick={() => addSet(it)}>{isCardio ? '+ Add round' : '+ Add set'}</button>}
+                  <button className="soft sm" disabled={switchBusy || finishBusy || uncertainChoice} style={{ marginTop: 8 }} onClick={() => setFeedbackExercise(it)} aria-label={`Technique feedback for ${it.exercise_name}`}>Technique feedback</button>
+                  {samePreviousExercise(it, items.find(original => original.id === it.id), prev) && prev?.items?.[it.id]?.some(s => s.done) && !simple && <div className="mute small" style={{ marginTop: 6 }}>Last time: {prev.items[it.id].filter(s => s.done).map(s => isCardio ? [s.time, s.distance && `${s.distance} km`, s.speed && `${s.speed} km/h`].filter(Boolean).join(' · ') || '–' : `${s.kg || '–'}×${s.reps || '–'}`).join(isCardio ? ' | ' : ', ')}</div>}
                 </div>
               )
             })}
@@ -269,8 +334,8 @@ export default function WorkoutPlayer() {
 
       {!readOnly && cw.status === 'scheduled' && (
         <div className="row" style={{ marginTop: 6 }}>
-          <button className="grow" style={{ minHeight: 52 }} onClick={() => setFinishing(true)}><Icon name="check" size={18} />Finish workout</button>
-          <button className="ghost" onClick={() => { if (confirm('Mark this workout as skipped?')) finish('skipped') }}>Skip</button>
+          <button className="grow" disabled={locked} style={{ minHeight: 52 }} onClick={() => setFinishing(true)}><Icon name="check" size={18} />Finish workout</button>
+          <button className="ghost" disabled={locked} onClick={() => { if (confirm('Mark this workout as skipped?')) finish('skipped') }}>Skip</button>
         </div>
       )}
 
@@ -283,15 +348,18 @@ export default function WorkoutPlayer() {
         </div>
       )}
 
+      {switchItem && <AlternativePicker key={switchItem.id} item={switchItem} selectedId={log.exercise_choices?.[switchItem.id]?.alternative_id} busy={switchBusy} error={switchError} uncertain={uncertainChoice} onChoose={a => { void chooseAlternative(a) }} onClose={() => { if (!changingExercise.current && !uncertainChoice) setSwitchItem(null) }} />}
+
       {cw && feedbackExercise && <ExerciseFeedback key={cw.id + feedbackExercise.id} clientId={cw.client_id} workoutId={cw.id} exercise={feedbackExercise} initialVideoId={feedbackId ?? undefined} coach={profile?.role === 'coach'} onClose={() => setFeedbackExercise(null)} />}
 
-      <Sheet open={finishing} onClose={() => setFinishing(false)} title="Nice work">
+      <Sheet open={finishing} onClose={() => { if (!finishingWrite.current) setFinishing(false) }} title="Nice work">
         <div className="stack">
           <p className="mute" style={{ margin: 0 }}>{done} of {totalSets} sets logged · {fmtSeconds(elapsed)}</p>
           <b>How did it feel?</b>
           <Stars value={rating} onChange={setRating} />
           <textarea rows={3} placeholder="Notes for your coach (optional)" value={note} onChange={e => setNote(e.target.value)} />
-          <button className="block" style={{ minHeight: 52 }} onClick={() => finish('done')}>Save and finish</button>
+          {saveError && <p className="err" role="alert">{saveError}</p>}
+          <button className="block" disabled={locked} style={{ minHeight: 52 }} onClick={() => finish('done')}>{finishBusy ? 'Saving...' : 'Save and finish'}</button>
         </div>
       </Sheet>
     </>
