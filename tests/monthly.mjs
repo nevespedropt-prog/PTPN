@@ -130,6 +130,7 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   await review.getByText('Monthly review saved and visible to your client.', { exact: true }).waitFor()
   ok((await sql('select * from monthly_reviews where client_id=$1 and month_start=$2', [IDS.ana, month + '-01'])).length === 1, 'monthly: duplicate coach submit creates one review')
   await review.getByLabel('Monthly feedback', { exact: true }).fill('Excellent consistency and strength progress.')
+  coach.page.removeAllListeners('dialog') // override open()'s automatic acceptance for this cancellation check
   coach.page.once('dialog', dialog => dialog.dismiss())
   await review.getByLabel('Report month', { exact: true }).selectOption(current)
   ok(await review.getByLabel('Report month', { exact: true }).inputValue() === month, 'monthly: cancelled month change preserves unsaved review')
