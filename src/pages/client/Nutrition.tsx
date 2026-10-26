@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
@@ -25,19 +25,30 @@ function AddFood({ meal, date, onDone, onClose }: { meal: MealType; date: string
   const [recipePick, setRecipePick] = useState(false)
   const [quick, setQuick] = useState({ name: '', kcal: '', protein: '', carbs: '', fat: '' })
   const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const saving = useRef(false)
 
   useEffect(() => { supabase.from('foods').select('*').order('name').then(({ data }) => setFoods((data ?? []) as Food[])) }, [])
   const list = useMemo(() => (foods ?? []).filter(f => f.name.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 40), [foods, q])
 
   async function insert(row: Partial<FoodLog>) {
+    if (saving.current) return
     setErr('')
-    const { error } = await supabase.from('food_logs').insert({ client_id: profile!.id, date, meal_type: meal, ...row })
-    if (error) return setErr(error.message)
-    onDone(); onClose()
+    if (!row.name?.trim()) return setErr('Enter a food name.')
+    if (['kcal', 'protein', 'carbs', 'fat'].some(k => !Number.isFinite(Number(row[k as keyof FoodLog] ?? 0)) || Number(row[k as keyof FoodLog] ?? 0) < 0)) {
+      return setErr('Enter valid, non-negative nutrition values.')
+    }
+    saving.current = true; setBusy(true)
+    try {
+      const result = await supabase.from('food_logs').insert({ client_id: profile!.id, date, meal_type: meal, ...row, name: row.name.trim() })
+      if (result.error) throw result.error
+      onDone(); onClose()
+    } catch { setErr('Could not save this food entry. Your values are still here. Please try again when connected.') }
+    finally { saving.current = false; setBusy(false) }
   }
 
   return (
-    <>
+    <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       <Seg value={tab} onChange={setTab} options={[{ value: 'foods', label: 'Foods' }, { value: 'recipes', label: 'Recipes' }, { value: 'quick', label: 'Quick add' }, { value: 'saved', label: 'Saved meals' }]} />
       {tab === 'foods' && (food ? (
         <div className="stack">
@@ -84,8 +95,9 @@ function AddFood({ meal, date, onDone, onClose }: { meal: MealType; date: string
         </form>
       )}
       {tab === 'saved' && profile && <SavedMealsPicker clientId={profile.id} date={date} meal={meal} onDone={onDone} onClose={onClose} />}
-      {err && <p className="err">{err}</p>}
-    </>
+      {busy && <p role="status">Saving food entry...</p>}
+      {err && <p className="err" role="alert">{err}</p>}
+    </fieldset>
   )
 }
 
@@ -102,31 +114,63 @@ export default function Nutrition() {
   const [view, setView] = useState<{ recipe: Recipe; servings: number } | null>(null)
   const [templates, setTemplates] = useState<MealPlanTemplate[]>([])
   const [planOpen, setPlanOpen] = useState<MealPlanTemplate | null>(null)
+  const [loadError, setLoadError] = useState('')
+  const [writeError, setWriteError] = useState('')
+  const [writing, setWriting] = useState(false)
+  const request = useRef(0)
+  const writeLock = useRef(false)
   const isFuture = date > today
   const lastDay = addDays(today, 28)
 
   const load = useCallback(async () => {
     if (!profile) return
-    const [t, l, p] = await Promise.all([
-      supabase.from('nutrition_targets').select('*').eq('client_id', profile.id).maybeSingle(),
-      supabase.from('food_logs').select('*').eq('client_id', profile.id).eq('date', date).order('created_at'),
-      supabase.from('meal_plan_items').select('*').eq('client_id', profile.id).eq('day', weekday(date)).order('sort'),
-    ])
-    setTargets((t.data as Targets | null) ?? null); setLogs((l.data ?? []) as FoodLog[])
-    const items = (p.data ?? []) as MealPlanItem[]
-    const ids = [...new Set(items.map(i => i.recipe_id))]
-    const recipes = ids.length ? ((await supabase.from('recipes').select('*').in('id', ids)).data ?? []) as Recipe[] : []
-    setPlan(items.map(i => ({ ...i, recipe: recipes.find(r => r.id === i.recipe_id) })))
+    const version = ++request.current
+    setLoadError('')
+    try {
+      const [t, l, p] = await Promise.all([
+        supabase.from('nutrition_targets').select('*').eq('client_id', profile.id).maybeSingle(),
+        supabase.from('food_logs').select('*').eq('client_id', profile.id).eq('date', date).order('created_at'),
+        supabase.from('meal_plan_items').select('*').eq('client_id', profile.id).eq('day', weekday(date)).order('sort'),
+      ])
+      if (t.error || l.error || p.error) throw t.error || l.error || p.error
+      if (version !== request.current) return
+      const items = (p.data ?? []) as MealPlanItem[]
+      const ids = [...new Set(items.map(i => i.recipe_id))]
+      const recipes = ids.length ? await supabase.from('recipes').select('*').in('id', ids) : { data: [], error: null }
+      if (recipes.error) throw recipes.error
+      if (version !== request.current) return
+      setTargets((t.data as Targets | null) ?? null); setLogs((l.data ?? []) as FoodLog[])
+      setPlan(items.map(i => ({ ...i, recipe: (recipes.data as Recipe[]).find(r => r.id === i.recipe_id) })))
+    } catch { if (version === request.current) setLoadError('Could not load this food diary. Please try again when connected.') }
   }, [profile, date])
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(); return () => { request.current++ } }, [load])
   useEffect(() => { supabase.from('meal_plan_templates').select('*').order('plan_no', { ascending: false }).then(({ data }) => setTemplates((data ?? []) as MealPlanTemplate[])) }, [])
 
-  async function remove(id: string) { await supabase.from('food_logs').delete().eq('id', id); load() }
+  async function remove(id: string) {
+    if (writeLock.current || !profile) return
+    writeLock.current = true; setWriting(true); setWriteError('')
+    try {
+      const result = await supabase.from('food_logs').delete().eq('id', id).eq('client_id', profile.id).eq('date', date).select('id')
+      if (result.error || !result.data?.length) throw result.error
+      setLogs(list => list?.filter(row => row.id !== id) ?? null)
+    } catch { setWriteError('Could not remove this food entry. Please try again when connected.') }
+    finally { writeLock.current = false; setWriting(false) }
+  }
+  async function writeLog(row: Partial<FoodLog>, close?: () => void) {
+    if (writeLock.current || !profile) return
+    writeLock.current = true; setWriting(true); setWriteError('')
+    try {
+      const result = await supabase.from('food_logs').insert({ client_id: profile.id, date, ...row })
+      if (result.error) throw result.error
+      close?.(); await load()
+    } catch { setWriteError('Could not log this meal. Your selection is still here. Please try again when connected.') }
+    finally { writeLock.current = false; setWriting(false) }
+  }
   async function logPlanned(i: MealPlanItem & { recipe?: Recipe }) {
     if (!i.recipe) return
-    const m = forServings(i.recipe, Number(i.servings))
-    await supabase.from('food_logs').insert({ client_id: profile!.id, date, meal_type: i.meal_type, name: i.recipe.name, amount_label: `${Number(i.servings)} serving${Number(i.servings) === 1 ? '' : 's'}`, recipe_id: i.recipe_id, ...m })
-    load()
+    await writeLog({ meal_type: i.meal_type, name: i.recipe.name,
+      amount_label: `${Number(i.servings)} serving${Number(i.servings) === 1 ? '' : 's'}`,
+      recipe_id: i.recipe_id, ...forServings(i.recipe, Number(i.servings)) })
   }
 
   const logged = sum(logs ?? [])
@@ -136,7 +180,12 @@ export default function Nutrition() {
 
   async function randomFor(meal: MealType, seen: string[] = []) {
     let all = library
-    if (!all) { all = ((await supabase.from('recipes').select('*')).data ?? []) as Recipe[]; setLibrary(all) }
+    setWriteError('')
+    if (!all) {
+      const result = await supabase.from('recipes').select('*')
+      if (result.error) { setWriteError('Could not load meal ideas. Please try again when connected.'); return }
+      all = (result.data ?? []) as Recipe[]; setLibrary(all)
+    }
     const mealLeft = left !== null ? left : null
     const pick = pickRandomMeal(all, meal, mealGoal(meal, targets?.kcal ?? null, mealLeft), seen)
     setRnd({ meal, pick, seen: pick ? [...seen, pick.recipe.id] : seen })
@@ -144,17 +193,18 @@ export default function Nutrition() {
   async function addRandom() {
     if (!rnd?.pick) return
     const { recipe, servings } = rnd.pick
-    await supabase.from('food_logs').insert({ client_id: profile!.id, date, meal_type: rnd.meal, name: recipe.name, amount_label: `${servings} serving${servings === 1 ? '' : 's'}`, recipe_id: recipe.id, ...forServings(recipe, servings) })
-    setRnd(null); load()
+    await writeLog({ meal_type: rnd.meal, name: recipe.name, amount_label: `${servings} serving${servings === 1 ? '' : 's'}`, recipe_id: recipe.id, ...forServings(recipe, servings) }, () => setRnd(null))
   }
 
   return (
     <>
       <PageHead eyebrow="Nutrition" title="Food diary" />
+      {loadError && <div className="card tight"><p className="err" role="alert">{loadError}</p><button className="soft" onClick={load}>Retry food diary</button></div>}
+      {writeError && !rnd && <p className="err" role="alert">{writeError}</p>}
       <div className="row between" style={{ marginBottom: 12 }}>
-        <button className="icon" onClick={() => setDate(addDays(date, -1))} aria-label="Previous day"><Icon name="back" size={18} /></button>
+        <button className="icon" disabled={writing} onClick={() => { setLogs(null); setPlan([]); setDate(addDays(date, -1)) }} aria-label="Previous day"><Icon name="back" size={18} /></button>
         <div className="center"><b>{relDay(date)}</b><div className="mute small">{longDay(date)}</div></div>
-        <button className="icon" onClick={() => setDate(addDays(date, 1))} aria-label="Next day" disabled={date >= lastDay}><Icon name="chev" size={18} /></button>
+        <button className="icon" onClick={() => { setLogs(null); setPlan([]); setDate(addDays(date, 1)) }} aria-label="Next day" disabled={writing || date >= lastDay}><Icon name="chev" size={18} /></button>
       </div>
 
       <div className="card hero" style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
@@ -173,7 +223,7 @@ export default function Nutrition() {
       </div>}
       {targets?.notes && <div className="card tight"><span className="eyebrow">From your coach</span><p style={{ margin: 0 }}>{targets.notes}</p></div>}
 
-      {!logs && <Skeleton n={3} />}
+      {!logs && !loadError && <Skeleton n={3} />}
       {logs && MEALS.map(meal => {
         const rows = logs.filter(l => l.meal_type === meal)
         const upcoming = plan.filter(p => p.meal_type === meal && p.recipe && (isFuture || !rows.some(r => r.recipe_id === p.recipe_id)))
@@ -191,7 +241,7 @@ export default function Nutrition() {
               <div key={r.id} className="food-row">
                 <span className="grow"><b style={{ fontWeight: 600 }}>{r.name}</b><br /><span className="mute small">{r.amount_label ? r.amount_label + ' · ' : ''}P {Math.round(r.protein)} · C {Math.round(r.carbs)} · F {Math.round(r.fat)}</span></span>
                 <span className="kc">{Math.round(r.kcal)}</span>
-                <button className="link" onClick={() => remove(r.id)} aria-label={`Remove ${r.name}`}>Remove</button>
+                <button className="link" disabled={writing} onClick={() => remove(r.id)} aria-label={`Remove ${r.name}`}>Remove</button>
               </div>
             ))}
             {rows.length === 0 && upcoming.length === 0 && <p className="mute small" style={{ margin: 0 }}>{isFuture ? 'Nothing planned.' : 'Nothing logged yet.'}</p>}
@@ -200,7 +250,7 @@ export default function Nutrition() {
                 <div className="grow" style={{ cursor: 'pointer' }} role="button" tabIndex={0} onClick={() => setView({ recipe: p.recipe!, servings: Number(p.servings) })} onKeyDown={e => { if (e.key === 'Enter') setView({ recipe: p.recipe!, servings: Number(p.servings) }) }}>
                   <span className="badge blue">{isFuture ? 'Upcoming' : 'Planned'}</span> <b style={{ fontWeight: 600, color: 'var(--ink)' }}>{p.recipe!.name}</b><br /><span className="mute small">{Number(p.servings)} serving · {Math.round(p.recipe!.kcal * Number(p.servings))} kcal · tap for recipe</span>
                 </div>
-                {!isFuture && <button className="sm soft" onClick={() => logPlanned(p)}>Log</button>}
+                {!isFuture && <button className="sm soft" disabled={writing} onClick={() => logPlanned(p)}>Log</button>}
               </div>
             ))}
             {!isFuture && profile && <MealShortcuts key={date + meal} clientId={profile.id} date={date} meal={meal} rows={rows} onDone={load} />}
@@ -228,14 +278,15 @@ export default function Nutrition() {
 
       <Sheet open={!!planOpen} onClose={() => setPlanOpen(null)} title={planOpen?.name ?? ''}>{planOpen && <PlanDetail tpl={planOpen} />}</Sheet>
       <Sheet open={!!view} onClose={() => setView(null)} title={view?.recipe.name ?? ''}>{view && <RecipeView recipe={view.recipe} servings={view.servings} />}</Sheet>
-      <Sheet open={!!rnd} onClose={() => setRnd(null)} title={rnd ? `Random ${MEAL_LABEL[rnd.meal].toLowerCase()} idea` : ''}>
+      <Sheet open={!!rnd} onClose={() => { if (!writing) setRnd(null) }} title={rnd ? `Random ${MEAL_LABEL[rnd.meal].toLowerCase()} idea` : ''}>
+        {writeError && <p className="err" role="alert">{writeError}</p>}
         {rnd && (rnd.pick ? (
           <div className="stack">
             <b style={{ fontSize: '1.1rem' }}>{rnd.pick.recipe.name}</b>
             <RecipeView recipe={rnd.pick.recipe} servings={rnd.pick.servings} />
             <div className="row" style={{ marginBottom: 0 }}>
-              <button onClick={addRandom}>Add to {MEAL_LABEL[rnd.meal].toLowerCase()}</button>
-              <button className="soft" onClick={() => randomFor(rnd.meal, rnd.seen)}><Icon name="dice" size={16} />Try another</button>
+              <button disabled={writing} onClick={addRandom}>Add to {MEAL_LABEL[rnd.meal].toLowerCase()}</button>
+              <button className="soft" disabled={writing} onClick={() => randomFor(rnd.meal, rnd.seen)}><Icon name="dice" size={16} />Try another</button>
             </div>
           </div>
         ) : <p className="mute">No recipes found for this meal.</p>)}

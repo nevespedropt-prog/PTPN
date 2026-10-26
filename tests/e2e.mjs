@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import { weeklyBrowserChecks } from './weekly-checkins.mjs'
 import { quickMealBrowserChecks } from './quick-meals.mjs'
 import { videoBrowserChecks } from './exercise-feedback.mjs'
+import { bugReviewChecks } from './bug-review.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -737,6 +738,7 @@ console.log('Client flows')
 
 await weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await quickMealBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await bugReviewChecks({ open, sql, IDS, BASE, shot, clean, ok })
 
 console.log(`\n${pass} passed, ${fail} failed`)
 await browser.close(); server.close()

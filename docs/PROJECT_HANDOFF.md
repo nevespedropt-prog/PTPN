@@ -139,3 +139,15 @@ Focused tests in tests/exercise-feedback.mjs cover ownership, wrong-workout subm
 Train now offers Remove workout on unfinished sessions whose workout was created by the signed-in client, including Coming up. A confirmation sheet names the session and explains unfinished set entries will be removed. Cancel preserves it; failures leave the dialog available for retry. The delete query checks client ownership and excludes completed sessions atomically. Completed and coach-created sessions have no remove control.
 
 Removal deletes only that client_workouts row, preserving the reusable workout definition and other sessions/history. Sessions with exercise video feedback are refused to avoid cascading review loss or orphaned private files. No schema or permission changes. Focused browser checks cover cancellation, completed/coach controls, failed-request recovery, persisted removal, empty accidental builds, preserved definitions, protected technique feedback and phone width.
+
+## Priority bug review (26 October 2026)
+
+Progress measurements reject non-positive weights and percentages outside 0 to 100, guard duplicate submissions, preserve failed-save drafts and show retryable read errors instead of pretending history is empty. Deletion has confirmation and checked results. Measurement values are validated in the app; this release does not alter database constraints or historical entries.
+
+Build my own now checks session scheduling before navigating. If a response is interrupted it checks whether the session exists; when absence is confirmed it cleans up the unused workout definition and shows an error. Unknown write outcomes prompt a refresh before retrying.
+
+Nutrition quick-add submissions have a synchronous duplicate-write guard. Planned/random meal writes and diary removals check errors and keep selections on failure. Diary reads show a retry action; request versions prevent older day responses overwriting the currently selected day. Day navigation clears the prior day's entries while loading, and is disabled during planned/random writes.
+
+Progress photo reads expose failures, preserve existing rows on retry errors and hide false empty states. Upload metadata failures confirm write outcome before cleaning up uploaded files. Deletion checks file and metadata responses independently: a failed file delete keeps its record, while a partial deletion explicitly asks the client to retry cleanup. These two API calls remain non-atomic; real storage/network/device behaviour still requires checking.
+
+No schema, dependency or design-system changes. tests/bug-review.mjs covers injected GET/POST/DELETE failures, invalid values, rapid submissions, cancellation, cleanup, slow date-response races and phone width. No real client records are used for these tests. Existing security advisor findings remain unchanged, including disabled leaked-password protection.
