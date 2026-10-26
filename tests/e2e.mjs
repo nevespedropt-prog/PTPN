@@ -8,6 +8,7 @@ import { bugReviewChecks } from './bug-review.mjs'
 import { onboardingBrowserChecks } from './onboarding.mjs'
 import { monthlyBrowserChecks } from './monthly.mjs'
 import { alternativeBrowserChecks } from './alternatives.mjs'
+import { notificationBrowserChecks } from './notifications.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -51,6 +52,7 @@ const tab = (page, name) => page.locator('nav a', { hasText: new RegExp('^\\s*' 
 const today = new Date().toLocaleDateString('en-CA')
 const addDaysISO = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA') }
 
+await notificationBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await alternativeBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
