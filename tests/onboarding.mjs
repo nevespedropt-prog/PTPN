@@ -57,7 +57,7 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   ok((await sql('select * from client_onboarding where client_id=$1', [IDS.ana])).length === 0, 'onboarding: closing setup creates no partial record')
   await start.click()
   await form.getByLabel('What would you like to achieve?', { exact: true }).fill('Build strength for a busy working week.')
-  await form.getByLabel('Training experience', { exact: true }).selectOption('returning')
+  await form.getByRole('combobox', { name: /^Training experience/ }).selectOption('returning')
   await form.getByRole('button', { name: 'Continue', exact: true }).click()
   await form.getByLabel('Where will you train and what equipment is available?', { exact: true }).fill('Home with dumbbells and a gym at weekends.')
   await form.getByRole('button', { name: 'Continue', exact: true }).click()

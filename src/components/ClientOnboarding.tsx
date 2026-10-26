@@ -122,14 +122,14 @@ export default function ClientOnboarding({ clientId, coach = false }: { clientId
         <form className="stack" onSubmit={next}>
           <p className="mute small" role="status">Step {step + 1} of 3 · {['Your goals', 'Your routine', 'Food preferences'][step]}</p>
           {step === 0 && <>
-            <label className="field">What would you like to achieve?<textarea rows={3} required maxLength={1200} value={answers.goals} onChange={e => setAnswers({ ...answers, goals: e.target.value })} placeholder="Your main goal and what success would feel like" /></label>
-            <label className="field">Training experience<select required value={answers.experience} onChange={e => setAnswers({ ...answers, experience: e.target.value as Experience })}>
+            <label className="field">What would you like to achieve?<textarea aria-label="What would you like to achieve?" rows={3} required maxLength={1200} value={answers.goals} onChange={e => setAnswers({ ...answers, goals: e.target.value })} placeholder="Your main goal and what success would feel like" /></label>
+            <label className="field">Training experience<select aria-label="Training experience" required value={answers.experience} onChange={e => setAnswers({ ...answers, experience: e.target.value as Experience })}>
               <option value="">Choose your experience</option>
               {Object.entries(levels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select></label>
           </>}
           {step === 1 && <>
-            <label className="field">Where will you train and what equipment is available?<textarea rows={3} required maxLength={1200} value={answers.equipment} onChange={e => setAnswers({ ...answers, equipment: e.target.value })} placeholder="Gym, home, outdoors, or no equipment" /></label>
+            <label className="field">Where will you train and what equipment is available?<textarea aria-label="Where will you train and what equipment is available?" rows={3} required maxLength={1200} value={answers.equipment} onChange={e => setAnswers({ ...answers, equipment: e.target.value })} placeholder="Gym, home, outdoors, or no equipment" /></label>
             <fieldset className="stack" style={{ border: 0, margin: 0, padding: 0, gap: 0 }}>
               <legend>Preferred training days</legend>
               <p className="mute small">Choose at least one. These are preferences, not a fixed schedule.</p>
@@ -137,7 +137,7 @@ export default function ClientOnboarding({ clientId, coach = false }: { clientId
             </fieldset>
           </>}
           {step === 2 && <>
-            <label className="field">Food preferences (optional)<textarea rows={4} maxLength={1200} disabled={busy} value={answers.food_preferences} onChange={e => setAnswers({ ...answers, food_preferences: e.target.value })} placeholder="Foods you enjoy or avoid, dietary preferences and time for cooking" /></label>
+            <label className="field">Food preferences (optional)<textarea aria-label="Food preferences (optional)" rows={4} maxLength={1200} disabled={busy} value={answers.food_preferences} onChange={e => setAnswers({ ...answers, food_preferences: e.target.value })} placeholder="Foods you enjoy or avoid, dietary preferences and time for cooking" /></label>
             <p className="mute small">Allergies and health conditions belong in your health and consent form under Account. Only you and your coach can read these answers.</p>
           </>}
           {error && <p className="err" role="alert">{error}</p>}
