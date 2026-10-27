@@ -110,7 +110,7 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   ok(await report.locator('.tile').count() === 0, 'monthly: incomplete load hides misleading summary')
   await page.unroute('**/rest/v1/monthly_reviews*')
   await report.getByRole('button', { name: 'Retry monthly report', exact: true }).click()
-  await report.getByText('No weight entries this month.', { exact: true }).waitFor()
+  await report.getByText('2 days with weight entries.', { exact: false }).waitFor()
   // Intentionally delayed old response must not replace the currently selected month.
   await page.route('**/rest/v1/monthly_reviews*', async route => {
     if (new URL(route.request().url()).searchParams.get('month_start') === 'eq.' + month + '-01') await new Promise(resolve => setTimeout(resolve, 500))
@@ -118,7 +118,7 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   })
   await report.getByLabel('Report month', { exact: true }).selectOption(month)
   await report.getByLabel('Report month', { exact: true }).selectOption(current)
-  await report.getByText('No weight entries this month.', { exact: true }).waitFor()
+  await report.getByText('2 days with weight entries.', { exact: false }).waitFor()
   await page.waitForTimeout(650) // allow the deliberately delayed response to arrive
   ok(await report.getByText('Monthly squat', { exact: true }).count() === 0, 'monthly: old month response cannot overwrite current report')
   await page.unroute('**/rest/v1/monthly_reviews*')
