@@ -248,3 +248,12 @@ Library now passes an explicit source route with the selected tab to programme/w
 The shared usePageTab hook also keeps an in-memory preference scoped by account/path/section, so ordinary SPA menu navigation preserves tabs when browser storage throws. URL selection still takes precedence. Full document navigation with both storage blocked and no explicit tab cannot recover an earlier preference; explicit return routes solve the reported detail flow. No database, dependency or design-system changes.
 
 Changed hooks.ts, Library.tsx, ProgramBuilder.tsx, WorkoutBuilder.tsx, focused coach-training navigation tests and this handoff. Regression checks now block sessionStorage and cover the exact View and assign/Back flow, direct programme entry, nested workout return after refresh retaining Week 2, workout-library return, all three Library tabs through an unrelated page, and client Train/Progress/Community menu returns.
+
+
+## Client Home and training detail return routes (27 October 2026)
+
+The shared tab-memory behaviour already applies to client Train, Progress, Community, food entry and meal-plan views. This follow-up carries explicit returnTo URLs on client Home and all Train workout links, including History and Coming up. WorkoutPlayer uses that validated source route for Back even after a refresh or missing browser history, while existing origin-less coach flows retain history-based Back.
+
+Train's selected calendar day is kept in a validated date URL parameter. Return links explicitly contain the active Schedule/History tab and selected day. Build my own carries the same origin through the builder and saving into the player. Client workout completion/skip still follows its existing Home flow. No workout data is changed by returning.
+
+Changed client Home.tsx, Train.tsx, WorkoutPlayer.tsx, the client save-navigation line in WorkoutBuilder.tsx, focused navigation tests and handoff. Tests use synthetic client sessions and block storage/clear history state before refreshing details: History returns to History, Schedule keeps the chosen day, a personal workout save preserves its training origin, and Home > workout > Back returns Home. Existing client tab/menu checks remain. No database, dependency or design-system changes.

@@ -83,7 +83,7 @@ export default function Home() {
             <p className="mute" style={{ margin: '0 0 14px' }}>
               {itemCounts[cw.workout_id] ?? 0} exercises{w?.duration_min ? ` · about ${w.duration_min} min` : ''}
             </p>
-            <Link to={`/workout/${cw.id}`} className={'btn block' + (done ? ' soft' : '')} style={{ minHeight: 50 }}>
+            <Link to={`/workout/${cw.id}?returnTo=%2F`} className={'btn block' + (done ? ' soft' : '')} style={{ minHeight: 50 }}>
               <Icon name={done ? 'check' : 'play'} size={18} />{done ? 'View workout' : 'Start workout'}
             </Link>
           </div>

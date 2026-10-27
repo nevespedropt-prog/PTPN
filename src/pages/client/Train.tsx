@@ -1,6 +1,6 @@
 import { usePageTab } from '../../hooks'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
 import { addDays, localDate, longDay, niceDate, relDay, weekOf, DAY_NAMES } from '../../lib/dates'
@@ -13,8 +13,14 @@ export default function Train() {
   const { profile } = useAuth()
   const nav = useNavigate()
   const [today] = useState(() => localDate())
-  const [sel, setSel] = useState(today)
+  const [search, setSearch] = useSearchParams()
+  const requestedDate = search.get('date')
+  const sel = requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) && localDate(new Date(requestedDate + 'T12:00:00')) === requestedDate ? requestedDate : today
+  const setSel = (date: string) => setSearch(previous => { const params = new URLSearchParams(previous); params.set('date', date); return params }, { replace: true })
   const [tab, setTab] = usePageTab('training', ['plan', 'history'] as const, 'plan')
+  const returnSearch = new URLSearchParams(search)
+  returnSearch.set('tab', tab); returnSearch.set('date', sel)
+  const returnTo = '/train?' + returnSearch.toString()
   const [cws, setCws] = useState<ClientWorkout[] | null>(null)
   const [workouts, setWorkouts] = useState<Record<string, Workout>>({})
   const [busy, setBusy] = useState(false)
@@ -61,7 +67,7 @@ export default function Train() {
           return
         }
       }
-      nav(`/build/${workoutId}?cw=${sessionId}`)
+      nav(`/build/${workoutId}?cw=${sessionId}&returnTo=${encodeURIComponent(returnTo)}`)
     } catch { setBuildError('Could not create your workout. Please try again when connected.') }
     finally { building.current = false; setBusy(false) }
   }
@@ -139,7 +145,7 @@ export default function Train() {
             const w = workouts[c.workout_id]
             return (
               <div key={c.id} className="card">
-              <Link to={`/workout/${c.id}`} style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)' }}>
+              <Link to={`/workout/${c.id}?returnTo=${encodeURIComponent(returnTo)}`} style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--ink)' }}>
                 <span className="avatar" style={{ width: 46, height: 46, borderRadius: 14, background: c.status === 'done' ? 'var(--green-soft)' : 'var(--gold-soft)', color: c.status === 'done' ? 'var(--green)' : 'var(--gold)' }}>
                   <Icon name={c.status === 'done' ? 'check' : 'train'} />
                 </span>
@@ -160,7 +166,7 @@ export default function Train() {
               <div className="list">
                 {upcoming.map(c => (
                   <div key={c.id} className="item">
-                    <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{name(c)}</span><br /><span className="meta">{relDay(c.date)}</span></Link>
+                    <Link to={`/workout/${c.id}?returnTo=${encodeURIComponent(returnTo)}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{name(c)}</span><br /><span className="meta">{relDay(c.date)}</span></Link>
                     {canRemove(c) ? removeButton(c) : <Icon name="chev" />}
                   </div>
                 ))}
@@ -175,7 +181,7 @@ export default function Train() {
           <div className="card tight">
             <div className="list">
               {history.map(c => (
-                <Link key={c.id} to={`/workout/${c.id}`} className="item">
+                <Link key={c.id} to={`/workout/${c.id}?returnTo=${encodeURIComponent(returnTo)}`} className="item">
                   <span className="grow">
                     <span className="title">{name(c)}</span><br />
                     <span className="meta">{niceDate(c.date)} · {setsDone(c)} sets{volumeKg(c) ? ` · ${Math.round(volumeKg(c)).toLocaleString()} kg volume` : ''}</span>
