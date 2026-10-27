@@ -89,6 +89,7 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'monthly: client report fits phone width')
   await shot(page, 'monthly-client-phone')
   await report.getByRole('button', { name: 'View private photo comparisons', exact: true }).click()
+  await page.getByRole('tab', { name: 'Photos', exact: true, selected: true }).waitFor()
   await page.getByRole('tab', { name: 'Photos', exact: true }).getAttribute('aria-selected').then(v => ok(v === 'true', 'monthly: photo action opens existing private photo viewer'))
   await page.getByRole('tab', { name: 'Monthly', exact: true }).click()
   await report.getByLabel('Report month', { exact: true }).waitFor()
