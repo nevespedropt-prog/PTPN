@@ -11,6 +11,7 @@ import { Empty, Sheet, Skeleton, Stars } from '../components/ui'
 import Icon from '../components/Icon'
 import ExerciseFeedback, { type FeedbackExercise } from '../components/ExerciseFeedback'
 import AlternativePicker from '../components/AlternativePicker'
+import WorkoutFormatGuide from '../components/WorkoutFormatGuide'
 import { alternativeChoice, performedItems, samePreviousExercise } from '../lib/alternatives'
 
 const emptySets = (it: WorkoutItem, load?: number | null): SetLog[] =>
@@ -227,6 +228,8 @@ export default function WorkoutPlayer() {
         </div>
         {!readOnly && <div className="clock" aria-label="Elapsed time">{fmtSeconds(elapsed)}</div>}
       </div>
+
+      <WorkoutFormatGuide format={w.format} minutes={w.duration_min} rounds={w.rounds} />
 
       {saveError && <div className="card tight"><p className="err" role="alert">{saveError}</p><button className="soft" disabled={locked} onClick={() => void persist(log)}>Retry workout save</button></div>}
 

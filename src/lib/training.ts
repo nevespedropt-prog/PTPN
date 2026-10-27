@@ -2,7 +2,17 @@ import type { ClientWorkout, OneRepMax, SetLog, WorkoutFormat, WorkoutItem } fro
 import { latestMax, loadKg } from './oneRepMax'
 
 export const FORMAT_LABEL: Record<WorkoutFormat, string> = {
-  standard: 'Straight sets', circuit: 'Circuit', amrap: 'AMRAP', emom: 'EMOM', intervals: 'Intervals',
+  standard: 'Superset', circuit: 'Circuit', amrap: 'AMRAP', emom: 'EMOM', intervals: 'Intervals',
+}
+
+
+/** Coaching instructions shown wherever a workout format is selected or performed. */
+export const FORMAT_DESCRIPTION: Record<WorkoutFormat, string> = {
+  standard: 'Perform two exercises back-to-back as a pair, then take the prescribed rest. Repeat the pair for the planned sets.',
+  circuit: 'Complete each exercise in sequence to finish one round. Take the prescribed rest, then repeat the circuit for the planned rounds.',
+  amrap: 'Complete as many rounds as possible within the chosen time cap. Follow the exercise order and record the full rounds you complete.',
+  emom: 'Start the prescribed exercise at the beginning of each minute. Finish the work, rest for the remainder of that minute, then start the next exercise on the next minute.',
+  intervals: 'Alternate work and recovery periods. Complete the prescribed work effort, take the planned recovery, then repeat for the scheduled intervals.',
 }
 
 // ---------- weight ----------
@@ -26,18 +36,18 @@ export function parseWeight(raw: string): ParsedWeight {
 export type CardioField = 'sets' | 'time' | 'distance' | 'speed' | 'rest'
 /** Which cardio fields make sense for each workout style. */
 export const CARDIO_FIELDS: Record<WorkoutFormat, CardioField[]> = {
-  standard: ['time', 'distance', 'speed'],      // steady run, bike, row: time, distance and the pace that follows
+  standard: ['time', 'distance', 'speed'],      // cardio target within a superset station
   intervals: ['sets', 'time', 'speed', 'rest'],  // work time and speed per interval, with rest between
   emom: ['sets', 'time', 'speed'],               // fixed minute, how fast
   amrap: ['time', 'distance'],                   // fixed time, how far
   circuit: ['time', 'distance'],                 // a station: time or distance
 }
 export const CARDIO_STYLE_HINT: Record<WorkoutFormat, string> = {
-  standard: 'Steady cardio: set a time, a distance or a speed.',
-  intervals: 'Intervals: rounds, work time, speed and rest.',
-  emom: 'EMOM: rounds, time and speed.',
-  amrap: 'AMRAP: time and distance.',
-  circuit: 'Circuit station: time or distance.',
+  standard: 'Finish this cardio target, then move to the paired exercise before resting.',
+  intervals: 'Repeat the work effort and prescribed recovery for each interval.',
+  emom: 'Start on the minute and rest for the remainder before the next effort.',
+  amrap: 'Complete this target on each round until the workout time cap.',
+  circuit: 'Complete this station, continue to the next, then repeat the circuit.',
 }
 
 /** "20:00", "1:30:00", "90s", "20 min" or a plain number (minutes) to minutes. */

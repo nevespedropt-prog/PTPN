@@ -8,6 +8,7 @@ import { bugReviewChecks } from './bug-review.mjs'
 import { onboardingBrowserChecks } from './onboarding.mjs'
 import { monthlyBrowserChecks } from './monthly.mjs'
 import { alternativeBrowserChecks } from './alternatives.mjs'
+import { workoutFormatChecks } from './workout-formats.mjs'
 import { exerciseBoxChecks } from './exercise-boxes.mjs'
 import { coachTrainingChecks, tabMemoryChecks } from './coach-training.mjs'
 import { dashboardBrowserChecks } from './dashboard.mjs'
@@ -55,6 +56,7 @@ const tab = (page, name) => page.locator('nav a', { hasText: new RegExp('^\\s*' 
 const today = new Date().toLocaleDateString('en-CA')
 const addDaysISO = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA') }
 
+await workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await exerciseBoxChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await coachTrainingChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await tabMemoryChecks({ open, sql, IDS, BASE, ok, clean })

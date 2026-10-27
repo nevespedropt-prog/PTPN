@@ -257,3 +257,12 @@ The shared tab-memory behaviour already applies to client Train, Progress, Commu
 Train's selected calendar day is kept in a validated date URL parameter. Return links explicitly contain the active Schedule/History tab and selected day. Build my own carries the same origin through the builder and saving into the player. Client workout completion/skip still follows its existing Home flow. No workout data is changed by returning.
 
 Changed client Home.tsx, Train.tsx, WorkoutPlayer.tsx, the client save-navigation line in WorkoutBuilder.tsx, focused navigation tests and handoff. Tests use synthetic client sessions and block storage/clear history state before refreshing details: History returns to History, Schedule keeps the chosen day, a personal workout save preserves its training origin, and Home > workout > Back returns Home. Existing client tab/menu checks remain. No database, dependency or design-system changes.
+
+
+## Workout format names and live instructions (27 October 2026)
+
+The displayed Straight sets option is replaced by Superset; Circuit, AMRAP, EMOM and Intervals remain. The existing saved standard key is retained for compatibility, so no schema/data migration is required. Superset is the displayed label wherever FORMAT_LABEL is used. This is a format label/guidance update, not automatic exercise pairing or a timer/logging rewrite.
+
+A shared WorkoutFormatGuide appears near the top of both the builder and workout player for every format, including strength-only workouts. It updates immediately on selection and uses a complete typed description map: paired exercises for Superset, sequential rounds for Circuit, repeating rounds within a time cap for AMRAP, minute starts and remaining-minute rest for EMOM, and repeated work/recovery for Intervals. Configured duration is shown, labelled Time cap for AMRAP; its rounds value is a Round goal, not a limit. Superset omits a global rounds badge. Cardio station hints agree with the selected format. Existing coach-written description/notes remain separately editable and are never overwritten by format switching.
+
+Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, WorkoutPlayer.tsx, tests/workout-formats.mjs, test runner and handoff. Focused checks cover all five option labels, immediate guide updates/placement, consistent cardio hints, save/reload and preserved notes, client guide parity and phone width. Screenshots are captured per format in CI; manual visual review remains separate. No dependency or database changes.
