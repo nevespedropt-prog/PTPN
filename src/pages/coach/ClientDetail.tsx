@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useClients } from '../../hooks'
+import { useClients, usePageTab } from '../../hooks'
 import { useAuth } from '../../auth'
 import { addDays, DAY_NAMES, localDate, niceDate, relDay } from '../../lib/dates'
 import { MEAL_LABEL, MEALS, forServings, generateWeek, suggestTargets, sum } from '../../lib/nutrition'
@@ -107,6 +107,10 @@ function Training({ id }: { id: string }) {
   const [wk, setWk] = useState<Workout | null>(null)
   const [prog, setProg] = useState<{ p: Program; days: ProgramDay[] } | null>(null)
   const [progList, setProgList] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<ClientWorkout | null>(null)
+  const [removing, setRemoving] = useState(false)
+  const [removeError, setRemoveError] = useState('')
+  const removeBusy = useRef(false)
   const today = localDate()
 
   const load = useCallback(async () => {
@@ -130,7 +134,27 @@ function Training({ id }: { id: string }) {
     if (error || !data) return alert(error?.message ?? 'Could not create the workout')
     nav(`/library/workouts/${data.id}?assignTo=${id}`)
   }
-  async function remove(c: ClientWorkout) { await supabase.from('client_workouts').delete().eq('id', c.id); load() }
+  async function remove() {
+    if (!removeTarget || removeTarget.status === 'done' || removeBusy.current) return
+    removeBusy.current = true; setRemoving(true); setRemoveError('')
+    try {
+      const clips = await supabase.from('exercise_videos').select('id').eq('client_workout_id', removeTarget.id).limit(1)
+      if (clips.error) throw clips.error
+      if (clips.data?.length) {
+        setRemoveError('This session has technique feedback. It cannot be removed here.')
+        return
+      }
+      const result = await supabase.from('client_workouts').delete().eq('id', removeTarget.id).eq('client_id', id).neq('status', 'done').select('id')
+      if (result.error) throw result.error
+      if (!result.data?.length) {
+        setRemoveError('This session has changed or is no longer available. Close and refresh the page.')
+        return
+      }
+      setCws(list => list.filter(c => c.id !== removeTarget.id))
+      setRemoveTarget(null)
+    } catch { setRemoveError('Could not remove this workout. Please check your connection and try again.') }
+    finally { removeBusy.current = false; setRemoving(false) }
+  }
   async function choose(p: Program) {
     const { data } = await supabase.from('program_days').select('*').eq('program_id', p.id)
     setProgList(false); setProg({ p, days: (data ?? []) as ProgramDay[] })
@@ -142,7 +166,7 @@ function Training({ id }: { id: string }) {
     <div key={c.id} className="item">
       <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)} · {niceDate(c.date)}</span></Link>
       <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' ? 'amber' : c.date < today ? 'amber' : 'blue')}>{c.status === 'scheduled' && c.date < today ? 'Missed' : c.status}</span>
-      {c.status === 'scheduled' && <button className="link" onClick={() => remove(c)} aria-label="Remove from schedule">Remove</button>}
+      {c.status !== 'done' && <button className="link" disabled={removing} onClick={() => { setRemoveError(''); setRemoveTarget(c) }} aria-label="Remove from schedule">Remove</button>}
     </div>
   )
   return (
@@ -156,6 +180,16 @@ function Training({ id }: { id: string }) {
       <div className="card tight">{upcoming.length === 0 && <Empty icon="calendar" title="Nothing scheduled" />}<div className="list">{upcoming.map(row)}</div></div>
       {past.length > 0 && <><div className="section-title"><h2>Past two weeks</h2></div><div className="card tight"><div className="list">{past.map(row)}</div></div></>}
 
+      <Sheet open={!!removeTarget} onClose={() => { if (!removeBusy.current) setRemoveTarget(null) }} title="Remove workout">
+        {removeTarget && <div className="stack">
+          <p>Remove <b>{names[removeTarget.workout_id] ?? 'Workout'}</b> on {niceDate(removeTarget.date)} from this client's schedule? Unfinished entries for this session will be removed. The saved workout and other sessions will stay.</p>
+          {removeError && <p className="err" role="alert">{removeError}</p>}
+          <div className="row">
+            <button className="soft" disabled={removing} onClick={() => setRemoveTarget(null)}>Cancel</button>
+            <button disabled={removing} onClick={remove}>{removing ? 'Removing...' : 'Confirm removal'}</button>
+          </div>
+        </div>}
+      </Sheet>
       <WorkoutPicker open={pick} onClose={() => setPick(false)} onPick={w => { setPick(false); setWk(w) }} />
       <Sheet open={!!wk} onClose={() => { setWk(null); load() }} title={`Assign ${wk?.name ?? ''}`}>{wk && client && <AssignWorkout workout={wk} clients={[client]} presetClient={id} onClose={() => { setWk(null); load() }} />}</Sheet>
       <Sheet open={progList} onClose={() => setProgList(false)} title="Choose a programme">
@@ -293,7 +327,7 @@ export default function ClientDetail() {
   const { id } = useParams()
   const { clients } = useClients()
   const [sp] = useSearchParams()
-  const [tab, setTab] = useState<Tab>(sp.get('tab') === 'training' ? 'training' : 'overview')
+  const [tab, setTab] = usePageTab<Tab>('client', ['overview', 'training', 'nutrition', 'habits', 'progress'], 'overview', 'tab', sp.has('reviewWeek'))
   if (!id) return null
   if (!clients) return <Skeleton n={3} />
   const c = clients.find(x => x.id === id)

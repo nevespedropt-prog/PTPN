@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
-import { useClients } from '../../hooks'
+import { useClients, usePageTab } from '../../hooks'
 import { DAY_NAMES } from '../../lib/dates'
 import type { Program, ProgramDay, Workout } from '../../types'
 import { Empty, PageHead, Sheet, Skeleton } from '../../components/ui'
@@ -17,7 +17,8 @@ export default function ProgramBuilder() {
   const [p, setP] = useState<Program | null | undefined>(undefined)
   const [days, setDays] = useState<ProgramDay[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
-  const [week, setWeek] = useState(1)
+  const [selectedWeek, setWeek] = usePageTab('programme-' + id, Array.from({ length: 52 }, (_, i) => i + 1), 1, 'week')
+  const week = Math.min(selectedWeek, p?.weeks ?? 52)
   const [pickFor, setPickFor] = useState<number | null>(null)
   const [assign, setAssign] = useState(false)
   const [msg, setMsg] = useState('')

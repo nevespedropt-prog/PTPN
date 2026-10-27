@@ -1,3 +1,4 @@
+import { usePageTab } from '../hooks'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { localDate, niceDate } from '../lib/dates'
@@ -138,7 +139,7 @@ function Records({ clientId }: { clientId: string }) {
 }
 
 export default function Progress({ clientId, readOnly = false }: { clientId: string; readOnly?: boolean }) {
-  const [tab, setTab] = useState<'body' | 'strength' | 'photos' | 'monthly'>('body')
+  const [tab, setTab] = usePageTab('progress-' + clientId, ['body', 'strength', 'photos', 'monthly'] as const, 'body', 'progressTab')
   return (
     <>
       {!readOnly && <PageHead eyebrow="Progress" title="Your results" />}

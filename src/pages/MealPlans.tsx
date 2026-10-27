@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
-import { useClients } from '../hooks'
+import { useClients, usePageTab } from '../hooks'
 import { MEAL_LABEL, MEALS, forServings, sum } from '../lib/nutrition'
 import type { MealPlanTemplate, Recipe, TemplateItem } from '../types'
 import { Empty, MacroChips, PageHead, Sheet, Skeleton } from '../components/ui'
@@ -77,8 +77,8 @@ export function Detail({ tpl }: { tpl: MealPlanTemplate }) {
   const { clients } = useClients()
   const [search] = useSearchParams()
   const [rows, setRows] = useState<Row[] | null>(null)
-  const [day, setDay] = useState(1)
-  const [view, setView] = useState<'plan' | 'shop'>('plan')
+  const [day, setDay] = usePageTab('meal-days-' + tpl.id, [1, 2, 3, 4, 5, 6, 7], 1, 'planDay')
+  const [view, setView] = usePageTab('meal-plan-' + tpl.id, ['plan', 'shop'] as const, 'plan', 'planView')
   const [clientId, setClientId] = useState(search.get('client') ?? '')
   const [fit, setFit] = useState(true)
   const [msg, setMsg] = useState('')

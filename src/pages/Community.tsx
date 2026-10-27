@@ -1,3 +1,4 @@
+import { usePageTab } from '../hooks'
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
@@ -186,7 +187,7 @@ function Challenges() {
 }
 
 export default function Community() {
-  const [tab, setTab] = useState<'feed' | 'challenges'>('feed')
+  const [tab, setTab] = usePageTab('community', ['feed', 'challenges'] as const, 'feed')
   return (
     <>
       <PageHead eyebrow="Community" title="Community" />

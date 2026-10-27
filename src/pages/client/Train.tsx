@@ -1,3 +1,4 @@
+import { usePageTab } from '../../hooks'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -13,7 +14,7 @@ export default function Train() {
   const nav = useNavigate()
   const [today] = useState(() => localDate())
   const [sel, setSel] = useState(today)
-  const [tab, setTab] = useState<'plan' | 'history'>('plan')
+  const [tab, setTab] = usePageTab('training', ['plan', 'history'] as const, 'plan')
   const [cws, setCws] = useState<ClientWorkout[] | null>(null)
   const [workouts, setWorkouts] = useState<Record<string, Workout>>({})
   const [busy, setBusy] = useState(false)
