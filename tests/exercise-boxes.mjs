@@ -48,7 +48,7 @@ export async function exerciseBoxChecks({ open, sql, IDS, BASE, shot, clean, ok 
     await live.getByLabel('Set 1 weight', { exact: true }).waitFor()
     ok(await live.getByLabel('Set 1 reps', { exact: true }).count() === 1 && await live.getByText('km/h', { exact: true }).count() === 0, 'client logs Burpee with strength reps and weight inputs')
     const description = await live.locator('.presc').innerText()
-    ok(description.includes('4 x 12') && description.includes('rest 45 s') && !description.includes('tempo') && !description.includes('RPE'), 'client Burpee description includes rest and omits effort and tempo')
+    ok(/4\s*[x\u00d7]\s*12/.test(description) && description.includes('rest 45 s') && !description.includes('tempo') && !description.includes('RPE'), 'client Burpee description includes rest and omits effort and tempo')
     ok(await client.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Burpee logging fits phone width')
     await shot(client.page, 'burpee-strength-player-phone')
     clean('Burpee strength logging', client.errors)
