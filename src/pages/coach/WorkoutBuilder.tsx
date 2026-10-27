@@ -12,7 +12,6 @@ import { ExercisePicker } from '../../components/Pickers'
 import AlternativeEditor from '../../components/AlternativeEditor'
 
 type Row = Omit<WorkoutItem, 'workout_id' | 'load' | 'tempo'> & { load: string; tempo: string; isNew?: boolean; cardio?: boolean }
-const LABELS = ['', 'A', 'B', 'C', 'D', 'E']
 
 export default function WorkoutBuilder() {
   const { id } = useParams()
@@ -125,7 +124,7 @@ export default function WorkoutBuilder() {
         <div className="section-title"><h2>Exercises</h2><span className="mute small">{rows.length} added</span></div>
         {rows.length === 0 && <div className="card"><Empty icon="train" title="No exercises yet">Add exercises from the library of 100+ moves or type your own.</Empty></div>}
         {rows.map((r, i) => (
-          <div key={r.id} className="card" style={r.group_label ? { borderLeft: '3px solid var(--violet)' } : undefined}>
+          <div key={r.id} className="card" role="group" aria-label={`Exercise ${i + 1}: ${r.exercise_name}`}>
             <div className="row between nowrap" style={{ marginBottom: 8 }}>
               <b className="grow truncate">{i + 1}. {r.exercise_name}</b>
               <button type="button" className="icon sm" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up"><Icon name="up" size={16} /></button>
@@ -141,13 +140,7 @@ export default function WorkoutBuilder() {
                   {CARDIO_FIELDS[w.format].includes('distance') && <label className="field">Distance (km)<input type="number" inputMode="decimal" min="0" step="any" value={r.cardio_distance_km ?? ''} onChange={e => updRow(i, { cardio_distance_km: num(e.target.value) })} /></label>}
                   {CARDIO_FIELDS[w.format].includes('speed') && <label className="field">Speed (km/h)<input type="number" inputMode="decimal" min="0" step="any" value={r.cardio_speed_kmh ?? ''} onChange={e => updRow(i, { cardio_speed_kmh: num(e.target.value) })} /></label>}
                   {CARDIO_FIELDS[w.format].includes('rest') && <label className="field">Rest (s)<input type="number" inputMode="numeric" min="0" step="15" value={r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>}
-                  <label className="field">Effort<input value={r.load} onChange={e => updRow(i, { load: e.target.value })} placeholder="e.g. RPE 8" /></label>
                   <label className="field">Details<input value={r.reps} onChange={e => updRow(i, { reps: e.target.value })} placeholder="60 s hard / 60 s easy" /></label>
-                  <label className="field">Group
-                    <select value={r.group_label} onChange={e => updRow(i, { group_label: e.target.value })}>
-                      {LABELS.map(l => <option key={l} value={l}>{l || 'None'}</option>)}
-                    </select>
-                  </label>
                 </div>
               </>
             ) : (
@@ -155,14 +148,8 @@ export default function WorkoutBuilder() {
                 <label className="field">Sets<input type="number" inputMode="numeric" min="1" value={r.sets ?? ''} onChange={e => updRow(i, { sets: num(e.target.value) })} /></label>
                 <label className="field">Reps<input value={r.reps} onChange={e => updRow(i, { reps: e.target.value })} placeholder="10 or 30 s" /></label>
                 <label className="field">Weight<input value={r.weight} onChange={e => updRow(i, { weight: e.target.value })} placeholder="kg, or 75%" /></label>
-                <label className="field">Effort<input value={r.load} onChange={e => updRow(i, { load: e.target.value })} placeholder="e.g. RPE 8" /></label>
                 <label className="field">Rest (s)<input type="number" inputMode="numeric" min="0" step="15" value={r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>
-                <label className="field">Tempo<input value={r.tempo} onChange={e => updRow(i, { tempo: e.target.value })} placeholder="3-1-1" /></label>
-                <label className="field">Group
-                  <select value={r.group_label} onChange={e => updRow(i, { group_label: e.target.value })}>
-                    {LABELS.map(l => <option key={l} value={l}>{l || 'None'}</option>)}
-                  </select>
-                </label>
+                {!/^burpees?$/i.test(r.exercise_name.trim()) && <label className="field">Tempo<input value={r.tempo} onChange={e => updRow(i, { tempo: e.target.value })} placeholder="3-1-1" /></label>}
               </div>
             )}
             <input style={{ marginTop: 8 }} placeholder="Coaching notes" value={r.notes} onChange={e => updRow(i, { notes: e.target.value })} />

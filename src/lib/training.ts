@@ -78,7 +78,6 @@ export const cardioPrescription = (it: WorkoutItem, format: WorkoutFormat) => {
   if (it.cardio_speed_kmh) parts.push(`@ ${Number(it.cardio_speed_kmh)} km/h`)
   if (f.includes('rest') && it.rest_sec) parts.push(`rest ${it.rest_sec} s`)
   if (it.reps) parts.push(it.reps)
-  if (it.load) parts.push(`· ${it.load}`)
   return parts.join(' ')
 }
 
@@ -90,8 +89,8 @@ export const prescription = (it: WorkoutItem) => {
   else if (it.reps) parts.push(it.reps)
   const w = weightOf(it)
   if (w) parts.push(parseWeight(w).kind === 'kg' ? `@ ${w.replace(/\s*kgs?$/i, '')} kg` : `@ ${w}`)
-  if (it.load) parts.push(`· ${it.load}`)
-  if (it.tempo) parts.push(`tempo ${it.tempo}`)
+  if (it.tempo && !/^burpees?$/i.test(it.exercise_name.trim())) parts.push(`tempo ${it.tempo}`)
+  if (it.rest_sec != null) parts.push(`rest ${it.rest_sec} s`)
   return parts.join(' ')
 }
 
