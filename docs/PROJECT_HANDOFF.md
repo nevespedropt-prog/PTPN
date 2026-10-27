@@ -282,3 +282,10 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - Timer state is stored inside the existing workout log, so a running or paused timer survives refresh without a schema migration.
 - Finishing a workout records only the manually measured session time. The screen wake lock is requested only while the session timer is running.
 - Live countdown text is excluded from screen-reader live announcements to avoid repeated announcements every second.
+## 2026-10-27 ranked coach priorities
+
+- The coach dashboard now opens with one ranked `Today's priorities` list instead of four equal-weight shortcut buttons.
+- Ranking order is urgent client follow-up, unread messages, weekly check-in reviews, technique-video reviews, then routine inactivity follow-up.
+- Every priority shows an exact count and links directly to the corresponding section on the dashboard.
+- Weekly and technique review queues report their pending counts to the dashboard while preserving their own loading, retry, archive filtering and 100-item safety behaviour.
+- Refresh reloads the dashboard and both review queues together. Failed or potentially truncated core reads still hide the dashboard instead of presenting incomplete totals.

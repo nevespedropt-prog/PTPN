@@ -16,7 +16,7 @@ export async function dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok }
     for (const [n, client] of [[6, IDS.ana], [7, IDS.bo]]) await sql("insert into weekly_checkins(id,client_id,week_start,training,nutrition,sleep_hours,energy,biggest_win,difficulties) values($1,$2,$3,'Training','Nutrition',8,4,'Win','None')", [id(n), client, monday])
     context = await open('coach', { w: 1280, h: 860 })
     const { page, errors } = context
-    const actions = page.getByRole('region', { name: 'Coach actions', exact: true })
+    const actions = page.getByRole('region', { name: "Today's priorities", exact: true })
     const attention = page.getByRole('region', { name: 'Clients needing attention', exact: true })
     const tile = name => page.locator('.tile').filter({ has: page.getByText(name, { exact: true }) }).locator('.value')
     await actions.waitFor()
@@ -31,9 +31,12 @@ export async function dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok }
     await reviews.getByText('Ana Silva', { exact: true }).waitFor()
     ok(await reviews.getByText('Bo Jones', { exact: true }).count() === 0, 'review queue excludes archived client')
     ok((await reviews.getByRole('link').getAttribute('href')).includes('reviewWeek=' + monday), 'weekly review opens the submitted week')
-    for (const target of ['weekly-reviews', 'technique-reviews', 'dashboard-inbox', 'needs-attention']) {
+    await actions.getByText('Weekly reviews', { exact: true }).waitFor()
+    const ranked = await actions.locator('a.item .title').allTextContents()
+    ok(ranked[0] === 'Unread messages' && ranked[1] === 'Weekly reviews', 'dashboard ranks replies before routine review work')
+    for (const target of ['dashboard-inbox', 'weekly-reviews']) {
       await actions.locator(`a[href="#${target}"]`).click()
-      ok(await page.evaluate(id => location.hash === '#' + id && !!document.getElementById(id), target), 'dashboard quick action opens ' + target)
+      ok(await page.evaluate(id => location.hash === '#' + id && !!document.getElementById(id), target), 'dashboard priority opens ' + target)
     }
     await sql('update checkins set mood=1 where id=$1', [id(5)])
     await sql('insert into weekly_reviews(checkin_id,feedback,next_focus) values($1,$2,$3)', [id(6), 'Reviewed', 'Next week'])
@@ -42,6 +45,7 @@ export async function dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok }
     await reviews.getByText('No pending reviews among the latest 100 check-ins.').waitFor()
     ok(await attention.getByText('Ana Silva', { exact: true }).count() === 1, 'refresh updates client attention and review queues together')
     ok(await attention.getByRole('link').getAttribute('href') === '/clients/' + IDS.ana, 'attention opens the correct client')
+    ok(await actions.locator('a.item').first().getByText('Urgent client follow-up', { exact: true }).count() === 1, 'low mood follow-up becomes the highest-ranked priority')
     await page.setViewportSize({ width: 390, height: 844 })
     await page.evaluate(() => window.scrollTo(0, 0))
     ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'dashboard actions fit phone width')
@@ -60,7 +64,7 @@ export async function dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok }
     await page.route('**/rest/v1/messages?*', r => r.fulfill({ contentType: 'application/json', body: JSON.stringify(Array(1000).fill({ client_id: IDS.bo })) }))
     await actions.getByRole('button', { name: 'Refresh dashboard' }).click()
     await page.getByRole('button', { name: 'Retry dashboard' }).waitFor()
-    ok(await page.getByRole('region', { name: 'Coach actions', exact: true }).count() === 0, 'potentially truncated response hides incomplete dashboard totals')
+    ok(await page.getByRole('region', { name: "Today's priorities", exact: true }).count() === 0, 'potentially truncated response hides incomplete dashboard totals')
     await page.unroute('**/rest/v1/messages?*')
     await page.getByRole('button', { name: 'Retry dashboard' }).click()
     await actions.waitFor()
@@ -73,3 +77,4 @@ export async function dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok }
     await sql('delete from client_archives where client_id=$1', [IDS.bo])
   }
 }
+
