@@ -165,6 +165,14 @@ ok((await as(A, `select public.push_public_key() k`)).rows?.[0]?.k === 'PUB', 's
 ok((await as(null, `select public.push_public_key() k`)).error, 'anon cannot call push_public_key')
 ok((await as(A, `delete from push_subscriptions where endpoint = 'https://push.test/a' returning id`)).rows?.length === 1, 'client removes own subscription')
 ok((await as(C, `update posts set pushed_at = now()`)).error === undefined, 'coach can mark posts pushed')
+const reminderSession = (await db.query(`insert into sessions(starts_at,title) values(now() + interval '7 hours 59 minutes','PT session') returning id`)).rows[0].id
+const laterSession = (await db.query(`insert into sessions(starts_at,title) values(now() + interval '9 hours','Later session') returning id`)).rows[0].id
+await db.query(`insert into bookings(session_id,client_id) values($1,$2),($3,$2)`, [reminderSession, A, laterSession])
+ok((await as(A, 'select * from claim_booking_reminders()')).error, 'client cannot claim server booking reminders')
+const dueReminders = (await db.query('select * from claim_booking_reminders()')).rows
+ok(dueReminders.length === 1 && dueReminders[0].client_id === A && dueReminders[0].title === 'PT session', 'server claims only bookings within eight hours')
+ok((await db.query('select * from claim_booking_reminders()')).rows.length === 0, 'booking reminder is claimed only once')
+ok((await db.query('select reminder_sent_at from bookings where session_id=$1', [laterSession])).rows[0].reminder_sent_at === null, 'later booking remains pending')
 
 // health and consent: own row only, coach can read, nobody else
 ok(!(await as(A, `insert into client_health (client_id, allergies, health_conditions, consent_data, consent_health, consent_accurate, consented_at) values ('${A}', 'Peanuts', 'None', true, true, true, now())`)).error, 'client saves own health and consent')
@@ -208,3 +216,4 @@ ok(Object.values(left.rows[0]).every(v => Number(v) === 0), 'deleting a user rem
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
+

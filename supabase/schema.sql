@@ -626,6 +626,32 @@ grant execute on function public.push_public_key() to authenticated;
 -- Announcements are pushed once; scheduled ones go out when their time arrives.
 alter table public.posts add column if not exists pushed_at timestamptz;
 
+-- Booked PT sessions get one reminder on the first reminder run at or inside eight hours.
+alter table public.bookings add column if not exists reminder_sent_at timestamptz;
+create index if not exists bookings_reminder_pending on public.bookings (session_id) where reminder_sent_at is null;
+
+create or replace function public.claim_booking_reminders()
+returns table (booking_id uuid, client_id uuid, starts_at timestamptz, title text)
+language sql volatile security invoker set search_path = public as $
+  with due as (
+    select b.id
+    from public.bookings b
+    join public.sessions s on s.id = b.session_id
+    where b.reminder_sent_at is null
+      and s.starts_at > now()
+      and s.starts_at <= now() + interval '8 hours'
+    order by s.starts_at
+    for update of b skip locked
+  )
+  update public.bookings b
+  set reminder_sent_at = now()
+  from due, public.sessions s
+  where b.id = due.id and s.id = b.session_id
+  returning b.id, b.client_id, s.starts_at, s.title
+$;
+revoke execute on function public.claim_booking_reminders() from public, anon, authenticated;
+grant execute on function public.claim_booking_reminders() to service_role;
+
 -- ========== v5: health information and data consent ==========
 -- One row per client. Health data is special category data, so we keep explicit, dated consent with a version.
 create table if not exists public.client_health (
@@ -913,3 +939,4 @@ create policy "exercise videos submit own" on public.exercise_videos for insert 
     and coalesce(cw.log->'exercise_choices'->(workout_item_id::text)->'item'->>'exercise_name',
       (select wi.exercise_name from public.workout_items wi where wi.id = workout_item_id and wi.workout_id = cw.workout_id)) = exercise_videos.exercise_name
   ));
+
