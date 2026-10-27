@@ -109,7 +109,7 @@ export default function ProgramBuilder() {
                 {list.length === 0 && <span className="mute" style={{ padding: '6px 0' }}>Rest</span>}
                 {list.map(d => (
                   <div key={d.id} className="row nowrap" style={{ marginBottom: 0, background: 'var(--card-2)', border: '1px solid var(--line)', borderRadius: 12, padding: '6px 6px 6px 12px' }}>
-                    <Link to={`/library/workouts/${d.workout_id}`} state={workoutReturn} className="grow truncate" style={{ color: 'var(--ink)', fontWeight: 600 }}>{names[d.workout_id] ?? 'Workout'}</Link>
+                    <Link to={`/library/workouts/${d.workout_id}?returnTo=${encodeURIComponent(workoutReturn.returnTo)}`} state={workoutReturn} className="grow truncate" style={{ color: 'var(--ink)', fontWeight: 600 }}>{names[d.workout_id] ?? 'Workout'}</Link>
                     {editable && <button className="icon sm" style={{ width: 32, minHeight: 32 }} onClick={() => removeDay(d)} aria-label="Remove workout"><Icon name="x" size={14} /></button>}
                   </div>
                 ))}

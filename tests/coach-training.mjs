@@ -167,6 +167,8 @@ export async function tabMemoryChecks({ open, sql, IDS, BASE, ok, clean }) {
     await blocked.page.getByRole('link', { name: /^(Edit|View) and assign$/ }).first().click()
     await blocked.page.getByRole('button', { name: 'Week 2', exact: true }).click()
     await blocked.page.locator('a[href^="/library/workouts/"]').first().click()
+    ok((new URL(blocked.page.url()).searchParams.get('returnTo') ?? '').includes('week=2'), 'nested workout carries return context in its URL')
+    await blocked.page.evaluate(() => history.replaceState(null, '', location.href))
     await blocked.page.reload({ waitUntil: 'networkidle' })
     const nestedBack = blocked.page.getByRole('link', { name: 'Back', exact: true })
     ok((await nestedBack.getAttribute('href')).includes('/library/programs/') && (await nestedBack.getAttribute('href')).includes('week=2'), 'workout return target retains the originating programme and week after refresh')

@@ -44,7 +44,7 @@ function Workouts() {
     const { data, error } = await supabase.from('workouts').insert({ name: 'New workout', created_by: profile!.id }).select().single()
     setBusy(false)
     if (error) return alert(error.message)
-    nav(`/library/workouts/${data.id}`, { state: returnState })
+    nav(`/library/workouts/${data.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`, { state: returnState })
   }
   async function duplicate(w: Workout) {
     setBusy(true)
@@ -52,7 +52,7 @@ function Workouts() {
     if (error) { setBusy(false); return alert(error.message) }
     const { data: items } = await supabase.from('workout_items').select('*').eq('workout_id', w.id)
     if (items?.length) await supabase.from('workout_items').insert(items.map(({ id: _id, workout_id: _w, ...r }) => ({ ...r, workout_id: copy.id })))
-    setBusy(false); nav(`/library/workouts/${copy.id}`, { state: returnState })
+    setBusy(false); nav(`/library/workouts/${copy.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`, { state: returnState })
   }
   async function remove(w: Workout) {
     if (!confirm(`Delete "${w.name}"? Scheduled sessions using it will be removed too.`)) return
@@ -71,11 +71,11 @@ function Workouts() {
               <span className="badge">{FORMAT_LABEL[w.format]}</span>
               <span className={'badge ' + (w.created_by ? 'violet' : 'blue')}>{w.created_by ? 'Yours' : 'Template'}</span>
             </div>
-            <Link to={`/library/workouts/${w.id}`} state={returnState}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{w.name}</b></Link>
+            <Link to={`/library/workouts/${w.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} state={returnState}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{w.name}</b></Link>
             <p className="mute small" style={{ margin: '4px 0 12px' }}>{counts[w.id] ?? 0} exercises{w.duration_min ? ` · ${w.duration_min} min` : ''}</p>
             <div className="row" style={{ marginBottom: 0 }}>
               <button className="sm" onClick={() => setAssign(w)}>Assign</button>
-              <Link className="btn soft sm" to={`/library/workouts/${w.id}`} state={returnState}>{w.created_by ? 'Edit' : 'View'}</Link>
+              <Link className="btn soft sm" to={`/library/workouts/${w.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} state={returnState}>{w.created_by ? 'Edit' : 'View'}</Link>
               <button className="soft sm" onClick={() => duplicate(w)} aria-label={`Duplicate ${w.name}`}><Icon name="copy" size={15} /></button>
               {w.created_by && <button className="link" onClick={() => remove(w)}>Delete</button>}
             </div>
@@ -99,7 +99,7 @@ function Programs() {
   async function create() {
     const { data, error } = await supabase.from('programs').insert({ name: 'New programme', created_by: profile!.id }).select().single()
     if (error) return alert(error.message)
-    nav(`/library/programs/${data.id}`, { state: returnState })
+    nav(`/library/programs/${data.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`, { state: returnState })
   }
   async function remove(p: Program) { if (confirm(`Delete "${p.name}"?`)) { await supabase.from('programs').delete().eq('id', p.id); load() } }
 
@@ -113,10 +113,10 @@ function Programs() {
             <div className="row" style={{ marginBottom: 6 }}>
               {p.goal && <span className="badge red">{p.goal}</span>}{p.level && <span className="badge">{p.level}</span>}<span className="badge">{p.weeks} weeks</span>
             </div>
-            <Link to={`/library/programs/${p.id}`} state={returnState}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{p.name}</b></Link>
+            <Link to={`/library/programs/${p.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} state={returnState}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{p.name}</b></Link>
             <p className="mute small" style={{ margin: '4px 0 12px' }}>{p.description}</p>
             <div className="row" style={{ marginBottom: 0 }}>
-              <Link className="btn sm" to={`/library/programs/${p.id}`} state={returnState}>{p.created_by ? 'Edit and assign' : 'View and assign'}</Link>
+              <Link className="btn sm" to={`/library/programs/${p.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} state={returnState}>{p.created_by ? 'Edit and assign' : 'View and assign'}</Link>
               {p.created_by && <button className="link" onClick={() => remove(p)}>Delete</button>}
             </div>
           </div>

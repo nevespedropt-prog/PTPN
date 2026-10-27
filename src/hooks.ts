@@ -68,8 +68,8 @@ export function usePageTab<T extends string | number>(scope: string, allowed: re
 
 /** Detail pages return to their explicit origin, with a safe internal fallback. */
 export function useReturnTo(fallback: string): string {
-  const { state } = useLocation()
-  const target = state?.returnTo
+  const { state, search } = useLocation()
+  const target = new URLSearchParams(search).get('returnTo') ?? state?.returnTo
   return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') && !target.includes('\\')
     ? target : fallback
 }
