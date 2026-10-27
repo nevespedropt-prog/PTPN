@@ -39,6 +39,8 @@ export function useClients() {
   return { clients, reload }
 }
 
+const pageTabs = new Map<string, string>()
+
 /** Remember navigation tabs in this browser tab, separately for each account/page/section. */
 export function usePageTab<T extends string | number>(scope: string, allowed: readonly T[], initial: T, param = 'tab', preferInitial = false): [T, (next: T) => void] {
   const { profile } = useAuth()
@@ -46,18 +48,28 @@ export function usePageTab<T extends string | number>(scope: string, allowed: re
   const [search, setSearch] = useSearchParams()
   const key = 'ptpn:tab:' + (profile?.id ?? 'guest') + ':' + pathname + ':' + scope
   const requested = search.get(param)
-  let remembered: string | null = null
-  try { remembered = sessionStorage.getItem(key) } catch { /* URL navigation still works when storage is blocked. */ }
+  let remembered: string | null = pageTabs.get(key) ?? null
+  try { remembered ??= sessionStorage.getItem(key) } catch { /* URL navigation still works when storage is blocked. */ }
   const requestedValue = allowed.find(option => String(option) === requested)
   const rememberedValue = allowed.find(option => String(option) === remembered)
   const value = requestedValue ?? (requested !== null || preferInitial ? initial : rememberedValue ?? initial)
   useEffect(() => {
+    pageTabs.set(key, String(value))
     try { sessionStorage.setItem(key, String(value)) } catch { /* Optional navigation preference only. */ }
   }, [key, value])
   const select = (next: T) => {
     if (!allowed.includes(next)) return
+    pageTabs.set(key, String(next))
     try { sessionStorage.setItem(key, String(next)) } catch { /* Keep navigation usable. */ }
     setSearch(previous => { const params = new URLSearchParams(previous); params.set(param, String(next)); return params }, { replace: true })
   }
   return [value, select]
+}
+
+/** Detail pages return to their explicit origin, with a safe internal fallback. */
+export function useReturnTo(fallback: string): string {
+  const { state } = useLocation()
+  const target = state?.returnTo
+  return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') && !target.includes('\\')
+    ? target : fallback
 }

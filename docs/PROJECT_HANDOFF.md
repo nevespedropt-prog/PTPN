@@ -237,3 +237,14 @@ WorkoutBuilder no longer exposes Effort or Group controls on strength or cardio 
 Burpee is recategorised from cardio to strength in the exercise library. The seed generator was corrected and seed.sql regenerated; the verified diff is only this category. The live data correction updates the Bodyweight Burpee entry by name/equipment, without rewriting session logs or prescriptions. No existing Burpee alternative approvals existed when checked; historical alternative snapshots are unchanged. Previously blank AMRAP sets remain coach-editable rather than assigning an unsolicited set count.
 
 Changes: WorkoutBuilder.tsx, lib/training.ts, seed generator and generated seed, tests/exercise-boxes.mjs, the existing builder browser flow and handoff. Tests check existing/new Burpee cards, machine cardio, retained strength tempo, field saves/reload, preservation of hidden legacy data, client reps/weight logging and prescription text, plus phone width. Live category correction is verified separately. No schema or dependency changes.
+
+
+## Explicit return routes and storage-independent tab memory (27 October 2026)
+
+Pedro reported Library > Programmes > View and assign > Back returning to Workouts despite the earlier tab-memory release. Programme Back still targeted bare /library and depended on sessionStorage; the old blocked-storage test only checked refreshing a URL that already contained a tab. It did not exercise that return link.
+
+Library now passes an explicit source route with the selected tab to programme/workout details, including create/duplicate flows. Builders use that internal return route with explicit Programmes/Workouts/Training fallbacks. Programme workout links carry the programme route and selected week, so their Back action returns to that programme week instead of losing the context in Library. Unknown detail pages use the same safe fallback. Return metadata survives a detail refresh through browser history state.
+
+The shared usePageTab hook also keeps an in-memory preference scoped by account/path/section, so ordinary SPA menu navigation preserves tabs when browser storage throws. URL selection still takes precedence. Full document navigation with both storage blocked and no explicit tab cannot recover an earlier preference; explicit return routes solve the reported detail flow. No database, dependency or design-system changes.
+
+Changed hooks.ts, Library.tsx, ProgramBuilder.tsx, WorkoutBuilder.tsx, focused coach-training navigation tests and this handoff. Regression checks now block sessionStorage and cover the exact View and assign/Back flow, direct programme entry, nested workout return after refresh retaining Week 2, workout-library return, all three Library tabs through an unrelated page, and client Train/Progress/Community menu returns.

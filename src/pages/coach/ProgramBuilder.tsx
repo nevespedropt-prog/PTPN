@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
-import { useClients, usePageTab } from '../../hooks'
+import { useClients, usePageTab, useReturnTo } from '../../hooks'
 import { DAY_NAMES } from '../../lib/dates'
 import type { Program, ProgramDay, Workout } from '../../types'
 import { Empty, PageHead, Sheet, Skeleton } from '../../components/ui'
@@ -12,6 +12,8 @@ import { AssignProgram } from './Assign'
 
 export default function ProgramBuilder() {
   const { id } = useParams()
+  const location = useLocation()
+  const back = useReturnTo('/library?tab=programs')
   const { profile } = useAuth()
   const { clients } = useClients()
   const [p, setP] = useState<Program | null | undefined>(undefined)
@@ -38,7 +40,7 @@ export default function ProgramBuilder() {
   useEffect(() => { load() }, [load])
 
   if (p === undefined) return <Skeleton n={3} />
-  if (!p) return <div className="card"><Empty icon="train" title="Programme not found"><Link to="/library">Back to library</Link></Empty></div>
+  if (!p) return <div className="card"><Empty icon="train" title="Programme not found"><Link to={back}>Back to library</Link></Empty></div>
   const editable = p.created_by === profile?.id
 
   async function saveMeta(patch: Partial<Program>) {
@@ -64,13 +66,16 @@ export default function ProgramBuilder() {
     load()
   }
 
+  const returnSearch = new URLSearchParams(location.search)
+  returnSearch.set('week', String(week))
+  const workoutReturn = { returnTo: location.pathname + '?' + returnSearch.toString() }
   const total = days.length
   const inWeek = (d: number) => days.filter(x => x.week === week && x.day === d)
 
   return (
     <>
       <div className="row between" style={{ marginBottom: 6 }}>
-        <Link to="/library" className="btn icon" aria-label="Back"><Icon name="back" size={18} /></Link>
+        <Link to={back} className="btn icon" aria-label="Back"><Icon name="back" size={18} /></Link>
         <span className={msg === 'Saved' ? 'ok small' : 'err small'}>{msg}</span>
       </div>
       <PageHead eyebrow="Programme" title={p.name} sub={`${p.weeks} weeks · ${total} scheduled workouts`}>
@@ -104,7 +109,7 @@ export default function ProgramBuilder() {
                 {list.length === 0 && <span className="mute" style={{ padding: '6px 0' }}>Rest</span>}
                 {list.map(d => (
                   <div key={d.id} className="row nowrap" style={{ marginBottom: 0, background: 'var(--card-2)', border: '1px solid var(--line)', borderRadius: 12, padding: '6px 6px 6px 12px' }}>
-                    <Link to={`/library/workouts/${d.workout_id}`} className="grow truncate" style={{ color: 'var(--ink)', fontWeight: 600 }}>{names[d.workout_id] ?? 'Workout'}</Link>
+                    <Link to={`/library/workouts/${d.workout_id}`} state={workoutReturn} className="grow truncate" style={{ color: 'var(--ink)', fontWeight: 600 }}>{names[d.workout_id] ?? 'Workout'}</Link>
                     {editable && <button className="icon sm" style={{ width: 32, minHeight: 32 }} onClick={() => removeDay(d)} aria-label="Remove workout"><Icon name="x" size={14} /></button>}
                   </div>
                 ))}
