@@ -149,7 +149,7 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
   </section>
 }
 
-export function WeeklyReviewQueue({ clients }: { clients: { id: string; full_name: string }[] }) {
+export function WeeklyReviewQueue({ clients, onCount }: { clients: { id: string; full_name: string }[]; onCount?: (count: number) => void }) {
   const [pending, setPending] = useState<Checkin[]>([])
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -169,8 +169,8 @@ export function WeeklyReviewQueue({ clients }: { clients: { id: string; full_nam
         if (r.error || a.error) throw r.error || a.error
         const reviewed = new Set((r.data ?? []).map(x => x.checkin_id))
         const archived = new Set((a.data ?? []).map(x => x.client_id))
-        if (active) setPending(items.filter(x => !reviewed.has(x.id) && !archived.has(x.client_id)))
-      } catch { if (active) setError(true) }
+        if (active) { const next = items.filter(x => !reviewed.has(x.id) && !archived.has(x.client_id)); setPending(next); onCount?.(next.length) }
+      } catch { if (active) { setError(true); onCount?.(-1) } }
       finally { if (active) setLoading(false) }
     })()
     return () => { active = false }

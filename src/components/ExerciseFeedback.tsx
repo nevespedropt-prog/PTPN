@@ -109,7 +109,7 @@ export default function ExerciseFeedback({ clientId, workoutId, exercise, coach,
   </Sheet>
 }
 
-export function TechniqueReviewQueue({ clients }: { clients: { id: string; full_name: string }[] }) {
+export function TechniqueReviewQueue({ clients, onCount }: { clients: { id: string; full_name: string }[]; onCount?: (count: number) => void }) {
   const [pending, setPending] = useState<Pick<Submission, 'id' | 'client_id' | 'client_workout_id' | 'exercise_name'>[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -129,8 +129,8 @@ export function TechniqueReviewQueue({ clients }: { clients: { id: string; full_
         if (r.error || a.error) throw r.error || a.error
         const reviewed = new Set((r.data ?? []).map(x => x.video_id))
         const archived = new Set((a.data ?? []).map(x => x.client_id))
-        if (active) setPending(rows.filter(x => !reviewed.has(x.id) && !archived.has(x.client_id)))
-      } catch { if (active) setError(true) }
+        if (active) { const next = rows.filter(x => !reviewed.has(x.id) && !archived.has(x.client_id)); setPending(next); onCount?.(next.length) }
+      } catch { if (active) { setError(true); onCount?.(-1) } }
       finally { if (active) setLoading(false) }
     })()
     return () => { active = false }

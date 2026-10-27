@@ -17,12 +17,13 @@ export default function Dashboard() {
   const [d, setD] = useState<Data | null>(null)
   const [refresh, setRefresh] = useState(0)
   const [error, setError] = useState(false)
+  const [queueCounts, setQueueCounts] = useState<{ weekly: number | null; technique: number | null }>({ weekly: null, technique: null })
   const today = localDate()
 
   useEffect(() => {
     if (!profile?.id) return
     let active = true
-    setD(null); setError(false)
+    setD(null); setError(false); setQueueCounts({ weekly: null, technique: null })
     ;(async () => {
       try {
         const [cw, ck, ms, se, people, archives] = await Promise.all([
@@ -79,19 +80,29 @@ export default function Dashboard() {
   const recent = activeWorkouts.filter(c => c.status === 'done').sort((a, b) => (b.completed_at ?? b.date).localeCompare(a.completed_at ?? a.date)).slice(0, 6)
   const unreadBy = new Map<string, number>()
   for (const m of d.msgs) unreadBy.set(m.client_id, (unreadBy.get(m.client_id) ?? 0) + 1)
+  const urgentAttention = attention.filter(item => item.priority >= 3).length
+  const routineAttention = attention.length - urgentAttention
+  const priorities = [
+    urgentAttention > 0 ? { label: 'Urgent client follow-up', detail: 'Low mood or multiple missed workouts', count: urgentAttention, href: '#needs-attention' } : null,
+    d.msgs.length > 0 ? { label: 'Unread messages', detail: `${unreadBy.size} conversation${unreadBy.size === 1 ? '' : 's'} awaiting a reply`, count: d.msgs.length, href: '#dashboard-inbox' } : null,
+    (queueCounts.weekly ?? 0) > 0 ? { label: 'Weekly reviews', detail: 'Client check-ins awaiting feedback', count: queueCounts.weekly!, href: '#weekly-reviews' } : null,
+    (queueCounts.technique ?? 0) > 0 ? { label: 'Technique reviews', detail: 'Exercise videos awaiting feedback', count: queueCounts.technique!, href: '#technique-reviews' } : null,
+    routineAttention > 0 ? { label: 'Routine client follow-up', detail: 'Training inactivity or no recent schedule', count: routineAttention, href: '#needs-attention' } : null,
+  ].filter((item): item is NonNullable<typeof item> => !!item)
+  const prioritiesLoaded = queueCounts.weekly !== null && queueCounts.technique !== null
 
   return (
     <>
       <PageHead eyebrow={longDay(today)} title={`${greeting()}, ${firstName(profile?.full_name ?? '')}`} />
-      <section className="card" aria-label="Coach actions" style={{ marginBottom: 12 }}>
-        <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}><h2 style={{ margin: 0 }}>Your next actions</h2><button className="soft sm" onClick={() => setRefresh(n => n + 1)}>Refresh dashboard</button></div>
-        <p className="mute small">Review client updates, reply to messages and follow up where needed.</p>
-        <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
-          <a className="btn soft sm" href="#weekly-reviews">Weekly reviews</a>
-          <a className="btn soft sm" href="#technique-reviews">Technique reviews</a>
-          <a className="btn soft sm" href="#dashboard-inbox">Unread messages ({d.msgs.length})</a>
-          <a className="btn soft sm" href="#needs-attention">Needs attention ({attention.length})</a>
-        </div>
+      <section className="card tight" aria-label="Today's priorities" style={{ marginBottom: 12 }}>
+        <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}><div><h2 style={{ margin: 0 }}>Today's priorities</h2><p className="mute small" style={{ margin: '4px 0 0' }}>Highest-impact coaching actions first.</p></div><button className="soft sm" onClick={() => setRefresh(n => n + 1)}>Refresh dashboard</button></div>
+        {!prioritiesLoaded && priorities.length === 0 ? <p role="status" className="mute">Checking priorities...</p> : priorities.length === 0 ? <Empty icon="check" title="All caught up">No client actions need attention right now.</Empty> : <div className="list" style={{ marginTop: 10 }}>
+          {priorities.map((item, index) => <a className="item" href={item.href} key={item.label}>
+            <span className="badge amber" aria-label={`Priority ${index + 1}`}>{index + 1}</span>
+            <span className="grow"><span className="title">{item.label}</span><br /><span className="meta">{item.detail}</span></span>
+            <span className="badge">{item.count}</span><Icon name="chev" />
+          </a>)}
+        </div>}
       </section>
       <div className="grid g4" style={{ marginBottom: 12 }}>
         <Tile label="Active clients" value={clients.length} />
@@ -100,8 +111,8 @@ export default function Dashboard() {
         <Tile label="Check-ins" value={new Set(activeCheckins.filter(k => k.date >= addDays(today, -1)).map(k => k.client_id)).size} foot="in the last 2 days" />
       </div>
 
-      <div id="weekly-reviews" style={{ scrollMarginTop: 80 }}><WeeklyReviewQueue key={refresh} clients={clients} /></div>
-      <div id="technique-reviews" style={{ scrollMarginTop: 80 }}><TechniqueReviewQueue key={refresh} clients={clients} /></div>
+      <div id="weekly-reviews" style={{ scrollMarginTop: 80 }}><WeeklyReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, weekly: count }))} /></div>
+      <div id="technique-reviews" style={{ scrollMarginTop: 80 }}><TechniqueReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, technique: count }))} /></div>
       <div className="split">
         <div>
           <div id="needs-attention" className="section-title" style={{ marginTop: 6, scrollMarginTop: 80 }}><h2>Needs attention</h2></div>
@@ -112,7 +123,7 @@ export default function Dashboard() {
               {attention.map(({ c, reasons }) => (
                 <Link key={c.id} to={`/clients/${c.id}`} className="item">
                   <Avatar name={c.full_name} size={40} />
-                  <span className="grow"><span className="title">{c.full_name || 'Unnamed'}</span><br /><span className="meta">{reasons.join(' · ')}</span></span>
+                  <span className="grow"><span className="title">{c.full_name || 'Unnamed'}</span><br /><span className="meta">{reasons.join(' � ')}</span></span>
                   <Icon name="chev" />
                 </Link>
               ))}
@@ -126,8 +137,8 @@ export default function Dashboard() {
               {recent.map(c => (
                 <Link key={c.id} to={`/workout/${c.id}`} className="item">
                   <Avatar name={nameOf(c.client_id)} size={36} />
-                  <span className="grow"><span className="title">{nameOf(c.client_id)}</span><br /><span className="meta">{d.workouts[c.workout_id]?.name ?? 'Workout'} · {niceDate(c.date)}</span></span>
-                  {c.rating && <span className="badge amber">{'\u2605'.repeat(c.rating)}</span>}
+                  <span className="grow"><span className="title">{nameOf(c.client_id)}</span><br /><span className="meta">{d.workouts[c.workout_id]?.name ?? 'Workout'} � {niceDate(c.date)}</span></span>
+                  {c.rating && <span className="badge amber">{'?'.repeat(c.rating)}</span>}
                 </Link>
               ))}
             </div>
@@ -144,7 +155,7 @@ export default function Dashboard() {
                 return (
                   <Link key={id} to={`/inbox/${id}`} className="item">
                     <Avatar name={nameOf(id)} size={36} />
-                    <span className="grow"><span className="title">{nameOf(id)}</span><br /><span className="meta truncate" style={{ display: 'block' }}>{last.body} · {timeAgo(last.created_at)}</span></span>
+                    <span className="grow"><span className="title">{nameOf(id)}</span><br /><span className="meta truncate" style={{ display: 'block' }}>{last.body} � {timeAgo(last.created_at)}</span></span>
                     <span className="dot">{n}</span>
                   </Link>
                 )
@@ -157,7 +168,7 @@ export default function Dashboard() {
             {d.sessions.length === 0 && <Empty icon="calendar" title="No sessions scheduled" />}
             <div className="list">
               {d.sessions.map(s => (
-                <div key={s.id} className="item"><span className="grow"><span className="title">{new Date(s.starts_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span><br /><span className="meta">{s.title} · {s.duration_min} min</span></span></div>
+                <div key={s.id} className="item"><span className="grow"><span className="title">{new Date(s.starts_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span><br /><span className="meta">{s.title} � {s.duration_min} min</span></span></div>
               ))}
             </div>
           </div>
@@ -166,3 +177,4 @@ export default function Dashboard() {
     </>
   )
 }
+
