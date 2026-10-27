@@ -8,6 +8,7 @@ import { bugReviewChecks } from './bug-review.mjs'
 import { onboardingBrowserChecks } from './onboarding.mjs'
 import { monthlyBrowserChecks } from './monthly.mjs'
 import { alternativeBrowserChecks } from './alternatives.mjs'
+import { exerciseBoxChecks } from './exercise-boxes.mjs'
 import { coachTrainingChecks, tabMemoryChecks } from './coach-training.mjs'
 import { dashboardBrowserChecks } from './dashboard.mjs'
 import { notificationBrowserChecks } from './notifications.mjs'
@@ -54,6 +55,7 @@ const tab = (page, name) => page.locator('nav a', { hasText: new RegExp('^\\s*' 
 const today = new Date().toLocaleDateString('en-CA')
 const addDaysISO = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA') }
 
+await exerciseBoxChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await coachTrainingChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await tabMemoryChecks({ open, sql, IDS, BASE, ok, clean })
 await dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok })
@@ -205,12 +207,11 @@ console.log('Coach flows')
   await page.getByRole('button', { name: /Add exercise/ }).click()
   await page.getByPlaceholder(/Search 100/).fill('Treadmill run')
   await page.locator('.sheet .item', { hasText: 'Treadmill run' }).click()
-  // wording: Weight and Effort replace %1RM and Load
+  // Compact strength controls retain Weight without Effort or Group.
   ok(await page.getByText('%1RM').count() === 0 && await page.getByText('Load', { exact: true }).count() === 0, 'builder no longer shows %1RM or Load')
-  ok(await page.getByText('Weight', { exact: true }).count() === 2 && await page.getByText('Effort', { exact: true }).count() === 3, 'builder shows Weight and Effort')
+  ok(await page.getByText('Weight', { exact: true }).count() === 2 && await page.getByText('Effort', { exact: true }).count() === 0 && await page.getByLabel('Group', { exact: true }).count() === 0, 'builder shows Weight without Effort or Group')
   await page.getByPlaceholder('kg, or 75%').nth(0).fill('80')
   await page.getByPlaceholder('kg, or 75%').nth(1).fill('75%')
-  await page.getByPlaceholder('e.g. RPE 8').nth(0).fill('RPE 8')
   // cardio exercise gets time, distance and speed instead of sets, reps and weight
   ok(await page.getByText('Distance (km)').count() === 1 && await page.getByText('Speed (km/h)').count() === 1, 'cardio exercise shows time, distance and speed fields')
   await page.getByPlaceholder('20:00 or 1:00').fill('20:00')
@@ -220,7 +221,7 @@ console.log('Coach flows')
   const wk = (await sql(`select w.id, count(i.id)::int n from workouts w join workout_items i on i.workout_id = w.id where w.name = 'Coach leg day' group by w.id`))[0]
   ok(wk?.n === 3, 'workout builder saved three exercises')
   const its = await sql(`select exercise_name, weight, percent_1rm, load, cardio_time, cardio_distance_km from workout_items where workout_id = '${wk.id}' order by sort`)
-  ok(its[0].weight === '80' && its[0].percent_1rm === null && its[0].load === 'RPE 8', 'weight in kg and effort saved')
+  ok(its[0].weight === '80' && its[0].percent_1rm === null && its[0].load === '', 'weight in kg saved without effort')
   ok(its[1].weight === '75%' && Number(its[1].percent_1rm) === 75, 'weight as a percent of max saved (still drives the working load)')
   ok(its[2].cardio_time === '20:00' && Number(its[2].cardio_distance_km) === 5, 'cardio time and distance saved')
   await shot(page, 'coach-workout-builder'); clean('workout builder', errors)

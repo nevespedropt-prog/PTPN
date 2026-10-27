@@ -79,7 +79,7 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Broad jump'),'Broad jump','Legs','Bodyweight','plyometric','Jump forward as far as possible, stick the landing.'),
 (pg_temp.sid('ex:Jump squat'),'Jump squat','Legs','Bodyweight','plyometric','Quarter squat, explode up, land softly into the next rep.'),
 (pg_temp.sid('ex:Medicine ball slam'),'Medicine ball slam','Full body','Medicine ball','plyometric','Reach tall, slam the ball down hard, catch and repeat.'),
-(pg_temp.sid('ex:Burpee'),'Burpee','Full body','Bodyweight','cardio','Squat, kick back to plank, chest down, jump up.'),
+(pg_temp.sid('ex:Burpee'),'Burpee','Full body','Bodyweight','strength','Squat, kick back to plank, chest down, jump up.'),
 (pg_temp.sid('ex:Skater jump'),'Skater jump','Legs','Bodyweight','plyometric','Bound side to side, land on one leg with control.'),
 (pg_temp.sid('ex:Tuck jump'),'Tuck jump','Legs','Bodyweight','plyometric','Jump and drive knees to the chest.'),
 (pg_temp.sid('ex:Power clean'),'Power clean','Full body','Barbell','strength','Pull from the floor, extend hard, catch in the front rack.'),

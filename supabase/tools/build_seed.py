@@ -96,7 +96,7 @@ EX = [
  ("Broad jump","Legs","Bodyweight","plyometric","Jump forward as far as possible, stick the landing."),
  ("Jump squat","Legs","Bodyweight","plyometric","Quarter squat, explode up, land softly into the next rep."),
  ("Medicine ball slam","Full body","Medicine ball","plyometric","Reach tall, slam the ball down hard, catch and repeat."),
- ("Burpee","Full body","Bodyweight","cardio","Squat, kick back to plank, chest down, jump up."),
+ ("Burpee","Full body","Bodyweight","strength","Squat, kick back to plank, chest down, jump up."),
  ("Skater jump","Legs","Bodyweight","plyometric","Bound side to side, land on one leg with control."),
  ("Tuck jump","Legs","Bodyweight","plyometric","Jump and drive knees to the chest."),
  ("Power clean","Full body","Barbell","strength","Pull from the floor, extend hard, catch in the front rack."),
