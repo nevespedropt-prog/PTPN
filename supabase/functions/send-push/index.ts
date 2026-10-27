@@ -2,6 +2,7 @@
 //   { kind: 'message', id }  a new chat message goes to the other side of the conversation
 //   { kind: 'posts' }        announcements that are due and not yet pushed go to everyone else
 //   { kind: 'reminders' }    clients with a workout scheduled today get a morning nudge
+//   { kind: 'booking-reminders' } clients get one reminder when a booked session is eight hours away
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import webpush from 'npm:web-push@3.6.7'
 
@@ -9,7 +10,7 @@ type Sub = { id: string; user_id: string; endpoint: string; p256dh: string; auth
 type Note = { title: string; body: string; path: string; tag: string }
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
-const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
+const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '.' : s)
 
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -51,6 +52,21 @@ Deno.serve(async (req: Request) => {
     for (const [client, list] of byClient) {
       jobs.push({ userIds: [client], note: { title: 'Workout today', body: list.length === 1 ? `${list[0]} is on your schedule today.` : `${list.length} workouts are on your schedule today.`, path: 'train', tag: 'reminder' } })
     }
+  } else if (body.kind === 'booking-reminders') {
+    const { data: due, error } = await db.rpc('claim_booking_reminders')
+    if (error) return json({ error: 'Could not claim booking reminders' }, 500)
+    const time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'short', hour: '2-digit', minute: '2-digit' })
+    for (const booking of due ?? []) {
+      jobs.push({
+        userIds: [booking.client_id],
+        note: {
+          title: 'Session reminder',
+          body: `${booking.title} starts at ${time.format(new Date(booking.starts_at))}.`,
+          path: 'book',
+          tag: 'booking-' + booking.booking_id,
+        },
+      })
+    }
   } else return json({ error: 'Unknown kind' }, 400)
 
   let sent = 0, removed = 0
@@ -71,3 +87,4 @@ Deno.serve(async (req: Request) => {
   }
   return json({ sent, removed })
 })
+

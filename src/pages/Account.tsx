@@ -87,7 +87,7 @@ export default function Account() {
       {ps !== 'unsupported' && (
         <section className="card col" aria-label="Notifications">
           <h2>Notifications</h2>
-          <span className="mute small">{profile?.role === 'coach' ? 'Get a message when a client writes to you.' : 'Get a message when your coach writes, a workout is due today, or there is a new announcement.'}</span>
+          <span className="mute small">{profile?.role === 'coach' ? 'Get a message when a client writes to you.' : 'Get a message when your coach writes, a session starts in eight hours, a workout is due today, or there is a new announcement.'}</span>
           {ps === null && <span className="mute small" role="status">Checking notification settings...</span>}
           {ps === 'needs-install' && <span className="small">On iPhone and iPad, add the app to your Home Screen first (More page, Install the app), then open it from there to turn notifications on.</span>}
           {ps === 'denied' && <span className="small">Notifications are blocked for this app. Allow them in your phone or browser settings, then come back.</span>}
@@ -108,3 +108,4 @@ export default function Account() {
     </>
   )
 }
+

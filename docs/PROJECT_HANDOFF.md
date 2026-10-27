@@ -297,3 +297,11 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - The latest saved monthly coach feedback and next focus are surfaced directly in the summary, so clients do not need to find the Monthly tab to understand what to work on.
 - Coach and client views use the same read-only evidence. Failed or potentially truncated progress reads show a retry state instead of a misleading summary.
 - No schema or production-data migration is required.
+## 2026-10-27 eight-hour session reminders
+
+- Clients with notifications enabled receive one push reminder when a booked PT session first comes within eight hours.
+- A five-minute server schedule claims due bookings atomically, preventing duplicate reminders during overlapping runs.
+- Sessions booked less than eight hours ahead are reminded on the next run; cancelled bookings are removed before they can notify.
+- Reminder times are formatted in Europe/London and tapping opens Book a session.
+- Apply supabase/migrate_v14_booking_reminders.sql and deploy the existing send-push Edge Function.
+
