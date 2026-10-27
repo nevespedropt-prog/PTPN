@@ -158,10 +158,10 @@ export default function WorkoutPlayer() {
     setRest(null)
     change({ ...log, timer: nextTimer })
   }
-  const startSessionTimer = () => setSessionTimer({ elapsed_sec: timerSeconds(log.timer, now), started_at: new Date(now).toISOString(), running: true })
-  const pauseSessionTimer = () => setSessionTimer({ elapsed_sec: timerSeconds(log.timer, now), started_at: null, running: false })
+  const startSessionTimer = () => { const at = Date.now(); setSessionTimer({ elapsed_sec: timerSeconds(log.timer, at), started_at: new Date(at).toISOString(), running: true }) }
+  const pauseSessionTimer = () => setSessionTimer({ elapsed_sec: timerSeconds(log.timer, Date.now()), started_at: null, running: false })
   const resetSessionTimer = () => {
-    if (timerSeconds(log.timer, now) > 0 && !confirm('Reset the session timer to 00:00?')) return
+    if (timerSeconds(log.timer, Date.now()) > 0 && !confirm('Reset the session timer to 00:00?')) return
     setSessionTimer({ elapsed_sec: 0, started_at: null, running: false })
   }
 
