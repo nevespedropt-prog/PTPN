@@ -56,7 +56,7 @@ export default function ProgressStory({ clientId, coach }: { clientId: string; c
       </div>
       <div>
         <h3 style={{ marginTop: 0 }}>Coach guidance</h3>
-        {data.review ? <div className="card tight" style={{ margin: 0 }}><p style={{ whiteSpace: 'pre-wrap', marginTop: 0 }}>{data.review.feedback}</p><b>Current focus</b><p style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>{data.review.next_focus}</p><span className="mute small">Review from {niceDate(data.review.month_start)}</span></div> : <p className="mute">{coach ? 'Add a monthly review to give this client a clear focus.' : 'Your coach's latest summary and next focus will appear here.'}</p>}
+        {data.review ? <div className="card tight" style={{ margin: 0 }}><p style={{ whiteSpace: 'pre-wrap', marginTop: 0 }}>{data.review.feedback}</p><b>Current focus</b><p style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>{data.review.next_focus}</p><span className="mute small">Review from {niceDate(data.review.month_start)}</span></div> : <p className="mute">{coach ? 'Add a monthly review to give this client a clear focus.' : 'The latest coach summary and next focus will appear here.'}</p>}
       </div>
     </div>
   </section>

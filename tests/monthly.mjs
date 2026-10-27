@@ -88,7 +88,7 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   await story.locator('.tile').filter({ hasText: 'Workouts this week' }).getByText('3', { exact: true }).waitFor()
   ok(await story.getByText('3 workouts completed this week', { exact: true }).count() === 1 && await story.getByText('2 more workouts than last week', { exact: true }).count() === 1, 'progress story turns weekly training into clear achievements')
   ok(await story.locator('.tile').filter({ hasText: 'Latest weight' }).getByText('-1 kg since', { exact: false }).count() === 1, 'progress story shows the latest body trend')
-  ok(await story.getByText('Your coach's latest summary and next focus will appear here.', { exact: true }).count() === 1, 'progress story explains where coach guidance will appear')
+  ok(await story.getByText('The latest coach summary and next focus will appear here.', { exact: true }).count() === 1, 'progress story explains where coach guidance will appear')
   await page.getByRole('tab', { name: 'Monthly', exact: true }).click()
   const report = page.getByRole('region', { name: 'Monthly report', exact: true })
   await report.getByText('Previous month: 66.7 kg. Change: +13.3 kg.', { exact: true }).waitFor()
@@ -167,5 +167,4 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   await sql('delete from workouts where id=$1', [w])
   await sql('delete from client_health where client_id=$1', [IDS.ana])
 }
-
 
