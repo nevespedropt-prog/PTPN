@@ -120,7 +120,7 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   await report.getByLabel('Report month', { exact: true }).selectOption(current)
   await report.getByText('2 days with weight entries.', { exact: false }).waitFor()
   await page.waitForTimeout(650) // allow the deliberately delayed response to arrive
-  ok(await report.getByText('Monthly squat', { exact: true }).count() === 0, 'monthly: old month response cannot overwrite current report')
+  ok(await report.getByLabel('Report month', { exact: true }).inputValue() === current && await report.getByText('2 days with weight entries.', { exact: false }).count() === 1, 'monthly: old month response cannot overwrite current report')
   await page.unroute('**/rest/v1/monthly_reviews*')
   client.errors.splice(0, client.errors.length, ...client.errors.filter(e => !/503/.test(e)))
   clean('monthly client', client.errors); await client.ctx.close()
