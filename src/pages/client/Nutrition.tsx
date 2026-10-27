@@ -1,3 +1,4 @@
+import { usePageTab } from '../../hooks'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -17,7 +18,7 @@ type AddTab = 'foods' | 'recipes' | 'quick' | 'saved'
 
 function AddFood({ meal, date, onDone, onClose }: { meal: MealType; date: string; onDone: () => void; onClose: () => void }) {
   const { profile } = useAuth()
-  const [tab, setTab] = useState<AddTab>('foods')
+  const [tab, setTab] = usePageTab<AddTab>('add-food', ['foods', 'recipes', 'quick', 'saved'], 'foods', 'foodTab')
   const [foods, setFoods] = useState<Food[] | null>(null)
   const [q, setQ] = useState('')
   const [food, setFood] = useState<Food | null>(null)

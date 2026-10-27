@@ -8,6 +8,7 @@ import { bugReviewChecks } from './bug-review.mjs'
 import { onboardingBrowserChecks } from './onboarding.mjs'
 import { monthlyBrowserChecks } from './monthly.mjs'
 import { alternativeBrowserChecks } from './alternatives.mjs'
+import { coachTrainingChecks, tabMemoryChecks } from './coach-training.mjs'
 import { dashboardBrowserChecks } from './dashboard.mjs'
 import { notificationBrowserChecks } from './notifications.mjs'
 
@@ -53,6 +54,8 @@ const tab = (page, name) => page.locator('nav a', { hasText: new RegExp('^\\s*' 
 const today = new Date().toLocaleDateString('en-CA')
 const addDaysISO = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA') }
 
+await coachTrainingChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await tabMemoryChecks({ open, sql, IDS, BASE, ok, clean })
 await dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok })
 await notificationBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await alternativeBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
@@ -371,6 +374,7 @@ console.log('Client flows')
   await page.locator('.sheet button', { hasText: 'Add entry' }).click()
   await page.getByText('Coffee and croissant').waitFor()
   await page.locator('.card', { hasText: 'Lunch' }).getByRole('button', { name: /Add/ }).first().click()
+  await page.getByRole('tab', { name: 'Foods', exact: true }).click()
   await page.getByPlaceholder('Search foods').fill('chicken breast')
   await page.locator('.sheet .item', { hasText: 'Chicken breast, cooked' }).click()
   await page.locator('.sheet input[type=number]').fill('200')

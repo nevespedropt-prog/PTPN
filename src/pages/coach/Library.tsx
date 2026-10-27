@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
-import { useClients } from '../../hooks'
+import { useClients, usePageTab } from '../../hooks'
 import { FORMAT_LABEL } from '../../lib/training'
 import type { Category, Exercise, Program, Workout } from '../../types'
 import { Empty, PageHead, Seg, Sheet, Skeleton } from '../../components/ui'
@@ -178,7 +178,7 @@ function Exercises() {
 }
 
 export default function Library() {
-  const [tab, setTab] = useState<'workouts' | 'programs' | 'exercises'>('workouts')
+  const [tab, setTab] = usePageTab('library', ['workouts', 'programs', 'exercises'] as const, 'workouts')
   return (
     <>
       <PageHead eyebrow="Training" title="Library" sub="Templates, programmes and the exercise library" />

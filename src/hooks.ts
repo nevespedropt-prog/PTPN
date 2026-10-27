@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useSearchParams } from 'react-router-dom'
+import { useAuth } from './auth'
 import { supabase } from './lib/supabase'
 import type { Profile } from './types'
 
@@ -36,4 +37,27 @@ export function useClients() {
   }, [])
   useEffect(() => { reload() }, [reload])
   return { clients, reload }
+}
+
+/** Remember navigation tabs in this browser tab, separately for each account/page/section. */
+export function usePageTab<T extends string | number>(scope: string, allowed: readonly T[], initial: T, param = 'tab', preferInitial = false): [T, (next: T) => void] {
+  const { profile } = useAuth()
+  const { pathname } = useLocation()
+  const [search, setSearch] = useSearchParams()
+  const key = 'ptpn:tab:' + (profile?.id ?? 'guest') + ':' + pathname + ':' + scope
+  const requested = search.get(param)
+  let remembered: string | null = null
+  try { remembered = sessionStorage.getItem(key) } catch { /* URL navigation still works when storage is blocked. */ }
+  const requestedValue = allowed.find(option => String(option) === requested)
+  const rememberedValue = allowed.find(option => String(option) === remembered)
+  const value = requestedValue ?? (requested !== null || preferInitial ? initial : rememberedValue ?? initial)
+  useEffect(() => {
+    try { sessionStorage.setItem(key, String(value)) } catch { /* Optional navigation preference only. */ }
+  }, [key, value])
+  const select = (next: T) => {
+    if (!allowed.includes(next)) return
+    try { sessionStorage.setItem(key, String(next)) } catch { /* Keep navigation usable. */ }
+    setSearch(previous => { const params = new URLSearchParams(previous); params.set(param, String(next)); return params }, { replace: true })
+  }
+  return [value, select]
 }
