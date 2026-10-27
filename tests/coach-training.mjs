@@ -239,11 +239,17 @@ export async function tabMemoryChecks({ open, sql, IDS, BASE, ok, clean }) {
     await blocked.page.getByRole('link', { name: 'Back', exact: true }).click()
     await blocked.page.getByRole('tab', { name: 'Programmes', exact: true, selected: true }).waitFor()
     await blocked.page.getByRole('tab', { name: 'Workouts', exact: true }).click()
+    const workoutSearch = blocked.page.getByPlaceholder('Search workouts')
+    const firstWorkoutName = await blocked.page.locator('.card a[href^="/library/workouts/"]:not(.btn)').first().innerText()
+    await workoutSearch.fill(firstWorkoutName)
+    await blocked.page.evaluate(() => { document.body.style.minHeight = '3000px'; scrollTo(0, 240) })
     await blocked.page.locator('.card a.btn[href^="/library/workouts/"]').first().click()
+    const workoutReturn = new URL(blocked.page.url()).searchParams.get('returnTo') ?? ''
+    ok(workoutReturn.includes('workoutQ=') && workoutReturn.includes('scrollY='), 'workout detail carries the Library search and scroll position')
     await blocked.page.reload({ waitUntil: 'networkidle' })
     await blocked.page.getByRole('link', { name: 'Back', exact: true }).click()
     await blocked.page.getByRole('tab', { name: 'Workouts', exact: true, selected: true }).waitFor()
-    ok(await selected(blocked.page, 'Workouts') === 'true', 'workout details return to Library Workouts without storage')
+    ok(await selected(blocked.page, 'Workouts') === 'true' && await workoutSearch.inputValue() === firstWorkoutName, 'workout details return to the same filtered Library view without storage')
     await blocked.page.setViewportSize({ width: 1280, height: 860 })
     for (const tab of ['Exercises', 'Programmes', 'Workouts']) {
       await blocked.page.getByRole('tab', { name: tab, exact: true }).click()
@@ -255,3 +261,4 @@ export async function tabMemoryChecks({ open, sql, IDS, BASE, ok, clean }) {
     clean('blocked tab preference storage', blocked.errors)
   } finally { await blocked.ctx.close() }
 }
+
