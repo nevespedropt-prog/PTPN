@@ -266,3 +266,12 @@ The displayed Straight sets option is replaced by Superset; Circuit, AMRAP, EMOM
 A shared WorkoutFormatGuide appears near the top of both the builder and workout player for every format, including strength-only workouts. It updates immediately on selection and uses a complete typed description map: paired exercises for Superset, sequential rounds for Circuit, repeating rounds within a time cap for AMRAP, minute starts and remaining-minute rest for EMOM, and repeated work/recovery for Intervals. Configured duration is shown, labelled Time cap for AMRAP; its rounds value is a Round goal, not a limit. Superset omits a global rounds badge. Cardio station hints agree with the selected format. Existing coach-written description/notes remain separately editable and are never overwritten by format switching.
 
 Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, WorkoutPlayer.tsx, tests/workout-formats.mjs, test runner and handoff. Focused checks cover all five option labels, immediate guide updates/placement, consistent cardio hints, save/reload and preserved notes, client guide parity and phone width. Screenshots are captured per format in CI; manual visual review remains separate. No dependency or database changes.
+
+## 2026-10-27 format behaviour and navigation polish
+
+- Workout formats now affect the client session instead of acting only as labels: Superset pairs consecutive exercises, Circuit and AMRAP use the full sequence, EMOM assigns minute stations, and Intervals assigns timed stations.
+- The client player shows format-aware live guidance. AMRAP counts down its time cap, EMOM shows the current minute and exercise, Intervals alternates work and recovery, and Circuit/Superset show the active round or pair.
+- Rest starts at the correct structural boundary: after a Superset pair, after a Circuit round, or after each Interval. AMRAP and EMOM rely on their format clocks.
+- Coaches can collapse all exercise prescription details while reviewing a long template.
+- Library workout/exercise searches and exercise category filters are stored in the URL. Workout and programme detail links also carry the Library scroll position back through refresh-safe return URLs.
+- No schema or production-data migration is required.

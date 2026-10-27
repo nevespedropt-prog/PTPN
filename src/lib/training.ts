@@ -50,6 +50,20 @@ export const CARDIO_STYLE_HINT: Record<WorkoutFormat, string> = {
   circuit: 'Complete this station, continue to the next, then repeat the circuit.',
 }
 
+/** Build the exercise blocks implied by the selected workout format. */
+export function formatGroups(items: WorkoutItem[], format: WorkoutFormat) {
+  const sorted = [...items].sort((a, b) => a.sort - b.sort)
+  if (format === 'standard') {
+    const groups: { label: string; items: WorkoutItem[] }[] = []
+    for (let i = 0; i < sorted.length; i += 2) groups.push({ label: `Pair ${Math.floor(i / 2) + 1}`, items: sorted.slice(i, i + 2) })
+    return groups
+  }
+  if (format === 'circuit' || format === 'amrap') return sorted.length ? [{ label: format === 'amrap' ? 'AMRAP sequence' : 'Circuit', items: sorted }] : []
+  if (format === 'emom') return sorted.map((item, i) => ({ label: `Minute ${i + 1}`, items: [item] }))
+  if (format === 'intervals') return sorted.map((item, i) => ({ label: `Interval ${i + 1}`, items: [item] }))
+  return groupItems(sorted)
+}
+
 /** "20:00", "1:30:00", "90s", "20 min" or a plain number (minutes) to minutes. */
 export function parseMinutes(raw: string | undefined): number | null {
   const t = (raw ?? '').trim().toLowerCase()
@@ -82,7 +96,7 @@ export function fillCardio(s: SetLog): SetLog {
 export const cardioPrescription = (it: WorkoutItem, format: WorkoutFormat) => {
   const f = CARDIO_FIELDS[format]
   const parts: string[] = []
-  if (f.includes('sets') && it.sets && it.sets > 1) parts.push(`${it.sets} ×`)
+  if (f.includes('sets') && it.sets && it.sets > 1) parts.push(`${it.sets} x`)
   if (it.cardio_time) parts.push(it.cardio_time.includes(':') || /[a-z]/i.test(it.cardio_time) ? it.cardio_time : `${it.cardio_time} min`)
   if (it.cardio_distance_km) parts.push(`${Number(it.cardio_distance_km)} km`)
   if (it.cardio_speed_kmh) parts.push(`@ ${Number(it.cardio_speed_kmh)} km/h`)
@@ -94,7 +108,7 @@ export const cardioPrescription = (it: WorkoutItem, format: WorkoutFormat) => {
 // ---------- strength ----------
 export const prescription = (it: WorkoutItem) => {
   const parts: string[] = []
-  if (it.sets && it.reps) parts.push(`${it.sets} × ${it.reps}`)
+  if (it.sets && it.reps) parts.push(`${it.sets} x ${it.reps}`)
   else if (it.sets) parts.push(`${it.sets} sets`)
   else if (it.reps) parts.push(it.reps)
   const w = weightOf(it)
@@ -156,3 +170,5 @@ export const setsDone = (cw: ClientWorkout) =>
 
 export const volumeKg = (cw: ClientWorkout) =>
   Object.values(cw.log?.items ?? {}).reduce((v, sets) => v + sets.reduce((a, s) => a + (s.done ? (parseFloat(s.kg) || 0) * (parseInt(s.reps) || 0) : 0), 0), 0)
+
+

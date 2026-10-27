@@ -22,6 +22,10 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
     await page.goto(BASE + '/library/workouts/' + id(1), { waitUntil: 'networkidle' })
     const select = page.getByLabel('Format', { exact: true })
     await select.waitFor()
+
+    await page.getByRole('button', { name: 'Collapse details', exact: true }).click()
+    ok(await page.getByRole('group', { name: 'Exercise 1: Goblet squat', exact: true }).getByLabel('Sets', { exact: true }).count() === 0, 'coach can collapse busy exercise prescriptions')
+    await page.getByRole('button', { name: 'Show details', exact: true }).click()
     const optionLabels = await select.locator('option').allTextContents()
     ok(JSON.stringify(optionLabels) === JSON.stringify(formats.map(f => f[1])), 'formats replace Straight sets with Superset and retain the other four options')
     const guide = page.getByRole('region', { name: 'Workout format', exact: true })
@@ -47,6 +51,12 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
       const clientGuide = client.page.getByRole('region', { name: 'Workout format', exact: true })
       await clientGuide.getByRole('heading', { name: label, exact: true }).waitFor()
       ok((await clientGuide.innerText()).includes(meaning), label + ' instructions also appear on the client workout')
+      const live = client.page.getByRole('region', { name: 'Live format guidance', exact: true })
+      await live.waitFor()
+      const expectedLive = value === 'standard' ? 'Current pair' : value === 'circuit' ? 'Current round' : value === 'amrap' ? 'AMRAP time remaining' : value === 'emom' ? 'Minute 1' : 'Work interval'
+      ok((await live.innerText()).includes(expectedLive), label + ' controls its live grouping or timer')
+      const expectedGroup = value === 'standard' ? 'Superset Pair 1' : value === 'circuit' ? 'Circuit' : value === 'amrap' ? 'AMRAP sequence' : value === 'emom' ? 'Minute 1' : 'Interval 1'
+      ok(await client.page.getByText(expectedGroup, { exact: true }).count() >= 1, label + ' automatically structures the exercise list')
       ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth) && await client.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), label + ' guide fits phone width on both sides')
       await shot(page, 'format-' + value + '-builder-phone')
       await shot(client.page, 'format-' + value + '-client-phone')
@@ -59,3 +69,4 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
     await sql('delete from workouts where id=$1', [id(1)])
   }
 }
+

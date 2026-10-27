@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
 import { useClients, usePageTab } from '../../hooks'
@@ -14,19 +14,38 @@ const CATS: Category[] = ['strength', 'cardio', 'mobility', 'plyometric', 'core'
 
 function useLibraryReturn(tab: string) {
   const { pathname, search } = useLocation()
+  const nav = useNavigate()
   const params = new URLSearchParams(search)
   params.set('tab', tab)
-  return { returnTo: pathname + '?' + params.toString() }
+  const base = pathname + '?' + params.toString()
+  const open = (to: string) => {
+    const back = new URLSearchParams(params)
+    back.set('scrollY', String(Math.round(window.scrollY)))
+    const state = { returnTo: pathname + '?' + back.toString() }
+    nav(`${to}?returnTo=${encodeURIComponent(state.returnTo)}`, { state })
+  }
+  return { returnTo: base, open }
+}
+
+function useRestoreLibraryScroll(ready: boolean) {
+  const { search } = useLocation()
+  useEffect(() => {
+    if (!ready) return
+    const y = Number(new URLSearchParams(search).get('scrollY'))
+    if (!Number.isFinite(y) || y <= 0) return
+    const frame = requestAnimationFrame(() => window.scrollTo({ top: y }))
+    return () => cancelAnimationFrame(frame)
+  }, [ready, search])
 }
 
 function Workouts() {
   const returnState = useLibraryReturn('workouts')
   const { profile } = useAuth()
-  const nav = useNavigate()
   const { clients } = useClients()
   const [rows, setRows] = useState<Workout[] | null>(null)
   const [counts, setCounts] = useState<Record<string, number>>({})
-  const [q, setQ] = useState('')
+  const [search, setSearch] = useSearchParams()
+  const q = search.get('workoutQ') ?? ''
   const [assign, setAssign] = useState<Workout | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -38,13 +57,14 @@ function Workouts() {
     setCounts(c)
   }, [])
   useEffect(() => { load() }, [load])
+  useRestoreLibraryScroll(rows !== null)
 
   async function create() {
     setBusy(true)
     const { data, error } = await supabase.from('workouts').insert({ name: 'New workout', created_by: profile!.id }).select().single()
     setBusy(false)
     if (error) return alert(error.message)
-    nav(`/library/workouts/${data.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`, { state: returnState })
+    returnState.open(`/library/workouts/${data.id}`)
   }
   async function duplicate(w: Workout) {
     setBusy(true)
@@ -52,7 +72,7 @@ function Workouts() {
     if (error) { setBusy(false); return alert(error.message) }
     const { data: items } = await supabase.from('workout_items').select('*').eq('workout_id', w.id)
     if (items?.length) await supabase.from('workout_items').insert(items.map(({ id: _id, workout_id: _w, ...r }) => ({ ...r, workout_id: copy.id })))
-    setBusy(false); nav(`/library/workouts/${copy.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`, { state: returnState })
+    setBusy(false); returnState.open(`/library/workouts/${copy.id}`)
   }
   async function remove(w: Workout) {
     if (!confirm(`Delete "${w.name}"? Scheduled sessions using it will be removed too.`)) return
@@ -62,7 +82,7 @@ function Workouts() {
   const list = (rows ?? []).filter(w => w.name.toLowerCase().includes(q.toLowerCase()))
   return (
     <>
-      <div className="row nowrap"><input placeholder="Search workouts" value={q} onChange={e => setQ(e.target.value)} /><button className="sm" style={{ flex: 'none' }} onClick={create} disabled={busy}><Icon name="plus" size={16} />New</button></div>
+      <div className="row nowrap"><input placeholder="Search workouts" value={q} onChange={e => setSearch(previous => { const next = new URLSearchParams(previous); if (e.target.value) next.set('workoutQ', e.target.value); else next.delete('workoutQ'); return next }, { replace: true })} /><button className="sm" style={{ flex: 'none' }} onClick={create} disabled={busy}><Icon name="plus" size={16} />New</button></div>
       {!rows && <Skeleton n={4} />}
       <div className="g-auto">
         {list.map(w => (
@@ -71,11 +91,11 @@ function Workouts() {
               <span className="badge">{FORMAT_LABEL[w.format]}</span>
               <span className={'badge ' + (w.created_by ? 'violet' : 'blue')}>{w.created_by ? 'Yours' : 'Template'}</span>
             </div>
-            <Link to={`/library/workouts/${w.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} state={returnState}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{w.name}</b></Link>
-            <p className="mute small" style={{ margin: '4px 0 12px' }}>{counts[w.id] ?? 0} exercises{w.duration_min ? ` · ${w.duration_min} min` : ''}</p>
+            <Link to={`/library/workouts/${w.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} onClick={e => { e.preventDefault(); returnState.open(`/library/workouts/${w.id}`) }}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{w.name}</b></Link>
+            <p className="mute small" style={{ margin: '4px 0 12px' }}>{counts[w.id] ?? 0} exercises{w.duration_min ? ` � ${w.duration_min} min` : ''}</p>
             <div className="row" style={{ marginBottom: 0 }}>
               <button className="sm" onClick={() => setAssign(w)}>Assign</button>
-              <Link className="btn soft sm" to={`/library/workouts/${w.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} state={returnState}>{w.created_by ? 'Edit' : 'View'}</Link>
+              <Link className="btn soft sm" to={`/library/workouts/${w.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} onClick={e => { e.preventDefault(); returnState.open(`/library/workouts/${w.id}`) }}>{w.created_by ? 'Edit' : 'View'}</Link>
               <button className="soft sm" onClick={() => duplicate(w)} aria-label={`Duplicate ${w.name}`}><Icon name="copy" size={15} /></button>
               {w.created_by && <button className="link" onClick={() => remove(w)}>Delete</button>}
             </div>
@@ -91,15 +111,15 @@ function Workouts() {
 function Programs() {
   const returnState = useLibraryReturn('programs')
   const { profile } = useAuth()
-  const nav = useNavigate()
   const [rows, setRows] = useState<Program[] | null>(null)
   const load = useCallback(async () => { const { data } = await supabase.from('programs').select('*').order('name'); setRows((data ?? []) as Program[]) }, [])
   useEffect(() => { load() }, [load])
+  useRestoreLibraryScroll(rows !== null)
 
   async function create() {
     const { data, error } = await supabase.from('programs').insert({ name: 'New programme', created_by: profile!.id }).select().single()
     if (error) return alert(error.message)
-    nav(`/library/programs/${data.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`, { state: returnState })
+    returnState.open(`/library/programs/${data.id}`)
   }
   async function remove(p: Program) { if (confirm(`Delete "${p.name}"?`)) { await supabase.from('programs').delete().eq('id', p.id); load() } }
 
@@ -113,10 +133,10 @@ function Programs() {
             <div className="row" style={{ marginBottom: 6 }}>
               {p.goal && <span className="badge red">{p.goal}</span>}{p.level && <span className="badge">{p.level}</span>}<span className="badge">{p.weeks} weeks</span>
             </div>
-            <Link to={`/library/programs/${p.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} state={returnState}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{p.name}</b></Link>
+            <Link to={`/library/programs/${p.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} onClick={e => { e.preventDefault(); returnState.open(`/library/programs/${p.id}`) }}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{p.name}</b></Link>
             <p className="mute small" style={{ margin: '4px 0 12px' }}>{p.description}</p>
             <div className="row" style={{ marginBottom: 0 }}>
-              <Link className="btn sm" to={`/library/programs/${p.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} state={returnState}>{p.created_by ? 'Edit and assign' : 'View and assign'}</Link>
+              <Link className="btn sm" to={`/library/programs/${p.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} onClick={e => { e.preventDefault(); returnState.open(`/library/programs/${p.id}`) }}>{p.created_by ? 'Edit and assign' : 'View and assign'}</Link>
               {p.created_by && <button className="link" onClick={() => remove(p)}>Delete</button>}
             </div>
           </div>
@@ -129,8 +149,16 @@ function Programs() {
 function Exercises() {
   const { profile } = useAuth()
   const { rows, reload } = useExercises()
-  const [q, setQ] = useState('')
-  const [cat, setCat] = useState<Category | 'all'>('all')
+  const [search, setSearch] = useSearchParams()
+  const q = search.get('exerciseQ') ?? ''
+  const requestedCat = search.get('category')
+  const cat: Category | 'all' = requestedCat && CATS.includes(requestedCat as Category) ? requestedCat as Category : 'all'
+  const updateFilters = (patch: { q?: string; cat?: Category | 'all' }) => setSearch(previous => {
+    const next = new URLSearchParams(previous)
+    if (patch.q !== undefined) { if (patch.q) next.set('exerciseQ', patch.q); else next.delete('exerciseQ') }
+    if (patch.cat !== undefined) { if (patch.cat === 'all') next.delete('category'); else next.set('category', patch.cat) }
+    return next
+  }, { replace: true })
   const [adding, setAdding] = useState(false)
   const [open, setOpen] = useState<Exercise | null>(null)
   const [f, setF] = useState({ name: '', muscle: '', equipment: '', category: 'strength' as Category, instructions: '', video_url: '' })
@@ -147,16 +175,16 @@ function Exercises() {
 
   return (
     <>
-      <div className="row nowrap"><input placeholder={`Search ${rows?.length ?? ''} exercises`} value={q} onChange={e => setQ(e.target.value)} /><button className="sm" style={{ flex: 'none' }} onClick={() => setAdding(true)}><Icon name="plus" size={16} />Custom</button></div>
+      <div className="row nowrap"><input placeholder={`Search ${rows?.length ?? ''} exercises`} value={q} onChange={e => updateFilters({ q: e.target.value })} /><button className="sm" style={{ flex: 'none' }} onClick={() => setAdding(true)}><Icon name="plus" size={16} />Custom</button></div>
       <div className="chips">
-        <button className={'chip' + (cat === 'all' ? ' on' : '')} onClick={() => setCat('all')}>All</button>
-        {CATS.map(c => <button key={c} className={'chip' + (cat === c ? ' on' : '')} onClick={() => setCat(c)} style={{ textTransform: 'capitalize' }}>{c}</button>)}
+        <button className={'chip' + (cat === 'all' ? ' on' : '')} onClick={() => updateFilters({ cat: 'all' })}>All</button>
+        {CATS.map(c => <button key={c} className={'chip' + (cat === c ? ' on' : '')} onClick={() => updateFilters({ cat: c })} style={{ textTransform: 'capitalize' }}>{c}</button>)}
       </div>
       {!rows && <Skeleton n={4} />}
       <div className="card tight"><div className="list">
         {list.slice(0, 400).map(x => (
           <button key={x.id} className="item" onClick={() => setOpen(x)}>
-            <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta">{x.muscle} · {x.equipment}</span></span>
+            <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta">{x.muscle} � {x.equipment}</span></span>
             <span className="badge" style={{ textTransform: 'capitalize' }}>{x.category}</span>
           </button>
         ))}
@@ -198,4 +226,5 @@ export default function Library() {
     </>
   )
 }
+
 

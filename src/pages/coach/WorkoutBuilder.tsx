@@ -28,6 +28,7 @@ export default function WorkoutBuilder() {
   const [dirty, setDirty] = useState(false)
   const [sched, setSched] = useState(false)
   const [alternativeItem, setAlternativeItem] = useState<Row | null>(null)
+  const [compact, setCompact] = useState(false)
   const { clients } = useClients()
   const coach = profile?.role === 'coach'
   const assignTo = coach ? sp.get('assignTo') : null
@@ -123,7 +124,7 @@ export default function WorkoutBuilder() {
           </div>
         </div>
 
-        <div className="section-title"><h2>Exercises</h2><span className="mute small">{rows.length} added</span></div>
+        <div className="section-title"><h2>Exercises</h2><div className="row" style={{ margin: 0 }}><span className="mute small">{rows.length} added</span>{rows.length > 0 && <button type="button" className="link sm" onClick={() => setCompact(!compact)}>{compact ? 'Show details' : 'Collapse details'}</button>}</div></div>
         {rows.length === 0 && <div className="card"><Empty icon="train" title="No exercises yet">Add exercises from the library of 100+ moves or type your own.</Empty></div>}
         {rows.map((r, i) => (
           <div key={r.id} className="card" role="group" aria-label={`Exercise ${i + 1}: ${r.exercise_name}`}>
@@ -133,7 +134,7 @@ export default function WorkoutBuilder() {
               <button type="button" className="icon sm" onClick={() => move(i, 1)} disabled={i === rows.length - 1} aria-label="Move down"><Icon name="down" size={16} /></button>
               <button type="button" className="icon sm" onClick={() => drop(i)} aria-label={`Remove ${r.exercise_name}`}><Icon name="trash" size={16} /></button>
             </div>
-            {r.cardio ? (
+            {!compact && (r.cardio ? (
               <>
                 <div className="mute small" style={{ marginBottom: 8 }}>Cardio. {CARDIO_STYLE_HINT[w.format]}</div>
                 <div className="inline-inputs">
@@ -153,10 +154,10 @@ export default function WorkoutBuilder() {
                 <label className="field">Rest (s)<input type="number" inputMode="numeric" min="0" step="15" value={r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>
                 {!/^burpees?$/i.test(r.exercise_name.trim()) && <label className="field">Tempo<input value={r.tempo} onChange={e => updRow(i, { tempo: e.target.value })} placeholder="3-1-1" /></label>}
               </div>
-            )}
-            <input style={{ marginTop: 8 }} placeholder="Coaching notes" value={r.notes} onChange={e => updRow(i, { notes: e.target.value })} />
+            ))}
+            {!compact && <><input style={{ marginTop: 8 }} placeholder="Coaching notes" value={r.notes} onChange={e => updRow(i, { notes: e.target.value })} />
             {coach && <button type="button" className="soft sm" style={{ marginTop: 10 }} disabled={r.isNew || busy} onClick={() => setAlternativeItem(r)} aria-label={`Manage alternatives for ${r.exercise_name}`}>Approved alternatives</button>}
-            {coach && r.isNew && <p className="mute small">Save this exercise before approving alternatives.</p>}
+            {coach && r.isNew && <p className="mute small">Save this exercise before approving alternatives.</p>}</>}
           </div>
         ))}
         {editable && <button type="button" className="soft block" onClick={() => setPicker(true)}><Icon name="plus" size={18} />Add exercise</button>}
@@ -176,3 +177,4 @@ export default function WorkoutBuilder() {
     </>
   )
 }
+
