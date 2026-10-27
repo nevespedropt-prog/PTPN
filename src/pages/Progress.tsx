@@ -10,6 +10,7 @@ import Photos from '../components/Photos'
 import Metrics from './Metrics'
 import MaxLifts from './MaxLifts'
 import MonthlyReport from '../components/MonthlyReport'
+import ProgressStory from '../components/ProgressStory'
 
 function Body({ clientId, readOnly }: { clientId: string; readOnly: boolean }) {
   const [rows, setRows] = useState<Measurement[]>([])
@@ -130,7 +131,7 @@ function Records({ clientId }: { clientId: string }) {
       {(prs ?? []).slice(0, 12).map((p, i) => (
         <div key={p.exercise} className="lift">
           <span className="badge" style={{ minWidth: 28, justifyContent: 'center' }}>{i + 1}</span>
-          <span className="grow"><b>{p.exercise}</b><br /><span className="mute small">{p.kg} kg × {p.reps} · {niceDate(p.date)}</span></span>
+          <span className="grow"><b>{p.exercise}</b><br /><span className="mute small">{p.kg} kg x {p.reps} � {niceDate(p.date)}</span></span>
           <span className="big">{p.e1rm}<small>kg</small></span>
         </div>
       ))}
@@ -143,6 +144,7 @@ export default function Progress({ clientId, readOnly = false }: { clientId: str
   return (
     <>
       {!readOnly && <PageHead eyebrow="Progress" title="Your results" />}
+      <ProgressStory clientId={clientId} coach={readOnly} />
       <Seg value={tab} onChange={setTab} options={[{ value: 'body', label: 'Body' }, { value: 'strength', label: 'Strength' }, { value: 'photos', label: 'Photos' }, { value: 'monthly', label: 'Monthly' }]} />
       {tab === 'body' && <Body clientId={clientId} readOnly={readOnly} />}
       {tab === 'strength' && <>
@@ -155,3 +157,5 @@ export default function Progress({ clientId, readOnly = false }: { clientId: str
     </>
   )
 }
+
+

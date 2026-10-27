@@ -69,16 +69,26 @@ export async function monthlyDbChecks(db, { coach: C, ana: A, bo: B }, ok) {
 
 export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok }) {
   const today = new Date().toLocaleDateString('en-CA'), current = today.slice(0, 7)
+  const moveDay = n => { const value = new Date(today + 'T12:00:00'); value.setDate(value.getDate() + n); return value.toLocaleDateString('en-CA') }
+  const weekStart = moveDay(1 - ((new Date(today + 'T12:00:00').getDay() + 6) % 7 + 1))
+  const previousWeek = (() => { const value = new Date(weekStart + 'T12:00:00'); value.setDate(value.getDate() - 1); return value.toLocaleDateString('en-CA') })()
   const month = shiftMonth(current, -1), previous = shiftMonth(month, -1)
   await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
   const w = (await sql("insert into workouts(name,created_by) values('Monthly fixture',$1) returning id", [IDS.coach]))[0].id
   const item = (await sql("insert into workout_items(workout_id,exercise_name) values($1,'Monthly squat') returning id", [w]))[0].id
   const log = kg => JSON.stringify({ items: { [item]: [{ kg: String(kg), reps: '10', done: true }] } })
   await sql("insert into client_workouts(client_id,workout_id,date,status,log) values($1,$2,$3,'done',$4::jsonb),($1,$2,$5,'done',$6::jsonb),($1,$2,$7,'skipped','{}'),($1,$2,$8,'scheduled','{}')", [IDS.ana, w, previous + '-05', log(50), month + '-05', log(60), month + '-10', month + '-15'])
+  await sql("insert into client_workouts(client_id,workout_id,date,status,log) values($1,$2,$3,'done',$4::jsonb),($1,$2,$3,'done',$4::jsonb),($1,$2,$3,'done',$4::jsonb),($1,$2,$5,'done',$4::jsonb)", [IDS.ana, w, today, log(65), previousWeek])
   const ids = (await sql("insert into measurements(client_id,date,weight_kg,body_fat_pct,notes) values($1,$2,81,25,'monthly fixture'),($1,$2,83,25,'monthly fixture'),($1,$3,80,24,'monthly fixture') returning id", [IDS.ana, month + '-01', month + '-03'])).map(x => x.id)
+  ids.push(...(await sql("insert into measurements(client_id,date,weight_kg,notes) values($1,$2,80,'progress story fixture'),($1,$3,79,'progress story fixture') returning id", [IDS.ana, moveDay(-1), today])).map(x => x.id))
   const client = await open('ana')
   const { page } = client
   await page.goto(BASE + '/progress', { waitUntil: 'networkidle' })
+  const story = page.getByRole('region', { name: 'Progress summary', exact: true })
+  await story.locator('.tile').filter({ hasText: 'Workouts this week' }).getByText('3', { exact: true }).waitFor()
+  ok(await story.getByText('3 workouts completed this week', { exact: true }).count() === 1 && await story.getByText('2 more workouts than last week', { exact: true }).count() === 1, 'progress story turns weekly training into clear achievements')
+  ok(await story.locator('.tile').filter({ hasText: 'Latest weight' }).getByText('-1 kg since', { exact: false }).count() === 1, 'progress story shows the latest body trend')
+  ok(await story.getByText('The latest coach summary and next focus will appear here.', { exact: true }).count() === 1, 'progress story explains where coach guidance will appear')
   await page.getByRole('tab', { name: 'Monthly', exact: true }).click()
   const report = page.getByRole('region', { name: 'Monthly report', exact: true })
   await report.getByText('Previous month: 66.7 kg. Change: +13.3 kg.', { exact: true }).waitFor()
@@ -100,7 +110,7 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   ok(await report.locator('.tile').count() === 0, 'monthly: incomplete load hides misleading summary')
   await page.unroute('**/rest/v1/monthly_reviews*')
   await report.getByRole('button', { name: 'Retry monthly report', exact: true }).click()
-  await report.getByText('No weight entries this month.', { exact: true }).waitFor()
+  await report.getByText('2 days with weight entries.', { exact: false }).waitFor()
   // Intentionally delayed old response must not replace the currently selected month.
   await page.route('**/rest/v1/monthly_reviews*', async route => {
     if (new URL(route.request().url()).searchParams.get('month_start') === 'eq.' + month + '-01') await new Promise(resolve => setTimeout(resolve, 500))
@@ -108,9 +118,9 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   })
   await report.getByLabel('Report month', { exact: true }).selectOption(month)
   await report.getByLabel('Report month', { exact: true }).selectOption(current)
-  await report.getByText('No weight entries this month.', { exact: true }).waitFor()
+  await report.getByText('2 days with weight entries.', { exact: false }).waitFor()
   await page.waitForTimeout(650) // allow the deliberately delayed response to arrive
-  ok(await report.getByText('Monthly squat', { exact: true }).count() === 0, 'monthly: old month response cannot overwrite current report')
+  ok(await report.getByLabel('Report month', { exact: true }).inputValue() === current && await report.getByText('2 days with weight entries.', { exact: false }).count() === 1, 'monthly: old month response cannot overwrite current report')
   await page.unroute('**/rest/v1/monthly_reviews*')
   client.errors.splice(0, client.errors.length, ...client.errors.filter(e => !/503/.test(e)))
   clean('monthly client', client.errors); await client.ctx.close()
@@ -145,6 +155,9 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   clean('monthly coach', coach.errors); await coach.ctx.close()
   const returning = await open('ana')
   await returning.page.goto(BASE + '/progress', { waitUntil: 'networkidle' })
+  const returningStory = returning.page.getByRole('region', { name: 'Progress summary', exact: true })
+  await returningStory.getByText('Excellent consistency and strength progress.', { exact: true }).waitFor()
+  ok(await returningStory.getByText('Plan three manageable training sessions each week.', { exact: true }).count() === 1, 'progress story surfaces the coach summary and current focus without opening the report')
   await returning.page.getByRole('tab', { name: 'Monthly', exact: true }).click()
   await returning.page.getByRole('region', { name: 'Monthly report', exact: true }).getByText('Excellent consistency and strength progress.', { exact: true }).waitFor()
   ok(true, 'monthly: client sees saved coach review after reopening')
@@ -154,3 +167,4 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   await sql('delete from workouts where id=$1', [w])
   await sql('delete from client_health where client_id=$1', [IDS.ana])
 }
+
