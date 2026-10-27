@@ -34,7 +34,8 @@ export interface WorkoutAlternative {
   cardio_time: string; cardio_distance_km: number | null; cardio_speed_kmh: number | null
 }
 export interface ExerciseChoice { alternative_id: string; item: WorkoutItem; is_cardio: boolean }
-export interface WorkoutLog { items?: Record<string, SetLog[]>; exercise_choices?: Record<string, ExerciseChoice>; rounds?: number; seconds?: number }
+export interface WorkoutTimer { elapsed_sec: number; started_at: string | null; running: boolean }
+export interface WorkoutLog { items?: Record<string, SetLog[]>; exercise_choices?: Record<string, ExerciseChoice>; rounds?: number; seconds?: number; timer?: WorkoutTimer }
 export interface ClientWorkout {
   id: string; client_id: string; workout_id: string; date: string; program_id: string | null; status: 'scheduled' | 'done' | 'skipped'
   log: WorkoutLog; rating: number | null; client_note: string; completed_at: string | null
@@ -72,3 +73,4 @@ export interface ClientHealth {
   client_id: string; allergies: string; health_conditions: string; medications: string; emergency_contact: string
   consent_data: boolean; consent_health: boolean; consent_accurate: boolean; consent_version: number; consented_at: string | null; updated_at?: string
 }
+
