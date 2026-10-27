@@ -10,6 +10,7 @@ import { AssignWorkout } from './Assign'
 import Icon from '../../components/Icon'
 import { ExercisePicker } from '../../components/Pickers'
 import AlternativeEditor from '../../components/AlternativeEditor'
+import WorkoutFormatGuide from '../../components/WorkoutFormatGuide'
 
 type Row = Omit<WorkoutItem, 'workout_id' | 'load' | 'tempo'> & { load: string; tempo: string; isNew?: boolean; cardio?: boolean }
 
@@ -106,13 +107,14 @@ export default function WorkoutBuilder() {
         <span className={msg === 'Saved' ? 'ok small' : 'err small'}>{msg}</span>
       </div>
       <PageHead eyebrow={coach ? 'Workout template' : 'My workout'} title={w.name || 'Untitled workout'} sub={editable ? undefined : 'Read only'} />
+      <WorkoutFormatGuide format={w.format} minutes={w.duration_min} rounds={w.rounds} />
       <fieldset disabled={!editable} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <div className="card stack">
           <label className="field">Name<input value={w.name} onChange={e => upd({ name: e.target.value })} /></label>
-          <label className="field">Description<textarea rows={2} value={w.description} onChange={e => upd({ description: e.target.value })} placeholder="What is this session for?" /></label>
+          <label className="field">Description<textarea aria-label="Description" rows={2} value={w.description} onChange={e => upd({ description: e.target.value })} placeholder="What is this session for?" /></label>
           <div className="inline-inputs">
             <label className="field">Format
-              <select value={w.format} onChange={e => upd({ format: e.target.value as WorkoutFormat })}>
+              <select aria-label="Format" value={w.format} onChange={e => upd({ format: e.target.value as WorkoutFormat })}>
                 {(Object.keys(FORMAT_LABEL) as WorkoutFormat[]).map(f => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
               </select>
             </label>
