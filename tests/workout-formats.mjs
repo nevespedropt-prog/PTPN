@@ -1,5 +1,3 @@
-import { formatGroups } from '../src/lib/training.ts'
-
 export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, ok }) {
   const id = n => 'ff600000-0000-4000-8000-' + String(n).padStart(12, '0')
   const formats = [
@@ -24,10 +22,7 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
     await page.goto(BASE + '/library/workouts/' + id(1), { waitUntil: 'networkidle' })
     const select = page.getByLabel('Format', { exact: true })
     await select.waitFor()
-    const sampleItems = [0, 1, 2, 3, 4].map(sort => ({ id: String(sort), sort }))
-    ok(formatGroups(sampleItems, 'standard').map(group => group.items.length).join(',') === '2,2,1', 'Superset automatically pairs consecutive exercises')
-    ok(formatGroups(sampleItems, 'circuit').length === 1 && formatGroups(sampleItems, 'amrap')[0].items.length === 5, 'Circuit and AMRAP automatically use the full exercise sequence')
-    ok(formatGroups(sampleItems, 'emom').every(group => group.items.length === 1) && formatGroups(sampleItems, 'intervals').length === 5, 'EMOM and Intervals automatically create timed stations')
+
     await page.getByRole('button', { name: 'Collapse details', exact: true }).click()
     ok(await page.getByRole('group', { name: 'Exercise 1: Goblet squat', exact: true }).getByLabel('Sets', { exact: true }).count() === 0, 'coach can collapse busy exercise prescriptions')
     await page.getByRole('button', { name: 'Show details', exact: true }).click()

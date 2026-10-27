@@ -22,7 +22,7 @@ export default function WorkoutFormatTracker({ workout, items, log, elapsed }: {
     const minute = Math.floor(elapsed / 60)
     title = `Minute ${minute + 1}`; value = fmtSeconds(60 - (elapsed % 60)); detail = items[minute % items.length]?.exercise_name ?? 'Start the next exercise'
   } else {
-    const item = items[0]
+    const item = items.find(candidate => candidate.cardio_time) ?? items[0]
     const work = Math.max(1, Math.round((parseMinutes(item.cardio_time || item.reps) ?? 1) * 60))
     const recovery = Math.max(0, item.rest_sec ?? 0)
     const cycle = work + recovery
