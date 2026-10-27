@@ -5,7 +5,7 @@ import { useAuth } from '../../auth'
 import { CARDIO_FIELDS, CARDIO_STYLE_HINT, FORMAT_LABEL, parseWeight, weightOf } from '../../lib/training'
 import type { Workout, WorkoutFormat, WorkoutItem } from '../../types'
 import { Empty, PageHead, Sheet, Skeleton } from '../../components/ui'
-import { useClients } from '../../hooks'
+import { useClients, useReturnTo } from '../../hooks'
 import { AssignWorkout } from './Assign'
 import Icon from '../../components/Icon'
 import { ExercisePicker } from '../../components/Pickers'
@@ -31,7 +31,7 @@ export default function WorkoutBuilder() {
   const coach = profile?.role === 'coach'
   const assignTo = coach ? sp.get('assignTo') : null
   const target = clients?.find(c => c.id === assignTo)
-  const back = assignTo ? `/clients/${assignTo}?tab=training` : coach ? '/library' : '/train'
+  const back = useReturnTo(assignTo ? `/clients/${assignTo}?tab=training` : coach ? '/library?tab=workouts' : '/train?tab=plan')
 
   useEffect(() => {
     if (!id) return
