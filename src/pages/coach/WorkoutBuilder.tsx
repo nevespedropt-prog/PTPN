@@ -92,7 +92,7 @@ export default function WorkoutBuilder() {
     }
     setRemoved([]); setRows(rows.map(r => ({ ...r, isNew: false }))); setDirty(false); setBusy(false); setMsg('Saved')
     const cw = sp.get('cw')
-    if (cw && !coach) nav(`/workout/${cw}`)
+    if (cw && !coach) nav(`/workout/${cw}?returnTo=${encodeURIComponent(back)}`)
     return true
   }
   async function saveAndSchedule() { if (!dirty || (await save())) setSched(true) }

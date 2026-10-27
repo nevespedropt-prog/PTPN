@@ -116,6 +116,7 @@ export async function tabMemoryChecks({ open, sql, IDS, BASE, ok, clean }) {
   } finally { await coach.ctx.close() }
   await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
   const client = await open('ana')
+  let clientBuiltWorkout
   try {
     const { page } = client
     for (const [path, name] of [['/train', 'History'], ['/progress', 'Strength'], ['/community', 'Challenges']]) {
@@ -147,8 +148,68 @@ export async function tabMemoryChecks({ open, sql, IDS, BASE, ok, clean }) {
       await page.getByRole('tab', { name, exact: true, selected: true }).waitFor()
       ok(await selected(page, name) === 'true', path + ' retains its tab through menu navigation when storage is blocked')
     }
-    clean('client tab memory', client.errors)
-  } finally { await client.ctx.close(); await sql('delete from client_health where client_id=$1', [IDS.ana]) }
+    // Client-facing detail returns must survive a refresh without storage/history state.
+    await page.addInitScript(() => Object.defineProperty(window, 'sessionStorage', { configurable: true, get() { throw new DOMException('Blocked', 'SecurityError') } }))
+    const today = new Date().toLocaleDateString('en-CA')
+    const day = new Date(today + 'T12:00:00')
+    day.setDate(day.getDate() + (day.getDay() === 1 ? 1 : -1))
+    const selectedDate = day.toLocaleDateString('en-CA')
+    const dateLabel = day.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+    const earlier = new Date(today + 'T12:00:00'); earlier.setDate(earlier.getDate() - 2)
+    const push = (await sql("select id from workouts where name='Push' limit 1"))[0].id
+    const historyId = 'cf200000-0000-4000-8000-000000000001'
+    const scheduleId = 'cf200000-0000-4000-8000-000000000002'
+    const homeId = 'cf200000-0000-4000-8000-000000000003'
+    for (const [id, date, status] of [[historyId, earlier.toLocaleDateString('en-CA'), 'done'], [scheduleId, selectedDate, 'scheduled'], [homeId, today, 'scheduled']]) {
+      await sql('insert into client_workouts(id,client_id,workout_id,date,status) values($1,$2,$3,$4,$5)', [id, IDS.ana, push, date, status])
+    }
+    const reloadWithoutState = async () => {
+      await page.evaluate(() => history.replaceState(null, '', location.href))
+      await page.reload({ waitUntil: 'networkidle' })
+    }
+    await page.goto(BASE + '/train?tab=history', { waitUntil: 'networkidle' })
+    await page.locator('a[href^="/workout/' + historyId + '"]').click()
+    ok((new URL(page.url()).searchParams.get('returnTo') ?? '').includes('tab=history'), 'client History workout carries its selected tab in the URL')
+    await reloadWithoutState()
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('tab', { name: 'History', exact: true, selected: true }).waitFor()
+    ok(new URL(page.url()).pathname === '/train', 'client workout returns to History after refresh with storage and history unavailable')
+    await page.goto(BASE + '/train?tab=plan', { waitUntil: 'networkidle' })
+    await page.getByRole('button', { name: dateLabel, exact: true }).click()
+    await page.waitForURL(url => url.searchParams.get('date') === selectedDate)
+    await page.locator('a[href^="/workout/' + scheduleId + '"]').first().click()
+    await reloadWithoutState()
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('tab', { name: 'Schedule', exact: true, selected: true }).waitFor()
+    ok(new URL(page.url()).searchParams.get('date') === selectedDate, 'Schedule return keeps the selected training day')
+    await page.locator('a[href^="/workout/' + scheduleId + '"]').first().waitFor()
+    await page.setViewportSize({ width: 390, height: 844 })
+    ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'client training return fits phone width')
+    await page.getByRole('button', { name: 'Build my own', exact: true }).click()
+    await page.waitForURL(/\/build\//)
+    clientBuiltWorkout = new URL(page.url()).pathname.split('/').pop()
+    ok((new URL(page.url()).searchParams.get('returnTo') ?? '').includes('date=' + selectedDate), 'client builder keeps its source training day')
+    await reloadWithoutState()
+    await page.getByLabel('Name', { exact: true }).fill('Client navigation test')
+    await page.getByRole('button', { name: 'Save workout', exact: true }).click()
+    await page.waitForURL(/\/workout\//)
+    await reloadWithoutState()
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.getByRole('tab', { name: 'Schedule', exact: true, selected: true }).waitFor()
+    ok(new URL(page.url()).searchParams.get('date') === selectedDate, 'saving a personal workout keeps its original Schedule return route')
+    await page.goto(BASE + '/', { waitUntil: 'networkidle' })
+    await page.locator('a[href^="/workout/' + homeId + '"]').click()
+    await reloadWithoutState()
+    await page.getByRole('button', { name: 'Back', exact: true }).click()
+    await page.waitForURL(url => url.pathname === '/')
+    ok(new URL(page.url()).pathname === '/', 'workout opened from client Home returns to Home after refresh')
+    clean('client tab memory and detail returns', client.errors)
+  } finally {
+    await client.ctx.close()
+    await sql("delete from client_workouts where id::text like 'cf200000-0000-4000-8000-%'")
+    if (clientBuiltWorkout) await sql('delete from workouts where id=$1', [clientBuiltWorkout])
+    await sql('delete from client_health where client_id=$1', [IDS.ana])
+  }
   const blocked = await open('coach')
   try {
     await blocked.page.addInitScript(() => Object.defineProperty(window, 'sessionStorage', { configurable: true, get() { throw new DOMException('Blocked', 'SecurityError') } }))

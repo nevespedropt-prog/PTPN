@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
+import { useReturnTo } from '../hooks'
 import { demoUrl, fmtSeconds } from '../lib/util'
 import { niceDate } from '../lib/dates'
 import { CARDIO_FIELDS, FORMAT_LABEL, cardioPrescription, fillCardio, groupItems, prescription, setsDone, volumeKg, workingLoad } from '../lib/training'
@@ -34,6 +35,7 @@ export default function WorkoutPlayer() {
   }, [id, feedbackId])
   const { profile } = useAuth()
   const nav = useNavigate()
+  const returnTo = useReturnTo('')
   const [cw, setCw] = useState<ClientWorkout | null | undefined>(undefined)
   const [w, setW] = useState<Workout | null>(null)
   const [items, setItems] = useState<WorkoutItem[]>([])
@@ -202,7 +204,7 @@ export default function WorkoutPlayer() {
   }
 
   if (cw === undefined) return <Skeleton n={4} />
-  if (!cw || !w) return <div className="card"><Empty icon="train" title="Workout not found"><Link to="/">Back to home</Link></Empty></div>
+  if (!cw || !w) return <div className="card"><Empty icon="train" title="Workout not found"><Link to={returnTo || '/'}>Back</Link></Empty></div>
 
   const groups = groupItems(performedItems(items, log))
   const totalSets = Object.values(log.items ?? {}).reduce((n, s) => n + s.length, 0)
@@ -214,7 +216,7 @@ export default function WorkoutPlayer() {
   return (
     <>
       <div className="row between" style={{ marginBottom: 6 }}>
-        <button className="icon" onClick={() => nav(-1)} aria-label="Back"><Icon name="back" size={18} /></button>
+        <button className="icon" onClick={() => returnTo ? nav(returnTo, { replace: true }) : nav(-1)} aria-label="Back"><Icon name="back" size={18} /></button>
         <span className="mute small">{readOnly ? (cw.status === 'done' ? `Completed ${niceDate(cw.date)}` : 'Read only') : saved === 'saving' ? 'Saving...' : saved === 'saved' ? 'Saved' : ' '}</span>
       </div>
       <div className="page-head" style={{ marginTop: 0 }}>
