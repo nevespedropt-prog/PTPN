@@ -275,3 +275,10 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - Coaches can collapse all exercise prescription details while reviewing a long template.
 - Library workout/exercise searches and exercise category filters are stored in the URL. Workout and programme detail links also carry the Library scroll position back through refresh-safe return URLs.
 - No schema or production-data migration is required.
+## 2026-10-27 manual workout timer controls
+
+- Opening a scheduled client workout leaves the session clock at 00:00. Clients explicitly start it when they begin training.
+- Active workouts provide Start, Pause, Resume and Reset controls. Pause and Reset also clear any active rest countdown.
+- Timer state is stored inside the existing workout log, so a running or paused timer survives refresh without a schema migration.
+- Finishing a workout records only the manually measured session time. The screen wake lock is requested only while the session timer is running.
+- Live countdown text is excluded from screen-reader live announcements to avoid repeated announcements every second.

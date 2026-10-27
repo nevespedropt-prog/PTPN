@@ -6,7 +6,7 @@ import { useReturnTo } from '../hooks'
 import { demoUrl, fmtSeconds } from '../lib/util'
 import { niceDate } from '../lib/dates'
 import { CARDIO_FIELDS, FORMAT_LABEL, cardioPrescription, fillCardio, formatGroups, prescription, setsDone, volumeKg, workingLoad } from '../lib/training'
-import type { ClientWorkout, OneRepMax, SetLog, Workout, WorkoutAlternative, WorkoutItem, WorkoutLog } from '../types'
+import type { ClientWorkout, OneRepMax, SetLog, Workout, WorkoutAlternative, WorkoutItem, WorkoutLog, WorkoutTimer } from '../types'
 import { Empty, Sheet, Skeleton, Stars } from '../components/ui'
 import Icon from '../components/Icon'
 import ExerciseFeedback, { type FeedbackExercise } from '../components/ExerciseFeedback'
@@ -21,6 +21,12 @@ const emptySets = (it: WorkoutItem, load?: number | null): SetLog[] =>
 const emptyCardio = (it: WorkoutItem, rounds: boolean): SetLog[] =>
   Array.from({ length: rounds ? it.sets ?? 1 : 1 }, () => ({ reps: '', kg: '', done: false, time: '', distance: '', speed: '' }))
 const CARDIO_HEAD: Record<string, string> = { time: 'Time', distance: 'km', speed: 'km/h' }
+const timerSeconds = (timer: WorkoutTimer | undefined, at: number) => {
+  if (!timer) return 0
+  const started = timer.running && timer.started_at ? Date.parse(timer.started_at) : NaN
+  const extra = Number.isFinite(started) ? Math.max(0, (at - started) / 1000) : 0
+  return Math.max(0, Math.floor((timer.elapsed_sec || 0) + extra))
+}
 
 export default function WorkoutPlayer() {
   const { id } = useParams()
@@ -48,7 +54,6 @@ export default function WorkoutPlayer() {
   const [saved, setSaved] = useState<'idle' | 'saving' | 'saved'>('idle')
   const [rest, setRest] = useState<{ end: number; total: number } | null>(null)
   const [now, setNow] = useState(() => Date.now())
-  const [start] = useState(() => Date.now())
   const [finishing, setFinishing] = useState(false)
   const [rating, setRating] = useState<number | null>(null)
   const [note, setNote] = useState('')
@@ -102,8 +107,9 @@ export default function WorkoutPlayer() {
     })()
   }, [id])
 
-  // Keep the screen on during a session (the lock is released when the tab is hidden, so ask again on return).
+  // Keep the screen awake only while the client has deliberately started the session timer.
   useEffect(() => {
+    if (!log.timer?.running) return
     type Lock = { release: () => Promise<void> }
     const wl = (navigator as unknown as { wakeLock?: { request: (t: 'screen') => Promise<Lock> } }).wakeLock
     if (!wl) return
@@ -112,7 +118,7 @@ export default function WorkoutPlayer() {
     ask()
     document.addEventListener('visibilitychange', ask)
     return () => { document.removeEventListener('visibilitychange', ask); lock?.release().catch(() => {}) }
-  }, [])
+  }, [log.timer?.running])
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 500)
     return () => clearInterval(t)
@@ -147,6 +153,17 @@ export default function WorkoutPlayer() {
     timer.current = setTimeout(() => persist(next), 700)
   }
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+
+  const setSessionTimer = (nextTimer: WorkoutTimer) => {
+    setRest(null)
+    change({ ...log, timer: nextTimer })
+  }
+  const startSessionTimer = () => setSessionTimer({ elapsed_sec: timerSeconds(log.timer, now), started_at: new Date(now).toISOString(), running: true })
+  const pauseSessionTimer = () => setSessionTimer({ elapsed_sec: timerSeconds(log.timer, now), started_at: null, running: false })
+  const resetSessionTimer = () => {
+    if (timerSeconds(log.timer, now) > 0 && !confirm('Reset the session timer to 00:00?')) return
+    setSessionTimer({ elapsed_sec: 0, started_at: null, running: false })
+  }
 
   const restAfter = (item: WorkoutItem) => {
     const ordered = performedItems(items, log)
@@ -204,7 +221,8 @@ export default function WorkoutPlayer() {
     if (timer.current) { clearTimeout(timer.current); timer.current = null }
     try {
       await saveQueue.current
-      const final: WorkoutLog = { ...log, seconds: Math.round((Date.now() - start) / 1000) }
+      const seconds = timerSeconds(log.timer, Date.now())
+      const final: WorkoutLog = { ...log, seconds, timer: { elapsed_sec: seconds, started_at: null, running: false } }
       const result = await supabase.from('client_workouts').update({
         status, log: final, rating: status === 'done' ? rating : null, client_note: note, completed_at: status === 'done' ? new Date().toISOString() : null,
       }).eq('id', cw.id).eq('status', 'scheduled').select('id')
@@ -222,7 +240,8 @@ export default function WorkoutPlayer() {
   const totalSets = Object.values(log.items ?? {}).reduce((n, s) => n + s.length, 0)
   const done = setsDone({ ...cw, log })
   const isRounds = w.format !== 'standard' && w.format !== 'intervals'
-  const elapsed = Math.round((now - start) / 1000)
+  const elapsed = timerSeconds(log.timer, now)
+  const timerStarted = elapsed > 0 || !!log.timer?.started_at
   const prevOf = (it: WorkoutItem, i: number) => samePreviousExercise(it, items.find(original => original.id === it.id), prev) ? prev?.items?.[it.id]?.[i] : undefined
 
   return (
@@ -237,8 +256,17 @@ export default function WorkoutPlayer() {
           <h1>{w.name}</h1>
           {w.description && <div className="sub">{w.description}</div>}
         </div>
-        {!readOnly && <div className="clock" aria-label="Elapsed time">{fmtSeconds(elapsed)}</div>}
+        {!readOnly && <div style={{ textAlign: 'right' }}>
+          <div className="clock" aria-label="Elapsed time">{fmtSeconds(elapsed)}</div>
+          <span className="mute small">{log.timer?.running ? 'Running' : timerStarted ? 'Paused' : 'Ready to start'}</span>
+        </div>}
       </div>
+
+      {!readOnly && <div className="row" role="group" aria-label="Session timer controls">
+        {!log.timer?.running && <button type="button" onClick={startSessionTimer}><Icon name="play" size={16} />{timerStarted ? 'Resume' : 'Start'}</button>}
+        {log.timer?.running && <button type="button" onClick={pauseSessionTimer}>Pause</button>}
+        <button type="button" className="soft" onClick={resetSessionTimer} disabled={!timerStarted && !log.timer?.running}>Reset</button>
+      </div>}
 
       <WorkoutFormatGuide format={w.format} minutes={w.duration_min} rounds={w.rounds} />
       {!readOnly && <WorkoutFormatTracker workout={w} items={performed} log={log} elapsed={elapsed} />}

@@ -33,7 +33,7 @@ export default function WorkoutFormatTracker({ workout, items, log, elapsed }: {
     detail = `Interval ${Math.floor(elapsed / cycle) + 1}${workout.rounds ? ` of ${workout.rounds}` : ''}`
   }
 
-  return <section className="card tight row between nowrap" aria-label="Live format guidance" aria-live="polite">
+  return <section className="card tight row between nowrap" aria-label="Live format guidance" aria-live="off">
     <div><span className="mute small">{title}</span><br /><b>{detail}</b></div>
     <span className="clock format-clock">{value}</span>
   </section>
