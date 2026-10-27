@@ -111,7 +111,7 @@ export default function WorkoutBuilder() {
       <fieldset disabled={!editable} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <div className="card stack">
           <label className="field">Name<input value={w.name} onChange={e => upd({ name: e.target.value })} /></label>
-          <label className="field">Description<textarea rows={2} value={w.description} onChange={e => upd({ description: e.target.value })} placeholder="What is this session for?" /></label>
+          <label className="field">Description<textarea aria-label="Description" rows={2} value={w.description} onChange={e => upd({ description: e.target.value })} placeholder="What is this session for?" /></label>
           <div className="inline-inputs">
             <label className="field">Format
               <select aria-label="Format" value={w.format} onChange={e => upd({ format: e.target.value as WorkoutFormat })}>
