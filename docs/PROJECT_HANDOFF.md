@@ -289,3 +289,11 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - Every priority shows an exact count and links directly to the corresponding section on the dashboard.
 - Weekly and technique review queues report their pending counts to the dashboard while preserving their own loading, retry, archive filtering and 100-item safety behaviour.
 - Refresh reloads the dashboard and both review queues together. Failed or potentially truncated core reads still hide the dashboard instead of presenting incomplete totals.
+## 2026-10-27 client progress story
+
+- Progress now opens with a concise story shared across Body, Strength, Photos and Monthly tabs.
+- The summary compares completed workouts with the previous week, counts active training days, and shows the latest weight change from the prior entry.
+- Evidence-based achievement badges highlight weekly consistency, improvement over the previous week, four-week session volume and active training days. Empty accounts receive a clear next-step prompt instead of invented progress.
+- The latest saved monthly coach feedback and next focus are surfaced directly in the summary, so clients do not need to find the Monthly tab to understand what to work on.
+- Coach and client views use the same read-only evidence. Failed or potentially truncated progress reads show a retry state instead of a misleading summary.
+- No schema or production-data migration is required.
