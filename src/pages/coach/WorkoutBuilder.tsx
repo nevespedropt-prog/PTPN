@@ -114,7 +114,7 @@ export default function WorkoutBuilder() {
           <label className="field">Description<textarea rows={2} value={w.description} onChange={e => upd({ description: e.target.value })} placeholder="What is this session for?" /></label>
           <div className="inline-inputs">
             <label className="field">Format
-              <select value={w.format} onChange={e => upd({ format: e.target.value as WorkoutFormat })}>
+              <select aria-label="Format" value={w.format} onChange={e => upd({ format: e.target.value as WorkoutFormat })}>
                 {(Object.keys(FORMAT_LABEL) as WorkoutFormat[]).map(f => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
               </select>
             </label>

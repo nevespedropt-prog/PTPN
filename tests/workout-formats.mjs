@@ -21,6 +21,7 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
     const { page } = coach
     await page.goto(BASE + '/library/workouts/' + id(1), { waitUntil: 'networkidle' })
     const select = page.getByLabel('Format', { exact: true })
+    await select.waitFor()
     const optionLabels = await select.locator('option').allTextContents()
     ok(JSON.stringify(optionLabels) === JSON.stringify(formats.map(f => f[1])), 'formats replace Straight sets with Superset and retain the other four options')
     const guide = page.getByRole('region', { name: 'Workout format', exact: true })
