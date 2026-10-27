@@ -204,3 +204,14 @@ Next actual-device step after release: open the PTPN web app in Android Chrome, 
 
 
 The notification release check exposed very slow Ubuntu package downloads during Playwright's unconditional --with-deps installation (earlier logs show most new packages were supplementary fonts; required browser libraries were already installed). CI now installs Chromium first and smoke-launches it, falling back to the existing --with-deps installer if launch fails. The same type/database/browser tests still run; no tests are skipped and the browser version remains Playwright's bundled version.
+
+
+## Coach dashboard actions (27 October 2026)
+
+Dashboard has a Your next actions card linking to the existing weekly and technique review queues, unread conversations and clients needing attention. Refresh dashboard reloads summary data and both review queues. Active client count, workout compliance, recent workouts and check-in totals exclude archived clients. Unread conversations retain archived clients and their correct names/reply links so messages are not hidden. The unread query no longer silently stops at 50 messages.
+
+Attention uses the latest daily check-in in the last seven days, rather than any old low-mood entry. Training reasons explicitly describe the last 14 calendar days through today. Follow-ups are sorted by missed workouts and a low latest mood; all matching active clients remain visible. Requests have checked errors, unmount protection and a retry screen instead of false empty/all-clear results. A full 1,000-row response is treated as potentially truncated and fails visibly rather than claiming complete totals. The five upcoming sessions and latest-100 review queue scopes remain unchanged.
+
+Changes: src/pages/coach/Dashboard.tsx, tests/dashboard.mjs, tests/e2e.mjs and this handoff. No schema, live data, dependencies or design tokens changed. Focused browser coverage checks active totals/compliance, more than 50 unread messages, archived conversations, recovered versus latest low mood, review refresh and deep links, quick navigation, request failure/retry, truncation protection and phone width. Automated release checks run in GitHub Actions. Manual visual review of this dashboard remains separate.
+
+Device-check update: Pedro confirmed notification enablement after changing Brave's push messaging setting, then confirmed a message notification arrived in a real-device test. One server registration was verified at setup time; this does not establish that both accounts/devices are registered. Pedro also confirmed a progress photo uploaded and stayed visible after refreshing. Notification tapping and separate reminder/announcement delivery were not confirmed in these checks.
