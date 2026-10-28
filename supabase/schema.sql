@@ -940,3 +940,4 @@ create policy "exercise videos submit own" on public.exercise_videos for insert 
     and coalesce(cw.log->'exercise_choices'->(workout_item_id::text)->'item'->>'exercise_name',
       (select wi.exercise_name from public.workout_items wi where wi.id = workout_item_id and wi.workout_id = cw.workout_id)) = exercise_videos.exercise_name
   ));
+
