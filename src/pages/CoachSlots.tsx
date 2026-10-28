@@ -81,7 +81,7 @@ export default function CoachSlots() {
   const event = (slot: Session) => {
     const booking = bookingBySession[slot.id]
     const client = booking ? people[booking.client_id] || 'Client' : 'Open slot'
-    return <div key={slot.id} className={`calendar-event ${booking ? 'booked' : 'open'}`} title={`${time(slot.starts_at)} � ${client}`}>
+    return <div key={slot.id} className={`calendar-event ${booking ? 'booked' : 'open'}`} title={`${time(slot.starts_at)} - ${client}`}>
       <b>{time(slot.starts_at)}</b><span>{client}</span>
     </div>
   }
@@ -102,9 +102,9 @@ export default function CoachSlots() {
         <div className="calendar-toolbar">
           <Seg value={view} onChange={setView} options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
           <div className="calendar-nav">
-            <button type="button" className="ghost sm" onClick={() => move(-1)} aria-label={`Previous ${view}`}><</button>
+            <button type="button" className="ghost sm" onClick={() => move(-1)} aria-label={`Previous ${view}`}>&lsaquo;</button>
             <button type="button" className="ghost sm" onClick={() => setFocus(startOfDay(new Date()))}>Today</button>
-            <button type="button" className="ghost sm" onClick={() => move(1)} aria-label={`Next ${view}`}>></button>
+            <button type="button" className="ghost sm" onClick={() => move(1)} aria-label={`Next ${view}`}>&rsaquo;</button>
           </div>
         </div>
         <h2 className="calendar-period">{periodLabel(view, focus)}</h2>
@@ -137,7 +137,7 @@ export default function CoachSlots() {
           const b = bookingBySession[s.id]
           return (
             <div key={s.id} className="card session-row">
-              <span><b>{fmt(s.starts_at)}</b> � {s.duration_min} min<br />
+              <span><b>{fmt(s.starts_at)}</b> - {s.duration_min} min<br />
                 <span className="mute">{b ? `Booked: ${people[b.client_id] || 'client'}` : 'Open'}</span></span>
               <button className="ghost" onClick={() => remove(s.id)}>Delete</button>
             </div>
