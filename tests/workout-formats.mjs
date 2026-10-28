@@ -47,10 +47,11 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
       if (value === 'standard') ok(await guide.getByText(/Rounds:/).count() === 0, 'Set-block guidance uses prescriptions rather than a global rounds target')
       if (value === 'standard') {
         ok(JSON.stringify(await page.getByLabel('Set style', { exact: true }).locator('option').allTextContents()) === JSON.stringify(['Single set', 'Superset', 'Tri-set']), 'builder offers all three set-block styles')
-        ok(await page.getByLabel('Rest after exercise 1', { exact: true }).isDisabled(), 'Superset prevents rest after its first exercise')
-        ok(await page.getByLabel('Rest after exercise 2', { exact: true }).getAttribute('min') === '60' && await page.getByLabel('Rest after exercise 2', { exact: true }).getAttribute('max') === '90', 'Superset limits rest after its second exercise to 60–90 seconds')
-        ok(await page.getByLabel('Rest after exercise 3', { exact: true }).isDisabled() && await page.getByLabel('Rest after exercise 4', { exact: true }).isDisabled(), 'Tri-set prevents rest after its first two exercises')
-        ok(await page.getByLabel('Rest after exercise 5', { exact: true }).getAttribute('min') === '60' && await page.getByLabel('Rest after exercise 5', { exact: true }).getAttribute('max') === '90', 'Tri-set limits rest after its third exercise to 60–90 seconds')
+        const rest = n => page.getByRole('group', { name: `Exercise ${n}:`, exact: false }).getByLabel('Rest (s)', { exact: true })
+        ok(await rest(1).isDisabled(), 'Superset prevents rest after its first exercise')
+        ok(await rest(2).getAttribute('min') === '60' && await rest(2).getAttribute('max') === '90', 'Superset limits rest after its second exercise to 60–90 seconds')
+        ok(await rest(3).isDisabled() && await rest(4).isDisabled(), 'Tri-set prevents rest after its first two exercises')
+        ok(await rest(5).getAttribute('min') === '60' && await rest(5).getAttribute('max') === '90', 'Tri-set limits rest after its third exercise to 60–90 seconds')
       }
       await page.getByRole('button', { name: 'Save workout', exact: true }).click()
       await page.getByRole('button', { name: 'Saved', exact: true }).waitFor()
