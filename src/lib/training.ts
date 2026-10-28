@@ -75,7 +75,7 @@ export function parseWeight(raw: string): ParsedWeight {
 export type CardioField = 'sets' | 'time' | 'distance' | 'speed' | 'rest'
 /** Which cardio fields make sense for each workout style. */
 export const CARDIO_FIELDS: Record<WorkoutFormat, CardioField[]> = {
-  standard: ['sets', 'time', 'distance', 'speed', 'rest'],
+  standard: ['time', 'distance', 'speed', 'rest'],
   intervals: ['sets', 'time', 'speed', 'rest'],  // work time and speed per interval, with rest between
   emom: ['sets', 'time', 'speed'],               // fixed minute, how fast
   amrap: ['time', 'distance'],                   // fixed time, how far
