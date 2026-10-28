@@ -245,6 +245,7 @@ create table public.workout_items (
   exercise_name text not null,
   sort int not null default 0,
   group_label text not null default '', -- items sharing a label form a superset / circuit block
+  set_style text not null default 'single' check (set_style in ('single','superset','triset')),
   sets int check (sets > 0),
   reps text not null default '',
   load text not null default '',
@@ -939,4 +940,3 @@ create policy "exercise videos submit own" on public.exercise_videos for insert 
     and coalesce(cw.log->'exercise_choices'->(workout_item_id::text)->'item'->>'exercise_name',
       (select wi.exercise_name from public.workout_items wi where wi.id = workout_item_id and wi.workout_id = cw.workout_id)) = exercise_videos.exercise_name
   ));
-
