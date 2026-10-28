@@ -1,0 +1,58 @@
+export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, ok }) {
+  console.log('Taster session workflow')
+  await sql('delete from fitness_assessment_items where taster_session_id in (select id from taster_sessions where client_id=$1)', [IDS.ana])
+  await sql('delete from measurements where taster_session_id in (select id from taster_sessions where client_id=$1)', [IDS.ana])
+  await sql('delete from taster_sessions where client_id=$1', [IDS.ana])
+
+  const coach = await open('coach', { w: 1280, h: 900 })
+  await coach.page.goto(BASE + `/clients/${IDS.ana}?tab=taster`, { waitUntil: 'networkidle' })
+  await coach.page.getByRole('tab', { name: 'Taster session', exact: true }).waitFor()
+  await coach.page.getByLabel('Fitness goal', { exact: true }).fill('Lose 5 kg while improving strength')
+  await coach.page.getByLabel('Assessment date', { exact: true }).fill('2026-10-28')
+  await coach.page.getByLabel('Target date', { exact: true }).fill('2027-01-28')
+  await coach.page.getByLabel('Date of birth', { exact: true }).fill('1990-01-01')
+  await coach.page.getByLabel('Sex used for calculation', { exact: true }).selectOption('male')
+  await coach.page.getByLabel('Activity level', { exact: true }).selectOption('moderate')
+  await coach.page.getByLabel('Height cm', { exact: true }).fill('170')
+  await coach.page.getByLabel('Weight kg', { exact: true }).fill('70')
+  await coach.page.getByLabel('Body fat %', { exact: true }).fill('20')
+  await coach.page.getByLabel('Target calories', { exact: true }).fill('2000')
+  await coach.page.getByRole('button', { name: 'Suggest macros', exact: true }).click()
+  ok(await coach.page.getByLabel('Protein g', { exact: true }).inputValue() === '140', 'taster: macros are suggested from target calories and weight')
+  await coach.page.getByRole('button', { name: 'Add exercise', exact: true }).click()
+  const picker = coach.page.getByRole('dialog', { name: 'Add exercise', exact: true })
+  await picker.getByPlaceholder('Search 100+ exercises').fill('Taster bench test')
+  await picker.getByRole('button', { name: /Use "Taster bench test"/ }).click()
+  await coach.page.getByLabel('Result', { exact: true }).fill('12')
+  await coach.page.getByLabel('Unit', { exact: true }).fill('reps')
+  await coach.page.getByLabel('Client summary', { exact: true }).fill('Strong starting point with good movement quality.')
+  await coach.page.getByLabel('Coach notes', { exact: true }).fill('Private coaching note.')
+  await coach.page.getByRole('button', { name: 'Save taster session', exact: true }).click()
+  await coach.page.getByText(/Taster session saved/).waitFor()
+
+  const taster = (await sql('select * from taster_sessions where client_id=$1 order by created_at desc limit 1', [IDS.ana]))[0]
+  const targets = (await sql('select * from nutrition_targets where client_id=$1', [IDS.ana]))[0]
+  ok(Number(taster?.bmi) === 24.2 && Number(taster?.estimated_maintenance_kcal) === 2461, 'taster: BMI and maintenance calories are saved')
+  ok(Number(targets?.kcal) === 2000 && Number(targets?.protein) === 140 && Number(targets?.carbs) === 234 && Number(targets?.fat) === 56, 'taster: editable nutrition targets flow to the nutrition profile')
+  ok((await sql('select count(*)::int n from fitness_assessment_items where taster_session_id=$1', [taster.id]))[0].n === 1, 'taster: fitness assessment exercise is saved')
+  ok(Number((await sql('select weight_kg,body_fat_pct from measurements where taster_session_id=$1', [taster.id]))[0]?.weight_kg) === 70, 'taster: weight and body fat flow to progress measurements')
+
+  await coach.page.getByRole('tab', { name: 'Overview', exact: true }).click()
+  await coach.page.getByText('Lose 5 kg while improving strength', { exact: true }).waitFor()
+  await shot(coach.page, 'coach-taster-overview')
+  clean('taster coach', coach.errors); await coach.ctx.close()
+
+  const client = await open('ana', { w: 390, h: 844 })
+  await client.page.getByText('My fitness goal', { exact: true }).waitFor()
+  ok(await client.page.getByText('Strong starting point with good movement quality.', { exact: true }).count() === 1, 'taster: client dashboard shows assessment summary')
+  ok(await client.page.getByText('Private coaching note.', { exact: true }).count() === 0 && await client.page.getByText('Taster bench test', { exact: true }).count() === 0, 'taster: client does not see private notes or exercise results')
+  await client.page.goto(BASE + '/nutrition', { waitUntil: 'networkidle' })
+  ok(await client.page.getByText(/of 2000 kcal/).count() >= 1, 'taster: client nutrition uses the saved calorie target')
+  await shot(client.page, 'client-taster-goal-phone')
+  clean('taster client', client.errors); await client.ctx.close()
+
+  await sql('delete from measurements where taster_session_id=$1', [taster.id])
+  await sql('delete from taster_sessions where id=$1', [taster.id])
+  await sql('delete from nutrition_targets where client_id=$1', [IDS.ana])
+}
+
