@@ -305,6 +305,7 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - Reminder times are formatted in Europe/London and tapping opens Book a session.
 - Apply supabase/migrate_v14_booking_reminders.sql and deploy the existing send-push Edge Function.
 
+
 ## 2026-10-28 exercise category audit
 
 - Audited all 225 built-in exercises against the five existing categories.
