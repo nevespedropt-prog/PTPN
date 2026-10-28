@@ -618,4 +618,3 @@ insert into public.program_days (id, program_id, week, day, workout_id) values
 (pg_temp.sid('pd:home:4:5:home'),pg_temp.sid('p:home'),4,5,pg_temp.sid('w:home')),
 (pg_temp.sid('pd:home:4:7:mobility'),pg_temp.sid('p:home'),4,7,pg_temp.sid('w:mobility'))
 on conflict (id) do nothing;
-

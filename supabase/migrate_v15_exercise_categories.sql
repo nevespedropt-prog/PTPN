@@ -17,4 +17,3 @@ where created_by is null
     'TRX push n pull',
     'Turkish get-up'
   );
-

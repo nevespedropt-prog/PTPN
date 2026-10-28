@@ -305,10 +305,10 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - Reminder times are formatted in Europe/London and tapping opens Book a session.
 - Apply supabase/migrate_v14_booking_reminders.sql and deploy the existing send-push Edge Function.
 
+
 ## 2026-10-28 exercise category audit
 
 - Audited all 225 built-in exercises against the five existing categories.
 - Corrected Mountain climber to core; Ball slam combo and Single arm ball throw to plyometric; Power bag pull, TRX push n pull and Turkish get-up to strength.
 - Kept Band pull-apart, Rotator cuff, Sled push, Sled push n pull, Wall ball, Superman, Swimmers and Windmill unchanged because their category legitimately depends on workout style, loading, reps and client level.
 - Live data, the repeatable seed and migrate_v15_exercise_categories.sql contain the same six approved corrections.
-
