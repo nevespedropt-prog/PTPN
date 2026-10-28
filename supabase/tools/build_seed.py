@@ -89,7 +89,7 @@ EX = [
  ("Pallof press","Core","Cable","core","Stand side-on to the cable, press out and resist rotation."),
  ("Bird dog","Core","Bodyweight","core","On all fours, reach opposite arm and leg, keep hips level."),
  ("Hollow hold","Core","Bodyweight","core","Low back pressed down, arms and legs extended, hold."),
- ("Mountain climber","Core","Bodyweight","cardio","Plank position, drive knees to chest quickly."),
+ ("Mountain climber","Core","Bodyweight","core","Plank position, drive knees to chest quickly."),
  ("Farmer's carry","Full body","Dumbbells","strength","Heavy weights at your sides, walk tall with short steps."),
  # power / plyo
  ("Box jump","Legs","Box","plyometric","Swing arms, jump onto the box, land softly, step down."),
