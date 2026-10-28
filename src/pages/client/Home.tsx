@@ -6,7 +6,7 @@ import { localDate, longDay, relDay, weekOf, timeAgo } from '../../lib/dates'
 import { firstName, greeting } from '../../lib/util'
 import { sum } from '../../lib/nutrition'
 import { FORMAT_LABEL } from '../../lib/training'
-import type { ClientWorkout, FoodLog, Message, Session, Targets, Workout } from '../../types'
+import type { ClientWorkout, FoodLog, Message, Session, Targets, TasterSession, Workout } from '../../types'
 import { MacroBar, PageHead, Ring, Tile } from '../../components/ui'
 import { CheckinForm, Habits } from '../../components/Daily'
 import Icon from '../../components/Icon'
@@ -23,21 +23,24 @@ export default function Home() {
   const [logs, setLogs] = useState<FoodLog[]>([])
   const [msg, setMsg] = useState<Message | null>(null)
   const [nextSession, setNextSession] = useState<Session | null>(null)
+  const [taster, setTaster] = useState<TasterSession | null>(null)
 
   useEffect(() => {
     if (!profile) return
     const week = weekOf(today)
     ;(async () => {
-      const [cw, t, fl, m, b] = await Promise.all([
+      const [cw, t, fl, m, b, ts] = await Promise.all([
         supabase.from('client_workouts').select('*').eq('client_id', profile.id).gte('date', week[0]).order('date').limit(40),
         supabase.from('nutrition_targets').select('*').eq('client_id', profile.id).maybeSingle(),
         supabase.from('food_logs').select('*').eq('client_id', profile.id).eq('date', today),
         supabase.from('messages').select('*').neq('sender_id', profile.id).order('created_at', { ascending: false }).limit(1),
         supabase.from('bookings').select('session_id').eq('client_id', profile.id),
+        supabase.from('taster_sessions').select('*').eq('client_id', profile.id).order('assessed_on', { ascending: false }).order('created_at', { ascending: false }).limit(1),
       ])
       const list = (cw.data ?? []) as ClientWorkout[]
       setCws(list); setTargets(t.data as Targets | null); setLogs((fl.data ?? []) as FoodLog[])
       setMsg(((m.data ?? []) as Message[])[0] ?? null)
+      setTaster(((ts.data ?? []) as TasterSession[])[0] ?? null)
       const ids = [...new Set(list.map(x => x.workout_id))]
       if (ids.length) {
         const [w, it] = await Promise.all([
@@ -70,6 +73,12 @@ export default function Home() {
 
       {profile && <ClientOnboarding key={profile.id} clientId={profile.id} />}
 
+      {taster && <div className="card goal-card">
+        <span className="eyebrow">My fitness goal</span><h2>{taster.goal}</h2>
+        <div className="row"><span className="badge red">Target {new Date(`${taster.target_date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+        {taster.client_summary && <><hr className="sep" /><p className="mute" style={{ margin: 0 }}>{taster.client_summary}</p></>}
+      </div>}
+
       {todays.length > 0 ? todays.map(cw => {
         const w = workouts[cw.workout_id]
         const done = cw.status === 'done'
@@ -81,7 +90,7 @@ export default function Home() {
             </div>
             <h2 style={{ fontSize: '1.5rem', margin: '6px 0 4px' }}>{w?.name ?? 'Workout'}</h2>
             <p className="mute" style={{ margin: '0 0 14px' }}>
-              {itemCounts[cw.workout_id] ?? 0} exercises{w?.duration_min ? ` · about ${w.duration_min} min` : ''}
+              {itemCounts[cw.workout_id] ?? 0} exercises{w?.duration_min ? ` � about ${w.duration_min} min` : ''}
             </p>
             <Link to={`/workout/${cw.id}?returnTo=%2F`} className={'btn block' + (done ? ' soft' : '')} style={{ minHeight: 50 }}>
               <Icon name={done ? 'check' : 'play'} size={18} />{done ? 'View workout' : 'Start workout'}
@@ -93,7 +102,7 @@ export default function Home() {
           <span className="badge">Rest day</span>
           <h2 style={{ fontSize: '1.4rem', margin: '10px 0 4px' }}>Recover and refuel</h2>
           <p className="mute" style={{ margin: 0 }}>
-            {upcoming ? <>Next up: <b style={{ color: 'var(--ink)' }}>{workouts[upcoming.workout_id]?.name ?? 'Workout'}</b> · {relDay(upcoming.date)}</> : 'No workouts scheduled yet. Your coach will add your programme here.'}
+            {upcoming ? <>Next up: <b style={{ color: 'var(--ink)' }}>{workouts[upcoming.workout_id]?.name ?? 'Workout'}</b> � {relDay(upcoming.date)}</> : 'No workouts scheduled yet. Your coach will add your programme here.'}
           </p>
         </div>
       )}
@@ -137,3 +146,4 @@ export default function Home() {
     </>
   )
 }
+

@@ -2,6 +2,17 @@ export type Role = 'client' | 'coach'
 export interface Profile { id: string; full_name: string; role: Role; created_at?: string }
 
 export interface Measurement { id: string; client_id: string; date: string; weight_kg: number | null; body_fat_pct: number | null; notes: string }
+export interface TasterSession {
+  id: string; client_id: string; assessed_on: string; goal: string; target_date: string; date_of_birth: string
+  sex: 'female' | 'male'; activity_level: 'sedentary' | 'light' | 'moderate' | 'very' | 'extra'
+  height_cm: number; weight_kg: number; body_fat_pct: number | null; bmi: number; estimated_maintenance_kcal: number
+  target_kcal: number; target_protein: number; target_carbs: number; target_fat: number
+  client_summary: string; coach_notes: string; created_by: string; created_at: string; updated_at: string
+}
+export interface FitnessAssessmentItem {
+  id: string; taster_session_id: string; exercise_id: string | null; exercise_name: string; category: string
+  result: string; unit: string; notes: string; sort: number
+}
 export interface Session { id: string; starts_at: string; duration_min: number; title: string }
 export interface Booking { id: string; session_id: string; client_id: string }
 
@@ -74,3 +85,4 @@ export interface ClientHealth {
   client_id: string; allergies: string; health_conditions: string; medications: string; emergency_contact: string
   consent_data: boolean; consent_health: boolean; consent_accurate: boolean; consent_version: number; consented_at: string | null; updated_at?: string
 }
+

@@ -542,3 +542,12 @@ button:focus-visible, .btn:focus-visible, a:focus-visible { outline: 2px solid v
   .session-row { align-items: flex-start; }
 }
 
+/* Coach taster session and shared goal summary */
+.goal-card { margin-bottom: 14px; }
+.goal-card h2 { margin: 7px 0 12px; font-size: 1.25rem; line-height: 1.35; }
+button.empty-goal { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; color: var(--ink); }
+.empty-goal span:first-child { display: grid; gap: 5px; }
+.taster-form { padding-bottom: 24px; }
+.assessment-row { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--field); }
+.assessment-row + .assessment-row { margin-top: 8px; }
+

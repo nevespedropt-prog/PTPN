@@ -6,7 +6,7 @@ import { useAuth } from '../../auth'
 import { addDays, DAY_NAMES, localDate, niceDate, relDay } from '../../lib/dates'
 import { MEAL_LABEL, MEALS, forServings, generateWeek, suggestTargets, sum } from '../../lib/nutrition'
 import { setsDone } from '../../lib/training'
-import type { ClientHealth, Checkin, ClientWorkout, FoodLog, MealPlanItem, Measurement, Program, ProgramDay, Recipe, Targets, Workout } from '../../types'
+import type { ClientHealth, Checkin, ClientWorkout, FoodLog, MealPlanItem, Measurement, Program, ProgramDay, Recipe, Targets, TasterSession, Workout } from '../../types'
 import { Avatar, Empty, MacroBar, MacroChips, Seg, Sheet, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
 import WeeklyCheckins from '../../components/WeeklyCheckins'
@@ -15,8 +15,9 @@ import { RecipePicker, WorkoutPicker } from '../../components/Pickers'
 import CoachHabits from '../CoachHabits'
 import Progress from '../Progress'
 import { AssignProgram, AssignWorkout } from './Assign'
+import TasterSessionForm from '../../components/TasterSession'
 
-type Tab = 'overview' | 'training' | 'nutrition' | 'habits' | 'progress'
+type Tab = 'overview' | 'taster' | 'training' | 'nutrition' | 'habits' | 'progress'
 
 const flagged = (v?: string) => !!v && v.trim() !== '' && v.trim().toLowerCase() !== 'none'
 
@@ -28,21 +29,24 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
   useEffect(() => { supabase.from('client_health').select('*').eq('client_id', id).maybeSingle().then(({ data }) => setHealth((data as ClientHealth) ?? null)) }, [id])
   const [weight, setWeight] = useState<Measurement | null>(null)
   const [kcal, setKcal] = useState<number | null>(null)
+  const [taster, setTaster] = useState<TasterSession | null>(null)
   const today = localDate()
 
   useEffect(() => {
     ;(async () => {
-      const [a, b, c, d] = await Promise.all([
+      const [a, b, c, d, e] = await Promise.all([
         supabase.from('client_workouts').select('*').eq('client_id', id).order('date', { ascending: false }).limit(30),
         supabase.from('checkins').select('*').eq('client_id', id).order('date', { ascending: false }).limit(1),
         supabase.from('measurements').select('*').eq('client_id', id).not('weight_kg', 'is', null).order('date', { ascending: false }).limit(1),
         supabase.from('food_logs').select('*').eq('client_id', id).gte('date', addDays(today, -6)),
+        supabase.from('taster_sessions').select('*').eq('client_id', id).order('assessed_on', { ascending: false }).order('created_at', { ascending: false }).limit(1),
       ])
       const list = (a.data ?? []) as ClientWorkout[]
       setCws(list); setCheckin(((b.data ?? []) as Checkin[])[0] ?? null); setWeight(((c.data ?? []) as Measurement[])[0] ?? null)
       const logs = (d.data ?? []) as FoodLog[]
       const daysLogged = new Set(logs.map(l => l.date)).size
       setKcal(daysLogged ? Math.round(sum(logs).kcal / daysLogged) : null)
+      setTaster(((e.data ?? []) as TasterSession[])[0] ?? null)
       const ids = [...new Set(list.map(x => x.workout_id))]
       if (ids.length) {
         const { data } = await supabase.from('workouts').select('id, name').in('id', ids)
@@ -55,11 +59,15 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
   const done = recent.filter(c => c.status === 'done').length
   return (
     <>
+      {taster ? <div className="card goal-card">
+        <span className="eyebrow">Current fitness goal</span><h2>{taster.goal}</h2>
+        <div className="row"><span className="badge red">Target {niceDate(taster.target_date)}</span><span className="badge">{taster.target_kcal} kcal/day</span></div>
+      </div> : <button className="card click goal-card empty-goal" onClick={() => go('taster')}><span><span className="eyebrow">Fitness goal</span><b>No taster session completed</b></span><span className="link red">Set up</span></button>}
       <div className="grid g4" style={{ marginBottom: 12 }}>
-        <Tile label="Compliance" value={recent.length ? `${Math.round((done / recent.length) * 100)}%` : '–'} foot="last 14 days" />
-        <Tile label="Weight" value={weight ? Number(weight.weight_kg) : '–'} unit={weight ? 'kg' : ''} foot={weight ? niceDate(weight.date) : 'Not logged'} />
-        <Tile label="Avg calories" value={kcal ?? '–'} foot="logged days, last 7" />
-        <Tile label="Latest mood" value={checkin?.mood ? `${checkin.mood}/5` : '–'} foot={checkin ? `Energy ${checkin.energy ?? '–'}/5 · ${niceDate(checkin.date)}` : 'No check-ins'} />
+        <Tile label="Compliance" value={recent.length ? `${Math.round((done / recent.length) * 100)}%` : '-'} foot="last 14 days" />
+        <Tile label="Weight" value={weight ? Number(weight.weight_kg) : '-'} unit={weight ? 'kg' : ''} foot={weight ? niceDate(weight.date) : 'Not logged'} />
+        <Tile label="Avg calories" value={kcal ?? '-'} foot="logged days, last 7" />
+        <Tile label="Latest mood" value={checkin?.mood ? `${checkin.mood}/5` : '-'} foot={checkin ? `Energy ${checkin.energy ?? '-'}/5 � ${niceDate(checkin.date)}` : 'No check-ins'} />
       </div>
       {health !== undefined && (
         <div className={'card tight' + (health && (flagged(health.allergies) || flagged(health.health_conditions)) ? ' consent-card' : '')}>
@@ -84,7 +92,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
         <div className="list">
           {cws.filter(c => c.date <= addDays(today, 3)).slice(0, 8).map(c => (
             <Link key={c.id} to={`/workout/${c.id}`} className="item">
-              <span className="grow"><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)}{c.status === 'done' ? ` · ${setsDone(c)} sets` : ''}</span></span>
+              <span className="grow"><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)}{c.status === 'done' ? ` � ${setsDone(c)} sets` : ''}</span></span>
               <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' || c.date < today ? 'amber' : 'blue')}>{c.status === 'scheduled' && c.date < today ? 'Missed' : c.status}</span>
             </Link>
           ))}
@@ -164,7 +172,7 @@ function Training({ id }: { id: string }) {
   const past = cws.filter(c => c.date < today).reverse()
   const row = (c: ClientWorkout) => (
     <div key={c.id} className="item">
-      <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)} · {niceDate(c.date)}</span></Link>
+      <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)} � {niceDate(c.date)}</span></Link>
       <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' ? 'amber' : c.date < today ? 'amber' : 'blue')}>{c.status === 'scheduled' && c.date < today ? 'Missed' : c.status}</span>
       {c.status !== 'done' && <button className="link" disabled={removing} onClick={() => { setRemoveError(''); setRemoveTarget(c) }} aria-label="Remove from schedule">Remove</button>}
     </div>
@@ -194,7 +202,7 @@ function Training({ id }: { id: string }) {
       <Sheet open={!!wk} onClose={() => { setWk(null); load() }} title={`Assign ${wk?.name ?? ''}`}>{wk && client && <AssignWorkout workout={wk} clients={[client]} presetClient={id} onClose={() => { setWk(null); load() }} />}</Sheet>
       <Sheet open={progList} onClose={() => setProgList(false)} title="Choose a programme">
         <div className="list">{programs.map(p => (
-          <button key={p.id} className="item" onClick={() => choose(p)}><span className="grow"><span className="title">{p.name}</span><br /><span className="meta">{p.goal} · {p.level} · {p.weeks} weeks</span></span><Icon name="chev" /></button>
+          <button key={p.id} className="item" onClick={() => choose(p)}><span className="grow"><span className="title">{p.name}</span><br /><span className="meta">{p.goal} � {p.level} � {p.weeks} weeks</span></span><Icon name="chev" /></button>
         ))}</div>
       </Sheet>
       <Sheet open={!!prog} onClose={() => { setProg(null); load() }} title={prog ? `Assign ${prog.p.name}` : ''}>{prog && client && <AssignProgram program={prog.p} days={prog.days} clients={[client]} presetClient={id} onClose={() => { setProg(null); load() }} />}</Sheet>
@@ -289,7 +297,7 @@ function Nutrition({ id }: { id: string }) {
         <div className="row" style={{ marginBottom: 0 }}><button className="soft sm" onClick={generate}><Icon name="sparkle" size={15} />Generate week</button><Link className="btn soft sm" to={`/meal-plans?client=${id}`}>Meal plan library</Link>{plan.length > 0 && <button className="link" onClick={clearPlan}>Clear</button>}</div>
       </div>
       <div className="week-strip">
-        {DAY_NAMES.map((n, i) => <button key={n} className={day === i + 1 ? 'on' : ''} onClick={() => setDay(i + 1)}><small>{n}</small><b>{plan.filter(p => p.day === i + 1).length || '–'}</b><i className={plan.some(p => p.day === i + 1) ? 'has' : ''} /></button>)}
+        {DAY_NAMES.map((n, i) => <button key={n} className={day === i + 1 ? 'on' : ''} onClick={() => setDay(i + 1)}><small>{n}</small><b>{plan.filter(p => p.day === i + 1).length || '-'}</b><i className={plan.some(p => p.day === i + 1) ? 'has' : ''} /></button>)}
       </div>
       <div className="card">
         {dayItems.length > 0 && <><MacroChips m={dayTotal} /><hr className="sep" /></>}
@@ -327,7 +335,7 @@ export default function ClientDetail() {
   const { id } = useParams()
   const { clients } = useClients()
   const [sp] = useSearchParams()
-  const [tab, setTab] = usePageTab<Tab>('client', ['overview', 'training', 'nutrition', 'habits', 'progress'], 'overview', 'tab', sp.has('reviewWeek'))
+  const [tab, setTab] = usePageTab<Tab>('client', ['overview', 'taster', 'training', 'nutrition', 'habits', 'progress'], 'overview', 'tab', sp.has('reviewWeek'))
   if (!id) return null
   if (!clients) return <Skeleton n={3} />
   const c = clients.find(x => x.id === id)
@@ -341,10 +349,11 @@ export default function ClientDetail() {
         <Link to={`/inbox/${id}`} className="btn soft sm"><Icon name="chat" size={16} />Message</Link>
       </div>
       <Seg value={tab} onChange={setTab} options={[
-        { value: 'overview', label: 'Overview' }, { value: 'training', label: 'Training' }, { value: 'nutrition', label: 'Nutrition' },
+        { value: 'overview', label: 'Overview' }, { value: 'taster', label: 'Taster session' }, { value: 'training', label: 'Training' }, { value: 'nutrition', label: 'Nutrition' },
         { value: 'habits', label: 'Habits' }, { value: 'progress', label: 'Progress' },
       ]} />
       {tab === 'overview' && <Overview id={id} go={setTab} />}
+      {tab === 'taster' && <TasterSessionForm clientId={id} />}
       {tab === 'training' && <Training id={id} />}
       {tab === 'nutrition' && <Nutrition id={id} />}
       {tab === 'habits' && <CoachHabits clientId={id} />}
@@ -352,3 +361,5 @@ export default function ClientDetail() {
     </>
   )
 }
+
+
