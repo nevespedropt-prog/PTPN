@@ -48,7 +48,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   ok(await client.page.getByText('Strong starting point with good movement quality.', { exact: true }).count() === 1, 'taster: client dashboard shows assessment summary')
   ok(await client.page.getByText('Private coaching note.', { exact: true }).count() === 0 && await client.page.getByText('Taster bench test', { exact: true }).count() === 0, 'taster: client does not see private notes or exercise results')
   await client.page.goto(BASE + '/nutrition', { waitUntil: 'networkidle' })
-  ok(await client.page.getByText(/of 2000 kcal/).count() >= 1, 'taster: client nutrition uses the saved calorie target')
+  ok(await client.page.getByText('of 2000', { exact: true }).count() >= 1, 'taster: client nutrition uses the saved calorie target')
   await shot(client.page, 'client-taster-goal-phone')
   clean('taster client', client.errors); await client.ctx.close()
 
