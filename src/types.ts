@@ -17,9 +17,10 @@ export interface OneRepMax { id: string; client_id: string; exercise: string; we
 export type Category = 'strength' | 'cardio' | 'mobility' | 'plyometric' | 'core'
 export interface Exercise { id: string; name: string; muscle: string; equipment: string; category: Category; instructions: string; video_url: string; created_by: string | null }
 export type WorkoutFormat = 'standard' | 'circuit' | 'amrap' | 'emom' | 'intervals'
+export type SetStyle = 'single' | 'superset' | 'triset'
 export interface Workout { id: string; name: string; description: string; format: WorkoutFormat; duration_min: number | null; rounds: number | null; created_by: string | null; created_at?: string }
 export interface WorkoutItem {
-  id: string; workout_id: string; exercise_id: string | null; exercise_name: string; sort: number; group_label: string
+  id: string; workout_id: string; exercise_id: string | null; exercise_name: string; sort: number; group_label: string; set_style: SetStyle
   sets: number | null; reps: string; load: string; percent_1rm: number | null; rest_sec: number | null; tempo: string; notes: string
   /** kg ("80"), percent of the client's max ("75%") or text ("bodyweight"). `load` is now shown as Effort (e.g. RPE 8). */
   weight: string
@@ -73,4 +74,3 @@ export interface ClientHealth {
   client_id: string; allergies: string; health_conditions: string; medications: string; emergency_contact: string
   consent_data: boolean; consent_health: boolean; consent_accurate: boolean; consent_version: number; consented_at: string | null; updated_at?: string
 }
-
