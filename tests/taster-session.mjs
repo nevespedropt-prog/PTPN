@@ -42,6 +42,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   await shot(coach.page, 'coach-taster-overview')
   clean('taster coach', coach.errors); await coach.ctx.close()
 
+  await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
   const client = await open('ana', { w: 390, h: 844 })
   await client.page.getByText('My fitness goal', { exact: true }).waitFor()
   ok(await client.page.getByText('Strong starting point with good movement quality.', { exact: true }).count() === 1, 'taster: client dashboard shows assessment summary')
@@ -54,5 +55,6 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   await sql('delete from measurements where taster_session_id=$1', [taster.id])
   await sql('delete from taster_sessions where id=$1', [taster.id])
   await sql('delete from nutrition_targets where client_id=$1', [IDS.ana])
+  await sql('delete from client_health where client_id=$1', [IDS.ana])
 }
 
