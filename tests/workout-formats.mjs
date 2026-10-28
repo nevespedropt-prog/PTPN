@@ -1,7 +1,7 @@
 export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, ok }) {
   const id = n => 'ff600000-0000-4000-8000-' + String(n).padStart(12, '0')
   const formats = [
-    ['standard', 'Superset', 'back-to-back', 'paired exercise'],
+    ['standard', 'Sets', 'any combination', 'rest rule'],
     ['circuit', 'Circuit', 'one round', 'next, then repeat'],
     ['amrap', 'AMRAP', 'as many rounds as possible', 'workout time cap'],
     ['emom', 'EMOM', 'each minute', 'Start on the minute'],
@@ -10,9 +10,13 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
   let coach, client
   try {
     await sql("insert into workouts(id,name,description,format,duration_min,rounds,created_by) values($1,'Format guidance test','Personal coaching note.','intervals',20,5,$2)", [id(1), IDS.coach])
-    for (const [n, name] of [[2, 'Goblet squat'], [3, 'Treadmill run']]) {
+    for (const [n, name] of [[2, 'Goblet squat'], [3, 'Treadmill run'], [5, 'Seated cable row'], [6, 'Push-up'], [7, 'Plank'], [8, 'Dead bug']]) {
       const ex = (await sql('select id from exercises where name=$1', [name]))[0]
-      await sql("insert into workout_items(id,workout_id,exercise_id,exercise_name,sort,sets,reps,rest_sec,cardio_time) values($1,$2,$3,$4,$5,3,'10',60,'1:00')", [id(n), id(1), ex.id, name, n])
+      const sort = n === 2 ? 0 : n === 3 ? 1 : n - 3
+      const style = sort < 2 ? 'superset' : sort < 5 ? 'triset' : 'single'
+      const group = sort < 2 ? 'A' : sort < 5 ? 'B' : 'C'
+      const rest = sort === 1 || sort === 4 ? 75 : sort === 5 ? 60 : 0
+      await sql("insert into workout_items(id,workout_id,exercise_id,exercise_name,sort,group_label,set_style,sets,reps,rest_sec,cardio_time) values($1,$2,$3,$4,$5,$6,$7,3,'10',$8,'1:00')", [id(n), id(1), ex.id, name, sort, group, style, rest])
     }
     await sql('insert into client_workouts(id,client_id,workout_id,date) values($1,$2,$3,current_date)', [id(4), IDS.ana, id(1)])
     await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
@@ -27,7 +31,7 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
     ok(await page.getByRole('group', { name: 'Exercise 1: Goblet squat', exact: true }).getByLabel('Sets', { exact: true }).count() === 0, 'coach can collapse busy exercise prescriptions')
     await page.getByRole('button', { name: 'Show details', exact: true }).click()
     const optionLabels = await select.locator('option').allTextContents()
-    ok(JSON.stringify(optionLabels) === JSON.stringify(formats.map(f => f[1])), 'formats replace Straight sets with Superset and retain the other four options')
+    ok(JSON.stringify(optionLabels) === JSON.stringify(formats.map(f => f[1])), 'workout formats retain Sets and the four timed or round-based options')
     const guide = page.getByRole('region', { name: 'Workout format', exact: true })
     const cardio = page.getByRole('group', { name: 'Exercise 2: Treadmill run', exact: true })
     for (const [value, label, meaning, cardioMeaning] of formats) {
@@ -40,7 +44,14 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
       ok(!!top && !!exercises && top.y < exercises.y, label + ' description appears above the exercises')
       ok(await page.getByLabel('Description', { exact: true }).inputValue() === 'Personal coaching note.', label + ' selection preserves the coach workout notes')
       if (value === 'amrap') ok(await guide.getByText('Time cap: 20 min', { exact: true }).count() === 1, 'AMRAP shows the configured time cap')
-      if (value === 'standard') ok(await guide.getByText(/Rounds:/).count() === 0, 'Superset guidance uses planned sets rather than a global rounds target')
+      if (value === 'standard') ok(await guide.getByText(/Rounds:/).count() === 0, 'Set-block guidance uses prescriptions rather than a global rounds target')
+      if (value === 'standard') {
+        ok(JSON.stringify(await page.getByLabel('Set style', { exact: true }).locator('option').allTextContents()) === JSON.stringify(['Single set', 'Superset', 'Tri-set']), 'builder offers all three set-block styles')
+        ok(await page.getByLabel('Rest after exercise 1', { exact: true }).isDisabled(), 'Superset prevents rest after its first exercise')
+        ok(await page.getByLabel('Rest after exercise 2', { exact: true }).getAttribute('min') === '60' && await page.getByLabel('Rest after exercise 2', { exact: true }).getAttribute('max') === '90', 'Superset limits rest after its second exercise to 60–90 seconds')
+        ok(await page.getByLabel('Rest after exercise 3', { exact: true }).isDisabled() && await page.getByLabel('Rest after exercise 4', { exact: true }).isDisabled(), 'Tri-set prevents rest after its first two exercises')
+        ok(await page.getByLabel('Rest after exercise 5', { exact: true }).getAttribute('min') === '60' && await page.getByLabel('Rest after exercise 5', { exact: true }).getAttribute('max') === '90', 'Tri-set limits rest after its third exercise to 60–90 seconds')
+      }
       await page.getByRole('button', { name: 'Save workout', exact: true }).click()
       await page.getByRole('button', { name: 'Saved', exact: true }).waitFor()
       await page.reload({ waitUntil: 'networkidle' })
@@ -53,10 +64,10 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
       ok((await clientGuide.innerText()).includes(meaning), label + ' instructions also appear on the client workout')
       const live = client.page.getByRole('region', { name: 'Live format guidance', exact: true })
       await live.waitFor()
-      const expectedLive = value === 'standard' ? 'Current pair' : value === 'circuit' ? 'Current round' : value === 'amrap' ? 'AMRAP time remaining' : value === 'emom' ? 'Minute 1' : 'Work interval'
+      const expectedLive = value === 'standard' ? 'Current set block' : value === 'circuit' ? 'Current round' : value === 'amrap' ? 'AMRAP time remaining' : value === 'emom' ? 'Minute 1' : 'Work interval'
       ok((await live.innerText()).includes(expectedLive), label + ' controls its live grouping or timer')
-      const expectedGroup = value === 'standard' ? 'Superset Pair 1' : value === 'circuit' ? 'Circuit' : value === 'amrap' ? 'AMRAP sequence' : value === 'emom' ? 'Minute 1' : 'Interval 1'
-      ok(await client.page.getByText(expectedGroup, { exact: true }).count() >= 1, label + ' automatically structures the exercise list')
+      const expectedGroup = value === 'standard' ? 'Superset 1' : value === 'circuit' ? 'Circuit' : value === 'amrap' ? 'AMRAP sequence' : value === 'emom' ? 'Minute 1' : 'Interval 1'
+      if (expectedGroup) ok(await client.page.getByText(expectedGroup, { exact: true }).count() >= 1, label + ' automatically structures the exercise list')
       if (value === 'standard') {
         const clock = client.page.getByLabel('Elapsed time', { exact: true })
         ok(await clock.innerText() === '0:00' && await client.page.getByText('Ready to start', { exact: true }).count() === 1, 'opening a workout leaves its timer stopped')
@@ -91,4 +102,3 @@ export async function workoutFormatChecks({ open, sql, IDS, BASE, shot, clean, o
     await sql('delete from workouts where id=$1', [id(1)])
   }
 }
-
