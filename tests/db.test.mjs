@@ -44,6 +44,19 @@ await db.exec(fs.readFileSync(repo + 'seed_common_meals.sql', 'utf8')) // re-run
 console.log('schema + seed loaded (twice)')
 const sq = (await db.query(`select id from public.exercises where name = 'Back squat'`)).rows[0].id
 ok(sq === '1801c6bd-da34-54f4-a8ed-a88850762e13', 'seed ids match python uuid5: ' + sq)
+const correctedCategories = Object.fromEntries((await db.query(`
+  select name, category from public.exercises
+  where name in ('Mountain climber','Ball slam combo','Power bag pull','Single arm ball throw','TRX push n pull','Turkish get-up')
+`)).rows.map(row => [row.name, row.category]))
+ok(
+  correctedCategories['Mountain climber'] === 'core'
+    && correctedCategories['Ball slam combo'] === 'plyometric'
+    && correctedCategories['Power bag pull'] === 'strength'
+    && correctedCategories['Single arm ball throw'] === 'plyometric'
+    && correctedCategories['TRX push n pull'] === 'strength'
+    && correctedCategories['Turkish get-up'] === 'strength',
+  'built-in exercise categories match the approved audit',
+)
 
 const C = '11111111-1111-1111-1111-111111111111', A = '22222222-2222-2222-2222-222222222222', B = '33333333-3333-3333-3333-333333333333'
 await db.exec(`
