@@ -57,6 +57,21 @@ ok(
     && correctedCategories['Turkish get-up'] === 'strength',
   'built-in exercise categories match the approved audit',
 )
+const invalidSetBlocks = (await db.query(`
+  with ranked as (
+    select wi.*, row_number() over (partition by workout_id, group_label order by sort) rn,
+      case set_style when 'superset' then 2 when 'triset' then 3 else 1 end required
+    from workout_items wi where set_style <> 'single'
+  )
+  select count(*)::int n from (
+    select workout_id, group_label, set_style
+    from ranked
+    group by workout_id, group_label, set_style
+    having count(*) <> max(required)
+      or not bool_and(case when rn < required then coalesce(rest_sec, 0) = 0 else coalesce(rest_sec, 0) between 60 and 90 end)
+  ) invalid
+`)).rows[0].n
+ok(invalidSetBlocks === 0, 'seeded superset and tri-set blocks have complete groups and correct rest positions')
 
 const C = '11111111-1111-1111-1111-111111111111', A = '22222222-2222-2222-2222-222222222222', B = '33333333-3333-3333-3333-333333333333'
 await db.exec(`
@@ -229,4 +244,3 @@ ok(Object.values(left.rows[0]).every(v => Number(v) === 0), 'deleting a user rem
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
-
