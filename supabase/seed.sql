@@ -73,7 +73,7 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Pallof press'),'Pallof press','Core','Cable','core','Stand side-on to the cable, press out and resist rotation.'),
 (pg_temp.sid('ex:Bird dog'),'Bird dog','Core','Bodyweight','core','On all fours, reach opposite arm and leg, keep hips level.'),
 (pg_temp.sid('ex:Hollow hold'),'Hollow hold','Core','Bodyweight','core','Low back pressed down, arms and legs extended, hold.'),
-(pg_temp.sid('ex:Mountain climber'),'Mountain climber','Core','Bodyweight','cardio','Plank position, drive knees to chest quickly.'),
+(pg_temp.sid('ex:Mountain climber'),'Mountain climber','Core','Bodyweight','core','Plank position, drive knees to chest quickly.'),
 (pg_temp.sid('ex:Farmer''s carry'),'Farmer''s carry','Full body','Dumbbells','strength','Heavy weights at your sides, walk tall with short steps.'),
 (pg_temp.sid('ex:Box jump'),'Box jump','Legs','Box','plyometric','Swing arms, jump onto the box, land softly, step down.'),
 (pg_temp.sid('ex:Broad jump'),'Broad jump','Legs','Bodyweight','plyometric','Jump forward as far as possible, stick the landing.'),
@@ -107,9 +107,9 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Shoulder dislocates'),'Shoulder dislocates','Mobility','Band','mobility','Wide grip, pass the band over and behind the head.'),
 (pg_temp.sid('ex:Deep squat hold'),'Deep squat hold','Mobility','Bodyweight','mobility','Sit in the bottom of a squat, chest tall, breathe.'),
 (pg_temp.sid('ex:Sled push n pull'),'Sled push n pull','Full body','Sled','cardio','Push the sled down the lane, turn and pull it back on the rope. Count laps. Also written push n push or pull n pull.'),
-(pg_temp.sid('ex:TRX push n pull'),'TRX push n pull','Full body','TRX','cardio','Alternate a TRX press-up with a TRX row, keeping the body in one straight line.'),
+(pg_temp.sid('ex:TRX push n pull'),'TRX push n pull','Full body','TRX','strength','Alternate a TRX press-up with a TRX row, keeping the body in one straight line.'),
 (pg_temp.sid('ex:Rope waves'),'Rope waves','Full body','Ropes','cardio','Hinge slightly and whip the ropes in fast, even waves, alternating or both arms together.'),
-(pg_temp.sid('ex:Ball slam combo'),'Ball slam combo','Full body','Medicine ball','cardio','Slam the ball, then flow into a run, squat or lunge before the next rep.'),
+(pg_temp.sid('ex:Ball slam combo'),'Ball slam combo','Full body','Medicine ball','plyometric','Slam the ball, then flow into a run, squat or lunge before the next rep.'),
 (pg_temp.sid('ex:Jumping jacks'),'Jumping jacks','Full body','Bodyweight','cardio','Jump the feet wide as the arms go overhead, then back together. Land softly.'),
 (pg_temp.sid('ex:Boxing'),'Boxing','Full body','Gloves or bag','cardio','Work in rounds or combinations: jab, cross, hook, with a tight guard and rotating hips.'),
 (pg_temp.sid('ex:Walking'),'Walking','Cardio','None','cardio','Brisk walk outdoors or on the treadmill, timed or as HIT intervals.'),
@@ -119,7 +119,7 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Ladder drills'),'Ladder drills','Legs','Agility ladder','cardio','Quick feet through the ladder, one foot per square, light on the toes.'),
 (pg_temp.sid('ex:Side shuffles'),'Side shuffles','Legs','Bodyweight','cardio','Stay low in a half squat and shuffle sideways without crossing the feet.'),
 (pg_temp.sid('ex:Punches'),'Punches','Shoulders','Dumbbells or landmine','cardio','Drive the weight forward in a straight line from a staggered stance, rotating through the hips.'),
-(pg_temp.sid('ex:Power bag pull'),'Power bag pull','Full body','Power bag','cardio','Pull or drag the bag with a flat back and powerful hip drive.'),
+(pg_temp.sid('ex:Power bag pull'),'Power bag pull','Full body','Power bag','strength','Pull or drag the bag with a flat back and powerful hip drive.'),
 (pg_temp.sid('ex:Bodyweight squat'),'Bodyweight squat','Quads','Bodyweight','strength','Feet shoulder width, sit between the hips and stand tall with the chest up.'),
 (pg_temp.sid('ex:TRX squat'),'TRX squat','Quads','TRX','strength','Hold the handles for balance, sit back and down, drive up through the heels.'),
 (pg_temp.sid('ex:Smith squat'),'Smith squat','Quads','Smith machine','strength','Bar on the upper back, feet slightly forward, squat to parallel or lower. Pulse and off-bench versions are used.'),
@@ -207,7 +207,7 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:V-up'),'V-up','Core','Bodyweight','core','Lie flat and lift the arms and legs together to form a V.'),
 (pg_temp.sid('ex:Hanging knee raise'),'Hanging knee raise','Core','Bar or dip bar','core','Hang or use a dip station and curl the knees to the chest. Add a twist for the obliques.'),
 (pg_temp.sid('ex:Leg push down'),'Leg push down','Core','Partner','core','Lying on your back, lower the legs against a partner''s push and control them back up.'),
-(pg_temp.sid('ex:Turkish get-up'),'Turkish get-up','Full body','Kettlebell','core','Move from lying to standing with the weight overhead, one controlled step at a time. Half version first.'),
+(pg_temp.sid('ex:Turkish get-up'),'Turkish get-up','Full body','Kettlebell','strength','Move from lying to standing with the weight overhead, one controlled step at a time. Half version first.'),
 (pg_temp.sid('ex:Hip drop'),'Hip drop','Core','Bodyweight','core','From a side plank, drop and lift the hip.'),
 (pg_temp.sid('ex:Leg raise'),'Leg raise','Core','Bench or floor','core','Raise straight legs to vertical and lower slowly. Reverse and windmill versions are used too.'),
 (pg_temp.sid('ex:Ball to chin'),'Ball to chin','Core','Medicine ball','core','Crunch up and touch the ball to the chin.'),
@@ -226,7 +226,7 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Swiss ball knees in'),'Swiss ball knees in','Core','Swiss ball','core','Shins on the ball in a push-up position, pull the knees to the chest.'),
 (pg_temp.sid('ex:Swiss ball up n down'),'Swiss ball up n down','Core','Swiss ball','core','Roll the ball and move through a slow up and down pattern with a tight core.'),
 (pg_temp.sid('ex:Knees to chest'),'Knees to chest','Core','Bodyweight','core','Lying or hanging, pull the knees to the chest.'),
-(pg_temp.sid('ex:Single arm ball throw'),'Single arm ball throw','Core','Medicine ball','core','Throw the ball one-handed with rotation, catch and repeat.')
+(pg_temp.sid('ex:Single arm ball throw'),'Single arm ball throw','Core','Medicine ball','plyometric','Throw the ball one-handed with rotation, catch and repeat.')
 on conflict (id) do nothing;
 
 insert into public.foods (id, name, serving_label, serving_g, kcal, protein, carbs, fat) values
@@ -618,3 +618,4 @@ insert into public.program_days (id, program_id, week, day, workout_id) values
 (pg_temp.sid('pd:home:4:5:home'),pg_temp.sid('p:home'),4,5,pg_temp.sid('w:home')),
 (pg_temp.sid('pd:home:4:7:mobility'),pg_temp.sid('p:home'),4,7,pg_temp.sid('w:mobility'))
 on conflict (id) do nothing;
+
