@@ -57,6 +57,7 @@ ok(
     && correctedCategories['Turkish get-up'] === 'strength',
   'built-in exercise categories match the approved audit',
 )
+
 const invalidSetBlocks = (await db.query(`
   with ranked as (
     select wi.*, row_number() over (partition by workout_id, group_label order by sort) rn,
@@ -244,3 +245,4 @@ ok(Object.values(left.rows[0]).every(v => Number(v) === 0), 'deleting a user rem
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
+
