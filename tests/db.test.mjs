@@ -57,7 +57,6 @@ ok(
     && correctedCategories['Turkish get-up'] === 'strength',
   'built-in exercise categories match the approved audit',
 )
-
 const invalidSetBlocks = (await db.query(`
   with ranked as (
     select wi.*, row_number() over (partition by workout_id, group_label order by sort) rn,
@@ -131,6 +130,16 @@ const rec = (await as(C, `select id from recipes limit 1`)).rows[0].id
 ok(!(await as(C, `insert into meal_plan_items (client_id, day, meal_type, recipe_id) values ('${A}', 1, 'lunch', '${rec}')`)).error, 'coach builds meal plan')
 ok((await as(A, `insert into meal_plan_items (client_id, day, meal_type, recipe_id) values ('${A}', 2, 'lunch', '${rec}')`)).error, 'client cannot edit meal plan')
 ok(!(await as(A, `insert into foods (name, kcal, created_by) values ('My bar', 200, '${A}')`)).error, 'client adds custom food')
+
+// Taster sessions: coach controls the assessment; clients only see their own summary row.
+const tasterSql = `(client_id,assessed_on,goal,target_date,date_of_birth,sex,activity_level,height_cm,weight_kg,body_fat_pct,bmi,estimated_maintenance_kcal,target_kcal,target_protein,target_carbs,target_fat,client_summary,created_by)
+  values ('${A}',current_date,'Improve strength',current_date + 90,'1990-01-01','female','moderate',165,65,25,23.9,2100,1800,130,185,58,'Good starting point','${C}')`
+ok((await as(A, `insert into taster_sessions ${tasterSql}`)).error, 'client cannot create a taster session')
+const taster = (await as(C, `insert into taster_sessions ${tasterSql} returning id`)).rows[0].id
+ok(await count(A, `select id from taster_sessions where id='${taster}'`) === 1 && await count(B, `select id from taster_sessions where id='${taster}'`) === 0, 'client reads only their own taster summary')
+ok(!(await as(C, `insert into fitness_assessment_items(taster_session_id,exercise_name,result,unit) values('${taster}','Sit to stand','12','reps')`)).error, 'coach adds a flexible fitness assessment result')
+ok(await count(A, `select id from fitness_assessment_items where taster_session_id='${taster}'`) === 0, 'client cannot read detailed assessment exercises')
+ok(!(await as(C, `insert into measurements(client_id,weight_kg,body_fat_pct,taster_session_id) values('${A}',65,25,'${taster}')`)).error, 'coach records taster measurements in progress history')
 
 // messages
 ok(!(await as(A, `insert into messages (client_id, sender_id, body) values ('${A}','${A}','Hi coach')`)).error, 'client messages coach')
