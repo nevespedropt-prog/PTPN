@@ -170,7 +170,7 @@ export default function WorkoutBuilder() {
                   {CARDIO_FIELDS[w.format].includes('time') && <label className="field">Time<input value={r.cardio_time} onChange={e => updRow(i, { cardio_time: e.target.value })} placeholder="20:00 or 1:00" /></label>}
                   {CARDIO_FIELDS[w.format].includes('distance') && <label className="field">Distance (km)<input type="number" inputMode="decimal" min="0" step="any" value={r.cardio_distance_km ?? ''} onChange={e => updRow(i, { cardio_distance_km: num(e.target.value) })} /></label>}
                   {CARDIO_FIELDS[w.format].includes('speed') && <label className="field">Speed (km/h)<input type="number" inputMode="decimal" min="0" step="any" value={r.cardio_speed_kmh ?? ''} onChange={e => updRow(i, { cardio_speed_kmh: num(e.target.value) })} /></label>}
-                  {CARDIO_FIELDS[w.format].includes('rest') && <label className="field">Rest (s)<input aria-label={`Rest after exercise ${i + 1}`} type="number" inputMode="numeric" min={finalBlockExercise(i) ? 60 : 0} max={finalBlockExercise(i) ? 90 : undefined} step="15" disabled={restLocked(i)} value={restLocked(i) ? 0 : r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>}
+                  {CARDIO_FIELDS[w.format].includes('rest') && <label className="field">Rest (s)<input type="number" inputMode="numeric" min={finalBlockExercise(i) ? 60 : 0} max={finalBlockExercise(i) ? 90 : undefined} step="15" disabled={restLocked(i)} value={restLocked(i) ? 0 : r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>}
                   <label className="field">Details<input value={r.reps} onChange={e => updRow(i, { reps: e.target.value })} placeholder="60 s hard / 60 s easy" /></label>
                 </div>
               </>
@@ -179,7 +179,7 @@ export default function WorkoutBuilder() {
                 <label className="field">Sets<input type="number" inputMode="numeric" min="1" value={r.sets ?? ''} onChange={e => updRow(i, { sets: num(e.target.value) })} /></label>
                 <label className="field">Reps<input value={r.reps} onChange={e => updRow(i, { reps: e.target.value })} placeholder="10 or 30 s" /></label>
                 <label className="field">Weight<input value={r.weight} onChange={e => updRow(i, { weight: e.target.value })} placeholder="kg, or 75%" /></label>
-                <label className="field">Rest (s)<input aria-label={`Rest after exercise ${i + 1}`} type="number" inputMode="numeric" min={finalBlockExercise(i) ? 60 : 0} max={finalBlockExercise(i) ? 90 : undefined} step="15" disabled={restLocked(i)} value={restLocked(i) ? 0 : r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>
+                <label className="field">Rest (s)<input type="number" inputMode="numeric" min={finalBlockExercise(i) ? 60 : 0} max={finalBlockExercise(i) ? 90 : undefined} step="15" disabled={restLocked(i)} value={restLocked(i) ? 0 : r.rest_sec ?? ''} onChange={e => updRow(i, { rest_sec: num(e.target.value) })} /></label>
                 {!/^burpees?$/i.test(r.exercise_name.trim()) && <label className="field">Tempo<input value={r.tempo} onChange={e => updRow(i, { tempo: e.target.value })} placeholder="3-1-1" /></label>}
               </div>
             ))}
