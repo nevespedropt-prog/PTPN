@@ -1,16 +1,21 @@
 import type { Workout, WorkoutItem, WorkoutLog } from '../types'
 import { fmtSeconds } from '../lib/util'
-import { parseMinutes } from '../lib/training'
+import { SET_STYLE_LABEL, parseMinutes, setBlocks } from '../lib/training'
 
 export default function WorkoutFormatTracker({ workout, items, log, elapsed }: { workout: Workout; items: WorkoutItem[]; log: WorkoutLog; elapsed: number }) {
   if (!items.length) return null
-  let title = 'Current pair'
-  let value = 'Pair 1'
-  let detail = 'Complete both exercises before resting.'
+  let title = 'Current set block'
+  let value = 'Block 1'
+  let detail = 'Complete the prescribed exercise block.'
 
   if (workout.format === 'standard') {
     const firstIncomplete = items.findIndex(item => (log.items?.[item.id] ?? []).some(set => !set.done))
-    value = `Pair ${Math.floor(Math.max(0, firstIncomplete) / 2) + 1}`
+    const current = items[Math.max(0, firstIncomplete)]
+    const blocks = setBlocks(items)
+    const blockIndex = Math.max(0, blocks.findIndex(block => block.items.some(item => item.id === current?.id)))
+    const block = blocks[blockIndex]
+    value = `Block ${blockIndex + 1} of ${blocks.length}`
+    detail = block ? `${SET_STYLE_LABEL[block.style]} · ${block.items.map(item => item.exercise_name).join(' + ')}` : detail
   } else if (workout.format === 'circuit') {
     title = 'Current round'; value = `Round ${(log.rounds ?? 0) + 1}`; detail = 'Complete every exercise, then record the round.'
   } else if (workout.format === 'amrap') {
