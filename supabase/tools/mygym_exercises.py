@@ -6,9 +6,9 @@ Lat pulldown and so on) are not repeated. Variations are folded into the cues.""
 NEW_EX = [
  # cardio / conditioning
  ("Sled push n pull", "Full body", "Sled", "cardio", "Push the sled down the lane, turn and pull it back on the rope. Count laps. Also written push n push or pull n pull."),
- ("TRX push n pull", "Full body", "TRX", "cardio", "Alternate a TRX press-up with a TRX row, keeping the body in one straight line."),
+ ("TRX push n pull", "Full body", "TRX", "strength", "Alternate a TRX press-up with a TRX row, keeping the body in one straight line."),
  ("Rope waves", "Full body", "Ropes", "cardio", "Hinge slightly and whip the ropes in fast, even waves, alternating or both arms together."),
- ("Ball slam combo", "Full body", "Medicine ball", "cardio", "Slam the ball, then flow into a run, squat or lunge before the next rep."),
+ ("Ball slam combo", "Full body", "Medicine ball", "plyometric", "Slam the ball, then flow into a run, squat or lunge before the next rep."),
  ("Jumping jacks", "Full body", "Bodyweight", "cardio", "Jump the feet wide as the arms go overhead, then back together. Land softly."),
  ("Boxing", "Full body", "Gloves or bag", "cardio", "Work in rounds or combinations: jab, cross, hook, with a tight guard and rotating hips."),
  ("Walking", "Cardio", "None", "cardio", "Brisk walk outdoors or on the treadmill, timed or as HIT intervals."),
@@ -18,7 +18,7 @@ NEW_EX = [
  ("Ladder drills", "Legs", "Agility ladder", "cardio", "Quick feet through the ladder, one foot per square, light on the toes."),
  ("Side shuffles", "Legs", "Bodyweight", "cardio", "Stay low in a half squat and shuffle sideways without crossing the feet."),
  ("Punches", "Shoulders", "Dumbbells or landmine", "cardio", "Drive the weight forward in a straight line from a staggered stance, rotating through the hips."),
- ("Power bag pull", "Full body", "Power bag", "cardio", "Pull or drag the bag with a flat back and powerful hip drive."),
+ ("Power bag pull", "Full body", "Power bag", "strength", "Pull or drag the bag with a flat back and powerful hip drive."),
  # lower body
  ("Bodyweight squat", "Quads", "Bodyweight", "strength", "Feet shoulder width, sit between the hips and stand tall with the chest up."),
  ("TRX squat", "Quads", "TRX", "strength", "Hold the handles for balance, sit back and down, drive up through the heels."),
@@ -111,7 +111,7 @@ NEW_EX = [
  ("V-up", "Core", "Bodyweight", "core", "Lie flat and lift the arms and legs together to form a V."),
  ("Hanging knee raise", "Core", "Bar or dip bar", "core", "Hang or use a dip station and curl the knees to the chest. Add a twist for the obliques."),
  ("Leg push down", "Core", "Partner", "core", "Lying on your back, lower the legs against a partner's push and control them back up."),
- ("Turkish get-up", "Full body", "Kettlebell", "core", "Move from lying to standing with the weight overhead, one controlled step at a time. Half version first."),
+ ("Turkish get-up", "Full body", "Kettlebell", "strength", "Move from lying to standing with the weight overhead, one controlled step at a time. Half version first."),
  ("Hip drop", "Core", "Bodyweight", "core", "From a side plank, drop and lift the hip."),
  ("Leg raise", "Core", "Bench or floor", "core", "Raise straight legs to vertical and lower slowly. Reverse and windmill versions are used too."),
  ("Ball to chin", "Core", "Medicine ball", "core", "Crunch up and touch the ball to the chin."),
@@ -130,5 +130,5 @@ NEW_EX = [
  ("Swiss ball knees in", "Core", "Swiss ball", "core", "Shins on the ball in a push-up position, pull the knees to the chest."),
  ("Swiss ball up n down", "Core", "Swiss ball", "core", "Roll the ball and move through a slow up and down pattern with a tight core."),
  ("Knees to chest", "Core", "Bodyweight", "core", "Lying or hanging, pull the knees to the chest."),
- ("Single arm ball throw", "Core", "Medicine ball", "core", "Throw the ball one-handed with rotation, catch and repeat."),
+ ("Single arm ball throw", "Core", "Medicine ball", "plyometric", "Throw the ball one-handed with rotation, catch and repeat."),
 ]

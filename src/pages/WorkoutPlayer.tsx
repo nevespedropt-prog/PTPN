@@ -168,7 +168,7 @@ export default function WorkoutPlayer() {
   const restAfter = (item: WorkoutItem) => {
     const ordered = performedItems(items, log)
     const position = ordered.findIndex(candidate => candidate.id === item.id)
-    if (w?.format === 'standard') return position % 2 === 1 || position === ordered.length - 1 ? item.rest_sec : 0
+    if (w?.format === 'standard') return item.rest_sec
     if (w?.format === 'circuit') return position === ordered.length - 1 ? item.rest_sec : 0
     if (w?.format === 'intervals') return item.rest_sec
     return 0
@@ -286,7 +286,7 @@ export default function WorkoutPlayer() {
       <div className="card">
         {groups.map((g, gi) => (
           <div key={gi} style={g.label ? { borderLeft: '3px solid var(--violet)', paddingLeft: 12, margin: '4px 0' } : undefined}>
-            {g.label && <div className="group-label"><Icon name="link" size={13} />{w.format === 'standard' ? `Superset ${g.label}` : g.label}</div>}
+            {g.label && <div className="group-label"><Icon name="link" size={13} />{g.label}</div>}
             {g.items.map(it => {
               const isCardio = log.exercise_choices?.[it.id]?.is_cardio ?? cardio.has(it.id)
               const load = isCardio ? null : workingLoad(it, maxes)

@@ -1,18 +1,57 @@
-import type { ClientWorkout, OneRepMax, SetLog, WorkoutFormat, WorkoutItem } from '../types'
+import type { ClientWorkout, OneRepMax, SetLog, SetStyle, WorkoutFormat, WorkoutItem } from '../types'
 import { latestMax, loadKg } from './oneRepMax'
 
 export const FORMAT_LABEL: Record<WorkoutFormat, string> = {
-  standard: 'Superset', circuit: 'Circuit', amrap: 'AMRAP', emom: 'EMOM', intervals: 'Intervals',
+  standard: 'Sets', circuit: 'Circuit', amrap: 'AMRAP', emom: 'EMOM', intervals: 'Intervals',
 }
 
 
 /** Coaching instructions shown wherever a workout format is selected or performed. */
 export const FORMAT_DESCRIPTION: Record<WorkoutFormat, string> = {
-  standard: 'Perform two exercises back-to-back as a pair, then take the prescribed rest. Repeat the pair for the planned sets.',
+  standard: 'Build the session with any combination of single sets, supersets and tri-sets. Each exercise block follows its own rest rule.',
   circuit: 'Complete each exercise in sequence to finish one round. Take the prescribed rest, then repeat the circuit for the planned rounds.',
   amrap: 'Complete as many rounds as possible within the chosen time cap. Follow the exercise order and record the full rounds you complete.',
   emom: 'Start the prescribed exercise at the beginning of each minute. Finish the work, rest for the remainder of that minute, then start the next exercise on the next minute.',
   intervals: 'Alternate work and recovery periods. Complete the prescribed work effort, take the planned recovery, then repeat for the scheduled intervals.',
+}
+
+export const SET_STYLE_LABEL: Record<SetStyle, string> = { single: 'Single set', superset: 'Superset', triset: 'Tri-set' }
+export const SET_STYLE_SIZE: Record<SetStyle, number> = { single: 1, superset: 2, triset: 3 }
+
+export function setBlocks<T extends { set_style: SetStyle; group_label: string }>(items: T[]): { style: SetStyle; label: string; items: T[] }[] {
+  const blocks: { style: SetStyle; label: string; items: T[] }[] = []
+  for (const item of items) {
+    const key = item.group_label || `single-${blocks.length}`
+    const last = blocks[blocks.length - 1]
+    if (last && last.label === key && last.style === item.set_style) last.items.push(item)
+    else blocks.push({ style: item.set_style, label: key, items: [item] })
+  }
+  return blocks
+}
+
+export function normaliseSetRests<T extends { set_style: SetStyle; group_label: string; rest_sec: number | null }>(items: T[]): T[] {
+  const next = items.map(item => ({ ...item }))
+  for (const block of setBlocks(next)) {
+    if (block.style === 'single') continue
+    block.items.forEach((item, i) => {
+      item.rest_sec = i === block.items.length - 1 && block.items.length === SET_STYLE_SIZE[block.style]
+        ? item.rest_sec != null && item.rest_sec >= 60 && item.rest_sec <= 90 ? item.rest_sec : 75
+        : 0
+    })
+  }
+  return next
+}
+
+export function setStyleValidation(items: { set_style: SetStyle; group_label: string; rest_sec: number | null }[]): string {
+  for (const block of setBlocks(items)) {
+    const required = SET_STYLE_SIZE[block.style]
+    if (block.items.length !== required) return `${SET_STYLE_LABEL[block.style]} blocks need exactly ${required} exercise${required === 1 ? '' : 's'}. Complete or remove the unfinished block.`
+    if (block.style === 'single') continue
+    if (block.items.slice(0, -1).some(item => (item.rest_sec ?? 0) !== 0)) return `${SET_STYLE_LABEL[block.style]} exercises must be back-to-back with no rest before the final exercise.`
+    const rest = block.items[block.items.length - 1].rest_sec
+    if (rest == null || rest < 60 || rest > 90) return `Rest after the final ${SET_STYLE_LABEL[block.style].toLowerCase()} exercise must be between 60 and 90 seconds.`
+  }
+  return ''
 }
 
 // ---------- weight ----------
@@ -36,14 +75,14 @@ export function parseWeight(raw: string): ParsedWeight {
 export type CardioField = 'sets' | 'time' | 'distance' | 'speed' | 'rest'
 /** Which cardio fields make sense for each workout style. */
 export const CARDIO_FIELDS: Record<WorkoutFormat, CardioField[]> = {
-  standard: ['time', 'distance', 'speed'],      // cardio target within a superset station
+  standard: ['time', 'distance', 'speed', 'rest'],
   intervals: ['sets', 'time', 'speed', 'rest'],  // work time and speed per interval, with rest between
   emom: ['sets', 'time', 'speed'],               // fixed minute, how fast
   amrap: ['time', 'distance'],                   // fixed time, how far
   circuit: ['time', 'distance'],                 // a station: time or distance
 }
 export const CARDIO_STYLE_HINT: Record<WorkoutFormat, string> = {
-  standard: 'Finish this cardio target, then move to the paired exercise before resting.',
+  standard: 'Follow the rest rule shown for this exercise block.',
   intervals: 'Repeat the work effort and prescribed recovery for each interval.',
   emom: 'Start on the minute and rest for the remainder before the next effort.',
   amrap: 'Complete this target on each round until the workout time cap.',
@@ -54,9 +93,11 @@ export const CARDIO_STYLE_HINT: Record<WorkoutFormat, string> = {
 export function formatGroups(items: WorkoutItem[], format: WorkoutFormat) {
   const sorted = [...items].sort((a, b) => a.sort - b.sort)
   if (format === 'standard') {
-    const groups: { label: string; items: WorkoutItem[] }[] = []
-    for (let i = 0; i < sorted.length; i += 2) groups.push({ label: `Pair ${Math.floor(i / 2) + 1}`, items: sorted.slice(i, i + 2) })
-    return groups
+    let superset = 0, triset = 0
+    return setBlocks(sorted).map(block => ({
+      label: block.style === 'single' ? 'Single set' : block.style === 'superset' ? `Superset ${++superset}` : `Tri-set ${++triset}`,
+      items: block.items,
+    }))
   }
   if (format === 'circuit' || format === 'amrap') return sorted.length ? [{ label: format === 'amrap' ? 'AMRAP sequence' : 'Circuit', items: sorted }] : []
   if (format === 'emom') return sorted.map((item, i) => ({ label: `Minute ${i + 1}`, items: [item] }))
@@ -96,7 +137,7 @@ export function fillCardio(s: SetLog): SetLog {
 export const cardioPrescription = (it: WorkoutItem, format: WorkoutFormat) => {
   const f = CARDIO_FIELDS[format]
   const parts: string[] = []
-  if (f.includes('sets') && it.sets && it.sets > 1) parts.push(`${it.sets} x`)
+  if (f.includes('sets') && it.sets && it.sets > 1) parts.push(`${it.sets} ×`)
   if (it.cardio_time) parts.push(it.cardio_time.includes(':') || /[a-z]/i.test(it.cardio_time) ? it.cardio_time : `${it.cardio_time} min`)
   if (it.cardio_distance_km) parts.push(`${Number(it.cardio_distance_km)} km`)
   if (it.cardio_speed_kmh) parts.push(`@ ${Number(it.cardio_speed_kmh)} km/h`)
@@ -108,7 +149,7 @@ export const cardioPrescription = (it: WorkoutItem, format: WorkoutFormat) => {
 // ---------- strength ----------
 export const prescription = (it: WorkoutItem) => {
   const parts: string[] = []
-  if (it.sets && it.reps) parts.push(`${it.sets} x ${it.reps}`)
+  if (it.sets && it.reps) parts.push(`${it.sets} × ${it.reps}`)
   else if (it.sets) parts.push(`${it.sets} sets`)
   else if (it.reps) parts.push(it.reps)
   const w = weightOf(it)
@@ -170,5 +211,4 @@ export const setsDone = (cw: ClientWorkout) =>
 
 export const volumeKg = (cw: ClientWorkout) =>
   Object.values(cw.log?.items ?? {}).reduce((v, sets) => v + sets.reduce((a, s) => a + (s.done ? (parseFloat(s.kg) || 0) * (parseInt(s.reps) || 0) : 0), 0), 0)
-
 

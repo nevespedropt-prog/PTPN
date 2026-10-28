@@ -245,6 +245,7 @@ create table public.workout_items (
   exercise_name text not null,
   sort int not null default 0,
   group_label text not null default '', -- items sharing a label form a superset / circuit block
+  set_style text not null default 'single' check (set_style in ('single','superset','triset')),
   sets int check (sets > 0),
   reps text not null default '',
   load text not null default '',

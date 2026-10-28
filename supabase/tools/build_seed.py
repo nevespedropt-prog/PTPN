@@ -89,7 +89,7 @@ EX = [
  ("Pallof press","Core","Cable","core","Stand side-on to the cable, press out and resist rotation."),
  ("Bird dog","Core","Bodyweight","core","On all fours, reach opposite arm and leg, keep hips level."),
  ("Hollow hold","Core","Bodyweight","core","Low back pressed down, arms and legs extended, hold."),
- ("Mountain climber","Core","Bodyweight","cardio","Plank position, drive knees to chest quickly."),
+ ("Mountain climber","Core","Bodyweight","core","Plank position, drive knees to chest quickly."),
  ("Farmer's carry","Full body","Dumbbells","strength","Heavy weights at your sides, walk tall with short steps."),
  # power / plyo
  ("Box jump","Legs","Box","plyometric","Swing arms, jump onto the box, land softly, step down."),
@@ -347,12 +347,12 @@ W = [
    ("Leg press","",3,"12",None,90,""),("Lat pulldown","",3,"10",None,90,""),("Seated dumbbell shoulder press","",3,"10",None,90,""),
    ("Glute bridge","",3,"12",None,60,""),("Dead bug","",3,"10 per side",None,45,"")]),
  ("push","Push","standard",60,None,"Chest, shoulders and triceps.",[
-   ("Barbell bench press","",4,"6-8",75,150,"Last set: 1-2 reps in reserve"),("Incline dumbbell press","",3,"10",None,90,""),
-   ("Overhead press","",3,"8",None,120,""),("Lateral raise","",3,"15",None,60,""),
-   ("Triceps pushdown","A",3,"12",None,0,"Superset with A2"),("Overhead triceps extension","A",3,"12",None,75,"")]),
+   ("Barbell bench press","A",4,"6-8",75,0,"No rest; continue to A2"),("Incline dumbbell press","A",3,"10",None,90,"Rest after A2"),
+   ("Overhead press","B",3,"8",None,0,"No rest; continue to B2"),("Lateral raise","B",3,"15",None,60,"Rest after B2"),
+   ("Triceps pushdown","C",3,"12",None,0,"No rest; continue to C2"),("Overhead triceps extension","C",3,"12",None,75,"Rest after C2")]),
  ("pull","Pull","standard",60,None,"Back, rear delts and biceps.",[
-   ("Deadlift","",3,"5",80,180,""),("Pull-up","",4,"max",None,120,"Use a band if needed"),("Barbell row","",3,"8",None,90,""),
-   ("Face pull","",3,"15",None,60,""),("Hammer curl","A",3,"12",None,0,"Superset with A2"),("Barbell curl","A",3,"10",None,75,"")]),
+   ("Deadlift","A",3,"5",80,0,"No rest; continue to A2"),("Pull-up","A",4,"max",None,75,"Rest after A2; use a band if needed"),("Barbell row","B",3,"8",None,0,"No rest; continue to B2"),
+   ("Face pull","B",3,"15",None,60,"Rest after B2"),("Hammer curl","C",3,"12",None,0,"No rest; continue to C2"),("Barbell curl","C",3,"10",None,75,"Rest after C2")]),
  ("legs","Legs","standard",65,None,"Quads, hamstrings, glutes and calves.",[
    ("Back squat","",4,"6",75,180,""),("Romanian deadlift","",3,"8",None,120,""),("Bulgarian split squat","",3,"10 per leg",None,90,""),
    ("Lying leg curl","",3,"12",None,60,""),("Standing calf raise","",4,"15",None,45,"")]),
@@ -376,8 +376,8 @@ W = [
    ("Kettlebell swing","A",None,"15",None,0,"Minute 1"),("Push-up","A",None,"12",None,0,"Minute 2"),
    ("Box jump","A",None,"10",None,0,"Minute 3"),("Plank","A",None,"40 s",None,0,"Minute 4")]),
  ("home","Home bodyweight","standard",35,None,"No equipment needed.",[
-   ("Push-up","",4,"12",None,60,""),("Reverse lunge","",3,"10 per leg",None,60,""),("Glute bridge","",3,"15",None,45,""),
-   ("Burpee","",3,"10",None,60,""),("Plank","",3,"40 s",None,45,""),("Mountain climber","",3,"30 s",None,45,"")]),
+   ("Push-up","A",4,"12",None,0,"No rest; continue to A2"),("Reverse lunge","A",3,"10 per leg",None,60,"Rest after A2"),("Glute bridge","B",3,"15",None,0,"No rest; continue to B2"),
+   ("Burpee","B",3,"10",None,60,"Rest after B2"),("Plank","C",3,"40 s",None,0,"No rest; continue to C2"),("Mountain climber","C",3,"30 s",None,75,"Rest after C2")]),
  ("mobility","Mobility flow","standard",20,None,"Recovery-day mobility, move slowly and breathe.",[
    ("World's greatest stretch","",2,"5 per side",None,0,""),("Hip 90/90","",2,"8",None,0,""),("Cat-cow","",2,"10",None,0,""),
    ("Thoracic rotation","",2,"8 per side",None,0,""),("Couch stretch","",2,"45 s per side",None,0,""),("Deep squat hold","",2,"60 s",None,0,"")]),
@@ -425,8 +425,9 @@ if __name__ == '__main__':
     for k, n, fm, d, r, desc, its in W:
         for i, (ex, grp, sets, reps, pct, rest, notes) in enumerate(its):
             assert ex in ex_names, ex
-            items.append(f"({(uid('wi',k+':'+str(i)))},{(uid('w',k))},{(uid('ex',ex))},{q(ex)},{i},{q(grp)},{sets if sets else 'null'},{q(reps)},{pct if pct else 'null'},{rest if rest is not None else 'null'},{q(notes)})")
-    out.append("insert into public.workout_items (id, workout_id, exercise_id, exercise_name, sort, group_label, sets, reps, percent_1rm, rest_sec, notes) values")
+            style = 'superset' if fm == 'standard' and grp else 'single'
+            items.append(f"({(uid('wi',k+':'+str(i)))},{(uid('w',k))},{(uid('ex',ex))},{q(ex)},{i},{q(grp)},{q(style)},{sets if sets else 'null'},{q(reps)},{pct if pct else 'null'},{rest if rest is not None else 'null'},{q(notes)})")
+    out.append("insert into public.workout_items (id, workout_id, exercise_id, exercise_name, sort, group_label, set_style, sets, reps, percent_1rm, rest_sec, notes) values")
     out.append(",\n".join(items) + "\non conflict (id) do nothing;\n")
     out.append("insert into public.programs (id, name, goal, level, weeks, description) values")
     out.append(",\n".join(f"({(uid('p',k))},{q(n)},{q(g)},{q(l)},{w},{q(desc)})" for k,n,g,l,w,desc,_ in P) + "\non conflict (id) do nothing;\n")
