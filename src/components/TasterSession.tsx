@@ -3,6 +3,7 @@ import { useAuth } from '../auth'
 import { ACTIVITY_LABEL, ageOn, bmi, maintenanceCalories, restingCalories, type ActivityLevel, type AssessmentSex } from '../lib/assessment'
 import { localDate } from '../lib/dates'
 import { suggestTargets } from '../lib/nutrition'
+import { blankParqAnswers, PARQ_QUESTIONS, type ParqAnswers } from '../lib/parq'
 import { supabase } from '../lib/supabase'
 import type { FitnessAssessmentItem, TasterSession } from '../types'
 import { ExercisePicker } from './Pickers'
@@ -18,6 +19,8 @@ const blank = (): Draft => ({
   job_description: '', fitness_level: 'beginner', diet: '',
   goal_metric_label: '', goal_metric_current: '', goal_metric_target: '', goal_metric_unit: '', new_habit: '',
   emergency_contact_name: '', emergency_contact_phone: '', emergency_contact_email: '',
+  parq_answers: blankParqAnswers(), parq_health_details: '', parq_injury_details: '', parq_medication_details: '', parq_allergy_details: '',
+  parq_exercise_consent: false, parq_consented_at: null,
   target_kcal: 0, target_protein: 0, target_carbs: 0, target_fat: 0,
   client_summary: '', coach_notes: '',
 })
@@ -41,6 +44,9 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
       goal_metric_label: row.goal_metric_label ?? '', goal_metric_current: row.goal_metric_current ?? '',
       goal_metric_target: row.goal_metric_target ?? '', goal_metric_unit: row.goal_metric_unit ?? '', new_habit: row.new_habit ?? '',
       emergency_contact_name: row.emergency_contact_name ?? '', emergency_contact_phone: row.emergency_contact_phone ?? '', emergency_contact_email: row.emergency_contact_email ?? '',
+      parq_answers: { ...blankParqAnswers(), ...(row.parq_answers ?? {}) }, parq_health_details: row.parq_health_details ?? '',
+      parq_injury_details: row.parq_injury_details ?? '', parq_medication_details: row.parq_medication_details ?? '', parq_allergy_details: row.parq_allergy_details ?? '',
+      parq_exercise_consent: row.parq_exercise_consent ?? false, parq_consented_at: row.parq_consented_at ?? null,
     })
     const result = await supabase.from('fitness_assessment_items').select('*').eq('taster_session_id', row.id).order('sort')
     setItems((result.data ?? []) as FitnessAssessmentItem[])
@@ -69,6 +75,13 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     e.preventDefault(); setMessage('')
     if (!draft || !calculated || !profile) return setMessage('Complete the personal details before saving.')
     if (draft.target_date < draft.assessed_on) return setMessage('The target date must be after the assessment date.')
+    if (PARQ_QUESTIONS.some(q => draft.parq_answers[q.key] == null)) return setMessage('Answer every health-screening question Yes or No.')
+    const needsHealthDetails = (['heart', 'chest_pain', 'dizziness', 'breathing', 'chronic_condition', 'recent_surgery', 'medical_supervision', 'pregnancy', 'other_concern'] as const).some(key => draft.parq_answers[key])
+    if (needsHealthDetails && !draft.parq_health_details.trim()) return setMessage('Add details for the health-screening answers marked Yes.')
+    if (draft.parq_answers.bone_joint_injury && !draft.parq_injury_details.trim()) return setMessage('Add the injury or pain details.')
+    if (draft.parq_answers.medication && !draft.parq_medication_details.trim()) return setMessage('Add the relevant medication details.')
+    if (draft.parq_answers.allergies && !draft.parq_allergy_details.trim()) return setMessage('Add the allergy details.')
+    if (!draft.parq_exercise_consent) return setMessage('Record the client's exercise consent before saving.')
     setBusy(true)
     const suggested = suggestTargets(Number(draft.target_kcal), Number(draft.weight_kg))
     const macros = draft.target_protein || draft.target_carbs || draft.target_fat ? draft : {
@@ -84,6 +97,9 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
       job_description: macros.job_description.trim(), fitness_level: macros.fitness_level, diet: macros.diet.trim(),
       goal_metric_label: macros.goal_metric_label.trim(), goal_metric_current: macros.goal_metric_current.trim(), goal_metric_target: macros.goal_metric_target.trim(), goal_metric_unit: macros.goal_metric_unit.trim(), new_habit: macros.new_habit.trim(),
       emergency_contact_name: macros.emergency_contact_name.trim(), emergency_contact_phone: macros.emergency_contact_phone.trim(), emergency_contact_email: macros.emergency_contact_email.trim(),
+      parq_answers: macros.parq_answers, parq_health_details: macros.parq_health_details.trim(), parq_injury_details: macros.parq_injury_details.trim(),
+      parq_medication_details: macros.parq_medication_details.trim(), parq_allergy_details: macros.parq_allergy_details.trim(), parq_exercise_consent: macros.parq_exercise_consent,
+      parq_consented_at: macros.parq_consented_at ?? new Date().toISOString(),
       client_summary: macros.client_summary.trim(), coach_notes: macros.coach_notes.trim(), created_by: profile.id, updated_at: new Date().toISOString(),
     }
     const saved = draft.id
@@ -111,7 +127,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
 
   function startNew() {
     if (!draft || !confirm('Start a new assessment? The saved assessment will stay in the client history.')) return
-    setDraft({ ...draft, id: undefined, assessed_on: localDate(), client_summary: '', coach_notes: '' }); setItems([]); setMessage('New assessment started.')
+    setDraft({ ...draft, id: undefined, assessed_on: localDate(), client_summary: '', coach_notes: '', parq_answers: blankParqAnswers(), parq_health_details: '', parq_injury_details: '', parq_medication_details: '', parq_allergy_details: '', parq_exercise_consent: false, parq_consented_at: null }); setItems([]); setMessage('New assessment started.')
   }
   function addExercise(e: { id: string | null; name: string; category?: string }) {
     setItems(list => [...list, { exercise_id: e.id, exercise_name: e.name, category: e.category ?? '', result: '', unit: '', notes: '' }]); setPicker(false)
@@ -197,6 +213,25 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
           <label className="field">Emergency contact number<input required type="tel" maxLength={80} value={draft.emergency_contact_phone} onChange={e => setDraft({ ...draft, emergency_contact_phone: e.target.value })} /></label>
           <label className="field">Emergency contact email<input required type="email" maxLength={320} value={draft.emergency_contact_email} onChange={e => setDraft({ ...draft, emergency_contact_email: e.target.value })} /></label>
         </div>
+      </div>
+      <div className="card stack parq-card">
+        <div><span className="eyebrow">Health screening</span><h3 style={{ margin: '4px 0' }}>PAR-Q and exercise consent</h3><p className="mute small" style={{ margin: 0 }}>Record the client's answers before exercise. A Yes answer is a prompt to review the detail and, where appropriate, seek medical guidance; it is not a diagnosis.</p></div>
+        <div className="parq-grid">
+          {PARQ_QUESTIONS.map(question => <fieldset className="parq-question" key={question.key}>
+            <legend>{question.text}</legend>
+            <div className="parq-choice">
+              <label><input type="radio" name={`parq-${question.key}`} checked={draft.parq_answers[question.key] === true} onChange={() => setDraft({ ...draft, parq_answers: { ...draft.parq_answers, [question.key]: true } as ParqAnswers })} />Yes</label>
+              <label><input type="radio" name={`parq-${question.key}`} checked={draft.parq_answers[question.key] === false} onChange={() => setDraft({ ...draft, parq_answers: { ...draft.parq_answers, [question.key]: false } as ParqAnswers })} />No</label>
+            </div>
+          </fieldset>)}
+        </div>
+        <div className="parq-details-grid">
+          <label className="field">Health conditions or other concerns<textarea rows={2} maxLength={2400} value={draft.parq_health_details} onChange={e => setDraft({ ...draft, parq_health_details: e.target.value })} placeholder="Required when a related answer is Yes" /></label>
+          <label className="field">Injuries, pain or movement limitations<textarea rows={2} maxLength={1600} value={draft.parq_injury_details} onChange={e => setDraft({ ...draft, parq_injury_details: e.target.value })} placeholder="Area, symptoms and current limitations" /></label>
+          <label className="field">Medication details<textarea rows={2} maxLength={1600} value={draft.parq_medication_details} onChange={e => setDraft({ ...draft, parq_medication_details: e.target.value })} placeholder="Name, purpose and coaching considerations" /></label>
+          <label className="field">Allergy details<textarea rows={2} maxLength={1600} value={draft.parq_allergy_details} onChange={e => setDraft({ ...draft, parq_allergy_details: e.target.value })} placeholder="Food, medication or other allergy" /></label>
+        </div>
+        <label className="tick parq-consent"><input type="checkbox" checked={draft.parq_exercise_consent} onChange={e => setDraft({ ...draft, parq_exercise_consent: e.target.checked, parq_consented_at: e.target.checked ? (draft.parq_consented_at ?? new Date().toISOString()) : null })} /><span>The client confirms these answers are accurate, agrees to tell the coach if anything changes, and consents to take part in exercise planned within the coach's professional scope.</span></label>
       </div>
       {message && <p className={message.includes('saved') || message.includes('added') ? 'ok' : 'err'} role="status">{message}</p>}
       <button disabled={busy} style={{ minHeight: 50 }}>{busy ? 'Saving...' : 'Save taster session'}</button>
