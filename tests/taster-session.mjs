@@ -14,10 +14,9 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   await coach.page.locator('label', { hasText: 'Sex used for calculation' }).locator('select').selectOption('male')
   await coach.page.locator('label', { hasText: 'Activity level' }).locator('select').selectOption('moderate')
   await coach.page.getByLabel('Height cm', { exact: true }).fill('170')
-  await coach.page.getByLabel('Current weight kg', { exact: true }).fill('70')
+  await coach.page.getByLabel('Starting weight kg', { exact: true }).fill('70')
   await coach.page.getByLabel('Target weight kg', { exact: true }).fill('65')
-  await coach.page.getByLabel('Current body fat %', { exact: true }).fill('20')
-  await coach.page.getByLabel('Target body fat %', { exact: true }).fill('17')
+  await coach.page.getByLabel('Starting body fat %', { exact: true }).fill('20')
   await coach.page.getByLabel('Job description', { exact: true }).fill('Office manager with a mostly seated working day')
   await coach.page.locator('label', { hasText: 'Fitness level' }).locator('select').selectOption('intermediate')
   await coach.page.getByLabel('Diet', { exact: true }).fill('Balanced diet; avoids shellfish')
@@ -46,7 +45,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   const taster = (await sql('select * from taster_sessions where client_id=$1 order by created_at desc limit 1', [IDS.ana]))[0]
   const targets = (await sql('select * from nutrition_targets where client_id=$1', [IDS.ana]))[0]
   ok(Number(taster?.bmi) === 24.2 && Number(taster?.estimated_maintenance_kcal) === 2461, 'taster: BMI and maintenance calories are saved')
-  ok(Number(taster?.target_bmi) === 22.5 && Number(taster?.bmr_kcal) === 1588 && Number(taster?.target_bmr_kcal) === 1538 && Number(taster?.target_body_fat_pct) === 17, 'taster: current and target measurements are saved and calculated')
+  ok(Number(taster?.target_bmi) === 22.5 && Number(taster?.bmr_kcal) === 1588 && Number(taster?.target_bmr_kcal) === 1538, 'taster: current and target measurements are saved and calculated')
   ok(taster?.job_description.includes('Office manager') && taster?.fitness_level === 'intermediate' && taster?.diet.includes('shellfish'), 'taster: work, fitness and diet context are saved')
   ok(taster?.goal_metric_label === 'Deadlift' && taster?.goal_metric_target === '120' && taster?.new_habit === 'Walk 8,000 steps daily', 'taster: goal metric and new habit drive the highlight tiles')
   ok(taster?.emergency_contact_name === 'Maria Silva' && taster?.emergency_contact_email === 'maria@example.com', 'taster: emergency contact details are saved')

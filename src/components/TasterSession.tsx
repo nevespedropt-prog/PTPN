@@ -144,20 +144,12 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
         <h3 style={{ margin: '6px 0 0' }}>Measurements</h3>
         <div className="measurement-entry-grid">
           <label className="field">Height cm<input required type="number" min="100" max="250" step="0.1" value={draft.height_cm || ''} onChange={e => setDraft({ ...draft, height_cm: Number(e.target.value) })} /></label>
-          <label className="field">Current weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.weight_kg || ''} onChange={e => setDraft({ ...draft, weight_kg: Number(e.target.value) })} /></label>
-          <label className="field">Current body fat %<input type="number" min="0" max="100" step="0.1" value={draft.body_fat_pct ?? ''} onChange={e => setDraft({ ...draft, body_fat_pct: e.target.value ? Number(e.target.value) : null })} /></label>
+          <label className="field">Starting weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.weight_kg || ''} onChange={e => setDraft({ ...draft, weight_kg: Number(e.target.value) })} /></label>
+          <label className="field">Starting body fat %<input type="number" min="0" max="100" step="0.1" value={draft.body_fat_pct ?? ''} onChange={e => setDraft({ ...draft, body_fat_pct: e.target.value ? Number(e.target.value) : null })} /></label>
+          <div className="measurement-stat"><span>BMI</span><strong>{calculated?.bmi ?? '-'}</strong></div>
+          <div className="measurement-stat"><span>BMR</span><strong>{calculated?.bmr ?? '-'}{calculated && <small> kcal</small>}</strong></div>
           <label className="field">Target weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.target_weight_kg || ''} onChange={e => setDraft({ ...draft, target_weight_kg: Number(e.target.value) })} /></label>
-          <label className="field">Target body fat %<input type="number" min="0" max="100" step="0.1" value={draft.target_body_fat_pct ?? ''} onChange={e => setDraft({ ...draft, target_body_fat_pct: e.target.value ? Number(e.target.value) : null })} /></label>
-        </div>
-        <div className="measurement-summary-grid">
-          <Tile label="Current weight" value={draft.weight_kg || '-'} unit={draft.weight_kg ? ' kg' : ''} />
-          <Tile label="Current body fat" value={draft.body_fat_pct ?? '-'} unit={draft.body_fat_pct != null ? '%' : ''} />
-          <Tile label="Current BMR" value={calculated?.bmr ?? '-'} unit={calculated ? ' kcal' : ''} />
-          <Tile label="Current BMI" value={calculated?.bmi ?? '-'} />
-          <Tile label="Target weight" value={draft.target_weight_kg || '-'} unit={draft.target_weight_kg ? ' kg' : ''} />
-          <Tile label="Target body fat" value={draft.target_body_fat_pct ?? '-'} unit={draft.target_body_fat_pct != null ? '%' : ''} />
-          <Tile label="Target BMR" value={calculated?.targetBmr ?? '-'} unit={calculated?.targetBmr ? ' kcal' : ''} />
-          <Tile label="Target BMI" value={calculated?.targetBmi ?? '-'} />
+          <div className="measurement-stat"><span>Target BMR</span><strong>{calculated?.targetBmr ?? '-'}{calculated?.targetBmr && <small> kcal</small>}</strong></div>
         </div>
         <h3 style={{ margin: '6px 0 0' }}>Goal highlights</h3>
         <div className="inline-inputs">
