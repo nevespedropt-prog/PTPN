@@ -219,6 +219,14 @@ ok(await count(B, `select 1 from client_health where client_id = '${A}'`) === 0,
 ok(await count(C, `select 1 from client_health where client_id = '${A}'`) === 1, 'coach can read client health data')
 ok((await as(C, `update client_health set allergies = 'x' where client_id = '${A}' returning 1`)).rows?.length === 0, 'coach cannot change client health answers')
 
+// Paid session credits: coach manages the allowance; clients can only read their own balance.
+ok((await as(A, `insert into client_session_credits (client_id, sessions_purchased) values ('${A}', 10)`)).error, 'client cannot add their own paid sessions')
+ok(!(await as(C, `insert into client_session_credits (client_id, sessions_purchased, completed_baseline) values ('${A}', 10, 2)`)).error, 'coach adds paid sessions')
+ok((await as(A, `select sessions_purchased, completed_baseline from client_session_credits where client_id = '${A}'`)).rows?.[0]?.sessions_purchased === 10, 'client reads own session balance')
+ok(await count(B, `select client_id from client_session_credits where client_id = '${A}'`) === 0, 'other client cannot read session balance')
+ok(!(await as(C, `update client_session_credits set sessions_purchased = 14, updated_at = now() where client_id = '${A}'`)).error, 'coach adds more sessions')
+ok((await as(A, `update client_session_credits set sessions_purchased = 99 where client_id = '${A}' returning client_id`)).rows?.length === 0, 'client cannot change session allowance')
+
 // Archive markers are coach-only; restoring never deletes client history.
 ok((await as(A, `insert into client_archives (client_id) values ('${A}')`)).error, 'client cannot archive themselves')
 ok((await as(A, `insert into client_archives (client_id) values ('${B}')`)).error, 'client cannot archive someone else')
