@@ -125,7 +125,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
       <div className="card stack">
         <h3 style={{ margin: 0 }}>Goal and timeframe</h3>
         <label className="field">Fitness goal<textarea required maxLength={1200} rows={3} value={draft.goal} onChange={e => setDraft({ ...draft, goal: e.target.value })} placeholder="What the client wants to achieve and how success will be measured" /></label>
-        <div className="inline-inputs">
+        <div className="taster-personal-grid">
           <label className="field">Assessment date<input required type="date" value={draft.assessed_on} onChange={e => setDraft({ ...draft, assessed_on: e.target.value })} /></label>
           <label className="field">Target date<input required type="date" value={draft.target_date} onChange={e => setDraft({ ...draft, target_date: e.target.value })} /></label>
         </div>
@@ -133,7 +133,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
 
       <div className="card stack">
         <h3 style={{ margin: 0 }}>Personal details</h3>
-        <div className="inline-inputs">
+        <div className="taster-personal-grid">
           <label className="field">Date of birth<input required type="date" max={localDate()} value={draft.date_of_birth} onChange={e => setDraft({ ...draft, date_of_birth: e.target.value })} /></label>
           <label className="field">Sex used for calculation<select value={draft.sex} onChange={e => setDraft({ ...draft, sex: e.target.value as AssessmentSex })}><option value="female">Female</option><option value="male">Male</option></select></label>
           <label className="field">Activity level<select value={draft.activity_level} onChange={e => setDraft({ ...draft, activity_level: e.target.value as ActivityLevel })}>{Object.entries(ACTIVITY_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
