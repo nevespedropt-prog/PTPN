@@ -10,6 +10,7 @@ import Login from './pages/Login'
 import Account from './pages/Account'
 import More from './pages/More'
 import Home from './pages/client/Home'
+import TasterSessionView from './pages/client/TasterSessionView'
 import Train from './pages/client/Train'
 import Nutrition from './pages/client/Nutrition'
 import WorkoutPlayer from './pages/WorkoutPlayer'
@@ -90,7 +91,7 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
             </div>
             <Link to="/account" className="drawer-user" onClick={() => setMenu(false)}>
               <Avatar name={name} size={44} />
-              <span className="grow"><b>{profile?.full_name || 'Account'}</b><br /><span className="mute small">{profile?.role === 'coach' ? 'Coach' : 'Client'} · Account and password</span></span>
+              <span className="grow"><b>{profile?.full_name || 'Account'}</b><br /><span className="mute small">{profile?.role === 'coach' ? 'Coach' : 'Client'} � Account and password</span></span>
               <Icon name="chev" />
             </Link>
             <div className="drawer-list">
@@ -182,6 +183,7 @@ export default function App() {
       ]}>
       <Routes>
         <Route path="/home" element={<Home />} />
+        <Route path="/taster-session" element={<TasterSessionView />} />
         <Route path="/train" element={<Train />} />
         <Route path="/workout/:id" element={<WorkoutPlayer />} />
         <Route path="/build/:id" element={<WorkoutBuilder />} />
@@ -201,3 +203,4 @@ export default function App() {
     </ConsentGate>
   )
 }
+

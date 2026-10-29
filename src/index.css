@@ -554,6 +554,20 @@ button.empty-goal { width: 100%; display: flex; align-items: center; justify-con
 .measurement-stat span { color: var(--ink-2); font-size: .84rem; font-weight: 600; }
 .measurement-stat strong { font-family: var(--display); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
 .measurement-stat small { color: var(--mute); font-family: inherit; font-size: .72rem; }
+.parq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.parq-question { min-width: 0; margin: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); }
+.parq-question legend { float: left; width: 100%; margin: 0 0 8px; padding: 0; color: var(--ink-2); font-size: .78rem; font-weight: 600; line-height: 1.35; }
+.parq-question legend + * { clear: both; }
+.parq-choice { display: flex; gap: 8px; }
+.parq-choice label { display: flex; align-items: center; gap: 5px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--mute); font-size: .76rem; cursor: pointer; }
+.parq-choice input { width: auto; min-height: auto; margin: 0; }
+.parq-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.parq-consent { padding: 12px; border: 1px solid rgba(215,185,120,.35); border-radius: 12px; background: var(--gold-soft); font-size: .8rem; line-height: 1.45; }
+.health-alert-list { display: grid; gap: 6px; margin-top: 8px; }
+.health-alert-item { padding: 9px 11px; border-left: 3px solid #ff7a87; border-radius: 8px; background: rgba(225,29,46,.08); font-size: .82rem; }
+.taster-read-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.taster-read-item { display: grid; gap: 4px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); }
+.taster-read-item span { color: var(--mute); font-size: .72rem; }
 .assessment-row { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--field); }
 .assessment-row + .assessment-row { margin-top: 8px; }
 .calculation-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -561,5 +575,6 @@ button.empty-goal { width: 100%; display: flex; align-items: center; justify-con
 .calculation-comparison b { font-size: 1.15rem; }
 @media (max-width: 920px) { .taster-personal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 680px) { .measurement-entry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .parq-grid, .parq-details-grid { grid-template-columns: 1fr; } .taster-read-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .taster-personal-grid { grid-template-columns: 1fr; gap: 14px; } }
 

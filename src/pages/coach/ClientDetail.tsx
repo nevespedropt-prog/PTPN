@@ -6,6 +6,7 @@ import { useAuth } from '../../auth'
 import { addDays, DAY_NAMES, localDate, niceDate, relDay } from '../../lib/dates'
 import { MEAL_LABEL, MEALS, forServings, generateWeek, suggestTargets, sum } from '../../lib/nutrition'
 import { setsDone } from '../../lib/training'
+import { parqAlerts } from '../../lib/parq'
 import type { ClientHealth, Checkin, ClientWorkout, FoodLog, MealPlanItem, Measurement, Program, ProgramDay, Recipe, Targets, TasterSession, Workout } from '../../types'
 import { Avatar, Empty, MacroBar, MacroChips, Seg, Sheet, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
@@ -58,6 +59,8 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
 
   const recent = cws.filter(c => c.date >= addDays(today, -14) && c.date <= today)
   const done = recent.filter(c => c.status === 'done').length
+  const tasterAlerts = parqAlerts(taster?.parq_answers)
+  const tasterDetails = taster ? [taster.parq_health_details, taster.parq_injury_details, taster.parq_medication_details, taster.parq_allergy_details].filter(Boolean) : []
   return (
     <>
       {taster ? <div className="card goal-card">
@@ -71,7 +74,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
         <SessionBalance clientId={id} coach />
       </div>
       {health !== undefined && (
-        <div className={'card tight' + (health && (flagged(health.allergies) || flagged(health.health_conditions)) ? ' consent-card' : '')}>
+        <div className={'card tight' + ((health && (flagged(health.allergies) || flagged(health.health_conditions))) || tasterAlerts.length ? ' consent-card' : '')}>
           <span className="eyebrow">Health and consent</span>
           {!health || !health.consented_at
             ? <p style={{ margin: 0 }} className="health-alert">Has not completed the health and consent form yet. They will be asked when they next sign in.</p>
@@ -82,6 +85,12 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
                 {health.emergency_contact && <span className="small"><b>Emergency contact:</b> {health.emergency_contact}</span>}
                 <span className="mute small">Consent given {new Date(health.consented_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
               </div>}
+          {taster && <><hr className="sep" /><div className="stack" style={{ gap: 6 }}>
+            <b className="small">Taster-session health screening</b>
+            {tasterAlerts.length ? <div className="health-alert-list">{tasterAlerts.map(alert => <div className="health-alert-item" key={alert}>{alert}</div>)}</div> : <span className="small">No exercise-safety concerns recorded.</span>}
+            {tasterDetails.map(detail => <span className="small" key={detail}>{detail}</span>)}
+            <span className="mute small">Exercise consent {taster.parq_exercise_consent ? 'recorded' : 'not recorded'}.</span>
+          </div></>}
         </div>
       )}
       {checkin?.note && <div className="card tight"><span className="eyebrow">Latest check-in note</span><p style={{ margin: 0 }}>{checkin.note}</p></div>}

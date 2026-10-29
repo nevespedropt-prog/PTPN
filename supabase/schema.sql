@@ -829,6 +829,13 @@ create table public.taster_sessions (
   emergency_contact_name text not null default '' check (length(emergency_contact_name) <= 160),
   emergency_contact_phone text not null default '' check (length(emergency_contact_phone) <= 80),
   emergency_contact_email text not null default '' check (length(emergency_contact_email) <= 320),
+  parq_answers jsonb not null default '{}'::jsonb check (jsonb_typeof(parq_answers) = 'object'),
+  parq_health_details text not null default '' check (length(parq_health_details) <= 2400),
+  parq_injury_details text not null default '' check (length(parq_injury_details) <= 1600),
+  parq_medication_details text not null default '' check (length(parq_medication_details) <= 1600),
+  parq_allergy_details text not null default '' check (length(parq_allergy_details) <= 1600),
+  parq_exercise_consent boolean not null default false,
+  parq_consented_at timestamptz,
   client_summary text not null default '' check (length(client_summary) <= 2400), coach_notes text not null default '' check (length(coach_notes) <= 4000),
   created_by uuid not null references public.profiles(id), created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
@@ -850,6 +857,7 @@ create policy "taster coach insert" on public.taster_sessions for insert to auth
 create policy "taster coach update" on public.taster_sessions for update to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
 create policy "taster coach delete" on public.taster_sessions for delete to authenticated using ((select public.is_coach()));
 create policy "assessment items coach read" on public.fitness_assessment_items for select to authenticated using ((select public.is_coach()));
+create policy "assessment items client read own" on public.fitness_assessment_items for select to authenticated using (exists (select 1 from public.taster_sessions t where t.id = taster_session_id and t.client_id = (select auth.uid())));
 create policy "assessment items coach insert" on public.fitness_assessment_items for insert to authenticated with check ((select public.is_coach()) and exists (select 1 from public.taster_sessions t where t.id = taster_session_id));
 create policy "assessment items coach update" on public.fitness_assessment_items for update to authenticated using ((select public.is_coach())) with check ((select public.is_coach()));
 create policy "assessment items coach delete" on public.fitness_assessment_items for delete to authenticated using ((select public.is_coach()));

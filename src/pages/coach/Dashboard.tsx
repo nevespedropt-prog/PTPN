@@ -4,13 +4,14 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
 import { addDays, daysBetween, localDate, longDay, niceDate, timeAgo, weekOf } from '../../lib/dates'
 import { firstName, greeting } from '../../lib/util'
-import type { Checkin, ClientWorkout, Message, Profile, Session, Workout } from '../../types'
+import { parqAlerts } from '../../lib/parq'
+import type { Checkin, ClientWorkout, Message, Profile, Session, TasterSession, Workout } from '../../types'
 import { Avatar, Empty, PageHead, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
 import { TechniqueReviewQueue } from '../../components/ExerciseFeedback'
 import { WeeklyReviewQueue } from '../../components/WeeklyCheckins'
 
-interface Data { clients: Profile[]; archived: string[]; cws: ClientWorkout[]; checkins: Checkin[]; msgs: Message[]; sessions: Session[]; workouts: Record<string, Workout> }
+interface Data { clients: Profile[]; archived: string[]; cws: ClientWorkout[]; checkins: Checkin[]; msgs: Message[]; sessions: Session[]; tasters: TasterSession[]; workouts: Record<string, Workout> }
 
 export default function Dashboard() {
   const { profile } = useAuth()
@@ -26,22 +27,23 @@ export default function Dashboard() {
     setD(null); setError(false); setQueueCounts({ weekly: null, technique: null })
     ;(async () => {
       try {
-        const [cw, ck, ms, se, people, archives] = await Promise.all([
+        const [cw, ck, ms, se, people, archives, tasters] = await Promise.all([
           supabase.from('client_workouts').select('*').gte('date', addDays(today, -13)).lte('date', today).order('date', { ascending: false }).limit(1000),
           supabase.from('checkins').select('*').gte('date', addDays(today, -6)).lte('date', today).order('date', { ascending: false }).limit(1000),
           supabase.from('messages').select('*').is('read_at', null).neq('sender_id', profile.id).order('created_at', { ascending: false }).limit(1000),
           supabase.from('sessions').select('*').gte('starts_at', new Date().toISOString()).order('starts_at').limit(5),
           supabase.from('profiles').select('*').eq('role', 'client').order('full_name').limit(1000),
           supabase.from('client_archives').select('client_id').limit(1000),
+          supabase.from('taster_sessions').select('*').order('assessed_on', { ascending: false }).order('created_at', { ascending: false }).limit(1000),
         ])
         // Never present failed or potentially truncated reads as complete totals.
-        const results = [cw, ck, ms, people, archives]
+        const results = [cw, ck, ms, people, archives, tasters]
         if (se.error || results.some(r => r.error || (r.data?.length ?? 0) >= 1000)) throw new Error('Dashboard unavailable')
         const cws = (cw.data ?? []) as ClientWorkout[]
         const ids = [...new Set(cws.map(c => c.workout_id))]
         const w = ids.length ? await supabase.from('workouts').select('*').in('id', ids).limit(1000) : { data: [], error: null }
         if (w.error || (w.data?.length ?? 0) >= 1000) throw new Error('Workouts unavailable')
-        if (active) setD({ clients: (people.data ?? []) as Profile[], archived: (archives.data ?? []).map(x => x.client_id), cws, checkins: (ck.data ?? []) as Checkin[], msgs: (ms.data ?? []) as Message[], sessions: (se.data ?? []) as Session[], workouts: Object.fromEntries((w.data as Workout[] ?? []).map(x => [x.id, x])) })
+        if (active) setD({ clients: (people.data ?? []) as Profile[], archived: (archives.data ?? []).map(x => x.client_id), cws, checkins: (ck.data ?? []) as Checkin[], msgs: (ms.data ?? []) as Message[], sessions: (se.data ?? []) as Session[], tasters: (tasters.data ?? []) as TasterSession[], workouts: Object.fromEntries((w.data as Workout[] ?? []).map(x => [x.id, x])) })
       } catch { if (active) setError(true) }
     })()
     return () => { active = false }
@@ -80,9 +82,19 @@ export default function Dashboard() {
   const recent = activeWorkouts.filter(c => c.status === 'done').sort((a, b) => (b.completed_at ?? b.date).localeCompare(a.completed_at ?? a.date)).slice(0, 6)
   const unreadBy = new Map<string, number>()
   for (const m of d.msgs) unreadBy.set(m.client_id, (unreadBy.get(m.client_id) ?? 0) + 1)
+  const latestTasters = new Map<string, TasterSession>()
+  for (const taster of d.tasters) if (!latestTasters.has(taster.client_id)) latestTasters.set(taster.client_id, taster)
+  const healthRisks = clients.map(client => {
+    const taster = latestTasters.get(client.id)
+    if (!taster) return null
+    const alerts = parqAlerts(taster.parq_answers)
+    const details = [taster.parq_health_details, taster.parq_injury_details, taster.parq_medication_details, taster.parq_allergy_details].filter(Boolean)
+    return alerts.length || details.length ? { client, alerts, details } : null
+  }).filter((item): item is NonNullable<typeof item> => !!item)
   const urgentAttention = attention.filter(item => item.priority >= 3).length
   const routineAttention = attention.length - urgentAttention
   const priorities = [
+    healthRisks.length > 0 ? { label: 'Health-screening alerts', detail: 'Important client risks to review before coaching', count: healthRisks.length, href: '#health-alerts' } : null,
     urgentAttention > 0 ? { label: 'Urgent client follow-up', detail: 'Low mood or multiple missed workouts', count: urgentAttention, href: '#needs-attention' } : null,
     d.msgs.length > 0 ? { label: 'Unread messages', detail: `${unreadBy.size} conversation${unreadBy.size === 1 ? '' : 's'} awaiting a reply`, count: d.msgs.length, href: '#dashboard-inbox' } : null,
     (queueCounts.weekly ?? 0) > 0 ? { label: 'Weekly reviews', detail: 'Client check-ins awaiting feedback', count: queueCounts.weekly!, href: '#weekly-reviews' } : null,
@@ -110,6 +122,14 @@ export default function Dashboard() {
         <Tile label="Unread" value={d.msgs.length} foot="messages" accent={d.msgs.length ? 'var(--gold)' : undefined} />
         <Tile label="Check-ins" value={new Set(activeCheckins.filter(k => k.date >= addDays(today, -1)).map(k => k.client_id)).size} foot="in the last 2 days" />
       </div>
+
+      {healthRisks.length > 0 && <section id="health-alerts" className="card tight consent-card" aria-label="Client health alerts" style={{ marginBottom: 12, scrollMarginTop: 80 }}>
+        <div><span className="eyebrow">Coach awareness</span><h2 style={{ margin: '5px 0 0' }}>Health-screening alerts</h2></div>
+        <div className="list" style={{ marginTop: 10 }}>{healthRisks.map(({ client, alerts, details }) => <Link key={client.id} to={`/clients/${client.id}`} className="item">
+          <Avatar name={client.full_name} size={40} />
+          <span className="grow"><span className="title">{client.full_name}</span><br /><span className="meta">{[...alerts, ...details].join(' � ')}</span></span><Icon name="chev" />
+        </Link>)}</div>
+      </section>}
 
       <div id="weekly-reviews" style={{ scrollMarginTop: 80 }}><WeeklyReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, weekly: count }))} /></div>
       <div id="technique-reviews" style={{ scrollMarginTop: 80 }}><TechniqueReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, technique: count }))} /></div>

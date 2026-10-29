@@ -10,6 +10,9 @@ export interface TasterSession {
   job_description: string; fitness_level: 'beginner' | 'intermediate' | 'advanced' | 'athlete'; diet: string
   goal_metric_label: string; goal_metric_current: string; goal_metric_target: string; goal_metric_unit: string; new_habit: string
   emergency_contact_name: string; emergency_contact_phone: string; emergency_contact_email: string
+  parq_answers: import('./lib/parq').ParqAnswers
+  parq_health_details: string; parq_injury_details: string; parq_medication_details: string; parq_allergy_details: string
+  parq_exercise_consent: boolean; parq_consented_at: string | null
   target_kcal: number; target_protein: number; target_carbs: number; target_fat: number
   client_summary: string; coach_notes: string; created_by: string; created_at: string; updated_at: string
 }
