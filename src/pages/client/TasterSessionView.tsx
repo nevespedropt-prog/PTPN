@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth'
 import { Empty, PageHead, Skeleton } from '../../components/ui'
-import { ACTIVITY_LABEL, ageOn } from '../../lib/assessment'
+import { ACTIVITY_LABEL, ageOn, maintenanceCalories } from '../../lib/assessment'
 import { niceDate } from '../../lib/dates'
 import { parqAlerts } from '../../lib/parq'
 import { supabase } from '../../lib/supabase'
@@ -33,6 +33,7 @@ export default function TasterSessionView() {
 
   const alerts = parqAlerts(taster.parq_answers)
   const detailLines = [taster.parq_health_details, taster.parq_injury_details, taster.parq_medication_details, taster.parq_allergy_details].filter(Boolean)
+  const targetMaintenance = maintenanceCalories(Number(taster.target_weight_kg), Number(taster.height_cm), ageOn(taster.date_of_birth), taster.sex, taster.activity_level)
   return <>
     <PageHead eyebrow="My coaching profile" title="Taster session" />
     <Link to="/home" className="link"> Back to dashboard</Link>
@@ -47,7 +48,7 @@ export default function TasterSessionView() {
     </div></div>
 
     <div className="card stack"><h3 style={{ margin: 0 }}>Measurements</h3><div className="taster-read-grid">
-      <ReadItem label="Height" value={`${taster.height_cm} cm`} /><ReadItem label="Starting weight" value={`${taster.weight_kg} kg`} /><ReadItem label="Starting body fat" value={taster.body_fat_pct == null ? '-' : `${taster.body_fat_pct}%`} /><ReadItem label="BMI" value={taster.bmi} /><ReadItem label="BMR" value={`${taster.bmr_kcal} kcal`} /><ReadItem label="Target weight" value={`${taster.target_weight_kg} kg`} /><ReadItem label="Target BMR" value={`${taster.target_bmr_kcal} kcal`} />
+      <ReadItem label="Height" value={`${taster.height_cm} cm`} /><ReadItem label="Starting weight" value={`${taster.weight_kg} kg`} /><ReadItem label="Starting body fat" value={taster.body_fat_pct == null ? '-' : `${taster.body_fat_pct}%`} /><ReadItem label="BMI" value={taster.bmi} /><ReadItem label="Maintenance calories" value={`${taster.estimated_maintenance_kcal} kcal/day`} /><ReadItem label="Target weight" value={`${taster.target_weight_kg} kg`} /><ReadItem label="Target maintenance" value={`${targetMaintenance} kcal/day`} />
     </div></div>
 
     <div className="card stack"><h3 style={{ margin: 0 }}>Personal and nutrition plan</h3><div className="taster-read-grid">
