@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
 import { HealthForm } from '../components/Consent'
-import type { ClientHealth } from '../types'
+import HealthScreeningView from '../components/HealthScreeningView'
+import type { ClientHealth, TasterSession } from '../types'
 import { disablePush, enablePush, pushState, type PushState } from '../lib/push'
 
 export default function Account() {
@@ -14,9 +15,12 @@ export default function Account() {
 
   const [health, setHealth] = useState<ClientHealth | null | undefined>(undefined)
   const [editHealth, setEditHealth] = useState(false)
+  const [screening, setScreening] = useState<TasterSession | null>(null)
   useEffect(() => {
     if (profile?.role !== 'client') return
     supabase.from('client_health').select('*').eq('client_id', profile.id).maybeSingle().then(({ data }) => setHealth((data as ClientHealth) ?? null))
+    supabase.from('taster_sessions').select('*').eq('client_id', profile.id).order('assessed_on', { ascending: false }).order('created_at', { ascending: false }).limit(1)
+      .then(({ data }) => setScreening(((data ?? []) as TasterSession[])[0] ?? null))
   }, [profile])
   const [ps, setPs] = useState<PushState | null>(null)
   const [pushMsg, setPushMsg] = useState('')
@@ -84,6 +88,7 @@ export default function Account() {
             : <button className="soft" onClick={() => setEditHealth(true)}>Update health information</button>}
         </div>
       )}
+      {profile?.role === 'client' && screening && <HealthScreeningView taster={screening} />}
       {ps !== 'unsupported' && (
         <section className="card col" aria-label="Notifications">
           <h2>Notifications</h2>

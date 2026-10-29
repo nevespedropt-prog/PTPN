@@ -131,7 +131,7 @@ function Records({ clientId }: { clientId: string }) {
       {(prs ?? []).slice(0, 12).map((p, i) => (
         <div key={p.exercise} className="lift">
           <span className="badge" style={{ minWidth: 28, justifyContent: 'center' }}>{i + 1}</span>
-          <span className="grow"><b>{p.exercise}</b><br /><span className="mute small">{p.kg} kg x {p.reps} � {niceDate(p.date)}</span></span>
+          <span className="grow"><b>{p.exercise}</b><br /><span className="mute small">{p.kg} kg x {p.reps} · {niceDate(p.date)}</span></span>
           <span className="big">{p.e1rm}<small>kg</small></span>
         </div>
       ))}

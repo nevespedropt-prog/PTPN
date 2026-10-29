@@ -10,7 +10,7 @@ import { ExercisePicker } from './Pickers'
 import Icon from './Icon'
 import { Empty, Skeleton, Tile } from './ui'
 
-type Draft = Omit<TasterSession, 'id' | 'client_id' | 'bmi' | 'target_bmi' | 'bmr_kcal' | 'target_bmr_kcal' | 'estimated_maintenance_kcal' | 'created_by' | 'created_at' | 'updated_at'> & { id?: string }
+type Draft = Omit<TasterSession, 'id' | 'client_id' | 'bmi' | 'target_bmi' | 'bmr_kcal' | 'target_bmr_kcal' | 'estimated_maintenance_kcal' | 'created_by' | 'created_at' | 'updated_at'> & { id?: string; coach_notes: string }
 type ItemDraft = Omit<FitnessAssessmentItem, 'id' | 'taster_session_id' | 'sort'> & { id?: string }
 
 const blank = (): Draft => ({
@@ -38,8 +38,10 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     if (error) { setMessage('Could not load the taster session.'); setDraft(blank()); return }
     const row = ((data ?? []) as TasterSession[])[0]
     if (!row) { setDraft(blank()); setItems([]); return }
+    const noted = await supabase.from('taster_session_notes').select('notes').eq('taster_session_id', row.id).maybeSingle()
+    if (noted.error) setMessage('Could not load your private coach notes.')
     setDraft({
-      ...row, id: row.id, target_weight_kg: row.target_weight_kg ?? row.weight_kg, target_body_fat_pct: row.target_body_fat_pct ?? null,
+      ...row, id: row.id, coach_notes: (noted.data as { notes: string } | null)?.notes ?? '', target_weight_kg: row.target_weight_kg ?? row.weight_kg, target_body_fat_pct: row.target_body_fat_pct ?? null,
       job_description: row.job_description ?? '', fitness_level: row.fitness_level ?? 'beginner', diet: row.diet ?? '',
       goal_metric_label: row.goal_metric_label ?? '', goal_metric_current: row.goal_metric_current ?? '',
       goal_metric_target: row.goal_metric_target ?? '', goal_metric_unit: row.goal_metric_unit ?? '', new_habit: row.new_habit ?? '',
@@ -104,17 +106,18 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
       parq_medication_details: macros.parq_medication_details.trim(), parq_allergy_details: macros.parq_allergy_details.trim(),
       parq_health_storage_consent: macros.parq_health_storage_consent, parq_health_storage_consented_at: macros.parq_health_storage_consented_at ?? new Date().toISOString(), parq_exercise_consent: macros.parq_exercise_consent,
       parq_consented_at: macros.parq_consented_at ?? new Date().toISOString(),
-      client_summary: macros.client_summary.trim(), coach_notes: macros.coach_notes.trim(), created_by: profile.id, updated_at: new Date().toISOString(),
+      client_summary: macros.client_summary.trim(), created_by: profile.id, updated_at: new Date().toISOString(),
     }
     const saved = draft.id
       ? await supabase.from('taster_sessions').update(payload).eq('id', draft.id).select().single()
       : await supabase.from('taster_sessions').insert(payload).select().single()
     if (saved.error || !saved.data) { setBusy(false); return setMessage(saved.error?.message ?? 'Could not save the taster session.') }
     const session = saved.data as TasterSession
-    const [measurement, targets, removed] = await Promise.all([
+    const [measurement, targets, removed, notes] = await Promise.all([
       supabase.from('measurements').upsert({ client_id: clientId, date: macros.assessed_on, weight_kg: Number(macros.weight_kg), body_fat_pct: macros.body_fat_pct ? Number(macros.body_fat_pct) : null, notes: 'Taster session', taster_session_id: session.id }, { onConflict: 'taster_session_id' }),
       supabase.from('nutrition_targets').upsert({ client_id: clientId, kcal: Number(macros.target_kcal), protein: Number(macros.target_protein), carbs: Number(macros.target_carbs), fat: Number(macros.target_fat), notes: `Set from taster session on ${macros.assessed_on}`, updated_at: new Date().toISOString() }),
       supabase.from('fitness_assessment_items').delete().eq('taster_session_id', session.id),
+      supabase.from('taster_session_notes').upsert({ taster_session_id: session.id, notes: macros.coach_notes.trim(), updated_at: new Date().toISOString() }, { onConflict: 'taster_session_id' }),
     ])
     let itemError = removed.error
     if (!itemError && items.length) {
@@ -125,7 +128,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
       itemError = added.error
     }
     setBusy(false)
-    if (measurement.error || targets.error || itemError) return setMessage(measurement.error?.message || targets.error?.message || itemError?.message || 'Some linked details could not be saved.')
+    if (measurement.error || targets.error || notes.error || itemError) return setMessage(measurement.error?.message || targets.error?.message || notes.error?.message || itemError?.message || 'Some linked details could not be saved.')
     setDraft({ ...macros, id: session.id }); setMessage('Taster session saved. Goal, progress and nutrition targets are now connected.')
   }
 

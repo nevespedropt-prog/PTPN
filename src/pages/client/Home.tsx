@@ -90,7 +90,7 @@ export default function Home() {
             </div>
             <h2 style={{ fontSize: '1.5rem', margin: '6px 0 4px' }}>{w?.name ?? 'Workout'}</h2>
             <p className="mute" style={{ margin: '0 0 14px' }}>
-              {itemCounts[cw.workout_id] ?? 0} exercises{w?.duration_min ? ` � about ${w.duration_min} min` : ''}
+              {itemCounts[cw.workout_id] ?? 0} exercises{w?.duration_min ? ` · about ${w.duration_min} min` : ''}
             </p>
             <Link to={`/workout/${cw.id}?returnTo=%2F`} className={'btn block' + (done ? ' soft' : '')} style={{ minHeight: 50 }}>
               <Icon name={done ? 'check' : 'play'} size={18} />{done ? 'View workout' : 'Start workout'}
@@ -102,7 +102,7 @@ export default function Home() {
           <span className="badge">Rest day</span>
           <h2 style={{ fontSize: '1.4rem', margin: '10px 0 4px' }}>Recover and refuel</h2>
           <p className="mute" style={{ margin: 0 }}>
-            {upcoming ? <>Next up: <b style={{ color: 'var(--ink)' }}>{workouts[upcoming.workout_id]?.name ?? 'Workout'}</b> � {relDay(upcoming.date)}</> : 'No workouts scheduled yet. Your coach will add your programme here.'}
+            {upcoming ? <>Next up: <b style={{ color: 'var(--ink)' }}>{workouts[upcoming.workout_id]?.name ?? 'Workout'}</b> · {relDay(upcoming.date)}</> : 'No workouts scheduled yet. Your coach will add your programme here.'}
           </p>
         </div>
       )}

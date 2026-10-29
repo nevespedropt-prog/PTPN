@@ -108,6 +108,10 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await feedback.getByText('Excellent consistency. Keep your preparation routine.', { exact: true }).waitFor()
   await feedback.getByText('Plan three training sessions.', { exact: true }).waitFor()
   ok(true, 'weekly: client sees coach feedback and next focus after reload')
+  await feedback.locator('summary').click()
+  ok(!(await feedback.getByText('Plan three training sessions.', { exact: true }).isVisible()), 'weekly: client can minimise the check-in box')
+  await feedback.locator('summary').click()
+  ok(await feedback.getByText('Plan three training sessions.', { exact: true }).isVisible(), 'weekly: client can expand the check-in box again')
   await shot(client.page, 'weekly-client-feedback-phone')
   // Past weeks can be reviewed; future weeks are never offered.
   const options = await feedback.getByLabel('Review week').locator('option').evaluateAll(os => os.map(o => o.value))

@@ -273,6 +273,17 @@ ok(bal?.length === 1 && Number(bal[0].owed_gbp) === 500 && Number(bal[0].paid_gb
 ok((await as(C, 'select * from admin_recent_enquiries(10)')).rows?.length === 2, 'coach reads enquiries through the admin list')
 ok((await as(null, 'select * from admin_recent_enquiries(10)')).error, 'anon cannot call the admin enquiries list')
 
+// coach acknowledgements: private to the coach
+ok(!(await as(C, `insert into coach_acknowledgements (coach_id, item_key, fingerprint) values ('${C}', 'priority:messages', 'abc')`)).error, 'coach ticks a dashboard item')
+ok(await count(C, 'select * from coach_acknowledgements') === 1, 'coach reads their own ticks')
+ok(!(await as(C, `update coach_acknowledgements set fingerprint = 'def' where item_key = 'priority:messages'`)).error, 'coach updates a tick')
+ok(!(await as(C, `insert into coach_acknowledgements (coach_id, item_key, fingerprint) values ('${C}', 'health:x', 'abc') on conflict (coach_id, item_key) do update set fingerprint = excluded.fingerprint`)).error, 'coach ticks with upsert')
+ok(await count(A, 'select * from coach_acknowledgements') === 0, 'client cannot read coach ticks')
+ok((await as(A, `insert into coach_acknowledgements (coach_id, item_key, fingerprint) values ('${A}', 'x', 'y')`)).error, 'client cannot add a coach tick')
+ok((await as(C, `insert into coach_acknowledgements (coach_id, item_key, fingerprint) values ('${A}', 'x', 'y')`)).error, 'coach cannot write a tick for someone else')
+ok((await as(null, 'select * from coach_acknowledgements')).error, 'anon cannot read coach ticks')
+ok(!(await as(C, `delete from coach_acknowledgements where item_key = 'health:x'`)).error && await count(C, 'select * from coach_acknowledgements') === 1, 'coach removes a tick')
+
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)
 ok((await db.query(`select count(*)::int n from client_archives where client_id = '${A}'`)).rows[0].n === 0, 'user deletion removes archive marker')

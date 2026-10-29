@@ -12,19 +12,19 @@ export async function sessionBalanceChecks({ open, sql, IDS, BASE, clean, ok }) 
   await sheet.getByText('6 sessions added.', { exact: true }).waitFor()
   ok((await sql('select sessions_purchased from client_session_credits where client_id=$1', [IDS.ana]))[0].sessions_purchased === 6, 'sessions: coach adds a paid allowance')
   await sheet.getByRole('button', { name: 'Close', exact: true }).click()
-  await balance.getByText('0 completed � 6 purchased', { exact: true }).waitFor()
+  await balance.getByText('0 completed · 6 purchased', { exact: true }).waitFor()
 
   const workout = (await sql("insert into workouts(name,created_by) values('Session credit fixture',$1) returning id", [IDS.coach]))[0].id
   const assigned = (await sql("insert into client_workouts(client_id,workout_id,date,status,completed_at) values($1,$2,current_date,'done',now()) returning id", [IDS.ana, workout]))[0].id
   await page.reload({ waitUntil: 'networkidle' })
   const updated = page.locator('.tile').filter({ hasText: 'Sessions left' })
-  ok(await updated.getByText('5', { exact: true }).count() === 1 && await updated.getByText('1 completed � 6 purchased', { exact: true }).count() === 1, 'sessions: completed training automatically reduces the balance')
+  ok(await updated.getByText('5', { exact: true }).count() === 1 && await updated.getByText('1 completed · 6 purchased', { exact: true }).count() === 1, 'sessions: completed training automatically reduces the balance')
 
   await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
   const client = await open('ana')
   await client.page.goto(BASE + '/', { waitUntil: 'networkidle' })
   const clientBalance = client.page.locator('.tile').filter({ hasText: 'Sessions left' })
-  ok(await clientBalance.getByText('5', { exact: true }).count() === 1 && await clientBalance.getByText('1 completed � 6 purchased', { exact: true }).count() === 1, 'sessions: client overview shows the same balance')
+  ok(await clientBalance.getByText('5', { exact: true }).count() === 1 && await clientBalance.getByText('1 completed · 6 purchased', { exact: true }).count() === 1, 'sessions: client overview shows the same balance')
   clean('session balance coach', errors)
   clean('session balance client', client.errors)
   await client.ctx.close(); await coach.ctx.close()

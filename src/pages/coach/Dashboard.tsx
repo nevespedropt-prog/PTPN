@@ -10,6 +10,8 @@ import { Avatar, Empty, PageHead, Skeleton, Tile } from '../../components/ui'
 import Icon from '../../components/Icon'
 import { TechniqueReviewQueue } from '../../components/ExerciseFeedback'
 import { WeeklyReviewQueue } from '../../components/WeeklyCheckins'
+import AckBox from '../../components/AckBox'
+import { fingerprint, useAcks } from '../../lib/ack'
 
 interface Data { clients: Profile[]; archived: string[]; cws: ClientWorkout[]; checkins: Checkin[]; msgs: Message[]; sessions: Session[]; tasters: TasterSession[]; workouts: Record<string, Workout> }
 
@@ -19,12 +21,14 @@ export default function Dashboard() {
   const [refresh, setRefresh] = useState(0)
   const [error, setError] = useState(false)
   const [queueCounts, setQueueCounts] = useState<{ weekly: number | null; technique: number | null }>({ weekly: null, technique: null })
+  const [queueIds, setQueueIds] = useState<{ weekly: string[]; technique: string[] }>({ weekly: [], technique: [] })
+  const acks = useAcks(refresh)
   const today = localDate()
 
   useEffect(() => {
     if (!profile?.id) return
     let active = true
-    setD(null); setError(false); setQueueCounts({ weekly: null, technique: null })
+    setD(null); setError(false); setQueueCounts({ weekly: null, technique: null }); setQueueIds({ weekly: [], technique: [] })
     ;(async () => {
       try {
         const [cw, ck, ms, se, people, archives, tasters] = await Promise.all([
@@ -89,18 +93,24 @@ export default function Dashboard() {
     if (!taster) return null
     const alerts = parqAlerts(taster.parq_answers)
     const details = [taster.parq_health_details, taster.parq_injury_details, taster.parq_medication_details, taster.parq_allergy_details].filter(Boolean)
-    return alerts.length || details.length ? { client, alerts, details } : null
+    return alerts.length || details.length ? { client, alerts, details, fp: fingerprint([taster.id, ...alerts, ...details]) } : null
   }).filter((item): item is NonNullable<typeof item> => !!item)
   const urgentAttention = attention.filter(item => item.priority >= 3).length
   const routineAttention = attention.length - urgentAttention
+  const urgentIds = attention.filter(item => item.priority >= 3).map(item => item.c.id)
+  const routineIds = attention.filter(item => item.priority < 3).map(item => item.c.id)
+  const latestMessageIds = [...unreadBy.keys()].map(id => id + ':' + d.msgs.find(m => m.client_id === id)!.id)
   const priorities = [
-    healthRisks.length > 0 ? { label: 'Health-screening alerts', detail: 'Important client risks to review before coaching', count: healthRisks.length, href: '#health-alerts' } : null,
-    urgentAttention > 0 ? { label: 'Urgent client follow-up', detail: 'Low mood or multiple missed workouts', count: urgentAttention, href: '#needs-attention' } : null,
-    d.msgs.length > 0 ? { label: 'Unread messages', detail: `${unreadBy.size} conversation${unreadBy.size === 1 ? '' : 's'} awaiting a reply`, count: d.msgs.length, href: '#dashboard-inbox' } : null,
-    (queueCounts.weekly ?? 0) > 0 ? { label: 'Weekly reviews', detail: 'Client check-ins awaiting feedback', count: queueCounts.weekly!, href: '#weekly-reviews' } : null,
-    (queueCounts.technique ?? 0) > 0 ? { label: 'Technique reviews', detail: 'Exercise videos awaiting feedback', count: queueCounts.technique!, href: '#technique-reviews' } : null,
-    routineAttention > 0 ? { label: 'Routine client follow-up', detail: 'Training inactivity or no recent schedule', count: routineAttention, href: '#needs-attention' } : null,
+    healthRisks.length > 0 ? { key: 'priority:health', fp: fingerprint(healthRisks.map(r => r.client.id + ':' + r.fp)), label: 'Health-screening alerts', detail: 'Important client risks to review before coaching', count: healthRisks.length, href: '#health-alerts' } : null,
+    urgentAttention > 0 ? { key: 'priority:urgent', fp: fingerprint(urgentIds), label: 'Urgent client follow-up', detail: 'Low mood or multiple missed workouts', count: urgentAttention, href: '#needs-attention' } : null,
+    d.msgs.length > 0 ? { key: 'priority:messages', fp: fingerprint(latestMessageIds), label: 'Unread messages', detail: `${unreadBy.size} conversation${unreadBy.size === 1 ? '' : 's'} awaiting a reply`, count: d.msgs.length, href: '#dashboard-inbox' } : null,
+    (queueCounts.weekly ?? 0) > 0 ? { key: 'priority:weekly', fp: fingerprint(queueIds.weekly), label: 'Weekly reviews', detail: 'Client check-ins awaiting feedback', count: queueCounts.weekly!, href: '#weekly-reviews' } : null,
+    (queueCounts.technique ?? 0) > 0 ? { key: 'priority:technique', fp: fingerprint(queueIds.technique), label: 'Technique reviews', detail: 'Exercise videos awaiting feedback', count: queueCounts.technique!, href: '#technique-reviews' } : null,
+    routineAttention > 0 ? { key: 'priority:routine', fp: fingerprint(routineIds), label: 'Routine client follow-up', detail: 'Training inactivity or no recent schedule', count: routineAttention, href: '#needs-attention' } : null,
   ].filter((item): item is NonNullable<typeof item> => !!item)
+  const ticksOff = !acks.ready || acks.failed
+  const checkedPriorities = priorities.filter(item => acks.isChecked(item.key, item.fp)).length
+  const checkedRisks = healthRisks.filter(r => acks.isChecked('health:' + r.client.id, r.fp)).length
   const prioritiesLoaded = queueCounts.weekly !== null && queueCounts.technique !== null
 
   return (
@@ -108,13 +118,23 @@ export default function Dashboard() {
       <PageHead eyebrow={longDay(today)} title={`${greeting()}, ${firstName(profile?.full_name ?? '')}`} />
       <section className="card tight" aria-label="Today's priorities" style={{ marginBottom: 12 }}>
         <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}><div><h2 style={{ margin: 0 }}>Today's priorities</h2><p className="mute small" style={{ margin: '4px 0 0' }}>Highest-impact coaching actions first.</p></div><button className="soft sm" onClick={() => setRefresh(n => n + 1)}>Refresh dashboard</button></div>
-        {!prioritiesLoaded && priorities.length === 0 ? <p role="status" className="mute">Checking priorities...</p> : priorities.length === 0 ? <Empty icon="check" title="All caught up">No client actions need attention right now.</Empty> : <div className="list" style={{ marginTop: 10 }}>
-          {priorities.map((item, index) => <a className="item" href={item.href} key={item.label}>
-            <span className="badge amber" aria-label={`Priority ${index + 1}`}>{index + 1}</span>
-            <span className="grow"><span className="title">{item.label}</span><br /><span className="meta">{item.detail}</span></span>
-            <span className="badge">{item.count}</span><Icon name="chev" />
-          </a>)}
-        </div>}
+        {!prioritiesLoaded && priorities.length === 0 ? <p role="status" className="mute">Checking priorities...</p> : priorities.length === 0 ? <Empty icon="check" title="All caught up">No client actions need attention right now.</Empty> : <>
+          <p className="mute small ack-note" role="status">{acks.failed ? 'Ticks are unavailable right now. Use Refresh dashboard to retry.' : `${checkedPriorities} of ${priorities.length} checked. Tick an item once you have looked at it. It unticks itself if something new comes in.`}</p>
+          {acks.saveError && <p className="err small" role="alert">{acks.saveError}</p>}
+          <div className="list" style={{ marginTop: 10 }}>
+            {priorities.map((item, index) => {
+              const checked = acks.isChecked(item.key, item.fp)
+              return <div className={'ack-row' + (checked ? ' checked' : '')} key={item.key}>
+                <AckBox label={`${item.label}: mark as checked`} checked={checked} disabled={ticksOff || acks.busy.includes(item.key)} onChange={value => acks.toggle(item.key, item.fp, value)} />
+                <a className="item" href={item.href}>
+                  <span className="badge amber" aria-label={`Priority ${index + 1}`}>{index + 1}</span>
+                  <span className="grow"><span className="title">{item.label}</span><br /><span className="meta">{checked ? 'Checked. ' : ''}{item.detail}</span></span>
+                  <span className="badge">{item.count}</span><Icon name="chev" />
+                </a>
+              </div>
+            })}
+          </div>
+        </>}
       </section>
       <div className="grid g4" style={{ marginBottom: 12 }}>
         <Tile label="Active clients" value={clients.length} />
@@ -125,14 +145,23 @@ export default function Dashboard() {
 
       {healthRisks.length > 0 && <section id="health-alerts" className="card tight consent-card" aria-label="Client health alerts" style={{ marginBottom: 12, scrollMarginTop: 80 }}>
         <div><span className="eyebrow">Coach awareness</span><h2 style={{ margin: '5px 0 0' }}>Health-screening alerts</h2></div>
-        <div className="list" style={{ marginTop: 10 }}>{healthRisks.map(({ client, alerts, details }) => <Link key={client.id} to={`/clients/${client.id}`} className="item">
-          <Avatar name={client.full_name} size={40} />
-          <span className="grow"><span className="title">{client.full_name}</span><br /><span className="meta">{[...alerts, ...details].join(' � ')}</span></span><Icon name="chev" />
-        </Link>)}</div>
+        <p className="mute small ack-note" role="status">{acks.failed ? 'Ticks are unavailable right now. Use Refresh dashboard to retry.' : `${checkedRisks} of ${healthRisks.length} checked. Open a client to read the alert, then tick it to confirm you are aware. It unticks itself if their screening changes.`}</p>
+        {acks.saveError && <p className="err small" role="alert">{acks.saveError}</p>}
+        <div className="list" style={{ marginTop: 10 }}>{healthRisks.map(({ client, alerts, details, fp }) => {
+          const key = 'health:' + client.id
+          const checked = acks.isChecked(key, fp)
+          return <div className={'ack-row' + (checked ? ' checked' : '')} key={client.id}>
+            <AckBox label={`${client.full_name}: confirm you have seen this health alert`} checked={checked} disabled={ticksOff || acks.busy.includes(key)} onChange={value => acks.toggle(key, fp, value)} />
+            <Link to={`/clients/${client.id}`} className="item">
+              <Avatar name={client.full_name} size={40} />
+              <span className="grow"><span className="title">{client.full_name}</span><br /><span className="meta">{[...alerts, ...details].join(' \u00b7 ')}</span></span><Icon name="chev" />
+            </Link>
+          </div>
+        })}</div>
       </section>}
 
-      <div id="weekly-reviews" style={{ scrollMarginTop: 80 }}><WeeklyReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, weekly: count }))} /></div>
-      <div id="technique-reviews" style={{ scrollMarginTop: 80 }}><TechniqueReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, technique: count }))} /></div>
+      <div id="weekly-reviews" style={{ scrollMarginTop: 80 }}><WeeklyReviewQueue key={refresh} clients={clients} onCount={(count, ids) => { setQueueCounts(current => ({ ...current, weekly: count })); setQueueIds(current => ({ ...current, weekly: ids ?? [] })) }} /></div>
+      <div id="technique-reviews" style={{ scrollMarginTop: 80 }}><TechniqueReviewQueue key={refresh} clients={clients} onCount={(count, ids) => { setQueueCounts(current => ({ ...current, technique: count })); setQueueIds(current => ({ ...current, technique: ids ?? [] })) }} /></div>
       <div className="split">
         <div>
           <div id="needs-attention" className="section-title" style={{ marginTop: 6, scrollMarginTop: 80 }}><h2>Needs attention</h2></div>
@@ -143,7 +172,7 @@ export default function Dashboard() {
               {attention.map(({ c, reasons }) => (
                 <Link key={c.id} to={`/clients/${c.id}`} className="item">
                   <Avatar name={c.full_name} size={40} />
-                  <span className="grow"><span className="title">{c.full_name || 'Unnamed'}</span><br /><span className="meta">{reasons.join(' � ')}</span></span>
+                  <span className="grow"><span className="title">{c.full_name || 'Unnamed'}</span><br /><span className="meta">{reasons.join(' · ')}</span></span>
                   <Icon name="chev" />
                 </Link>
               ))}
@@ -157,8 +186,8 @@ export default function Dashboard() {
               {recent.map(c => (
                 <Link key={c.id} to={`/workout/${c.id}`} className="item">
                   <Avatar name={nameOf(c.client_id)} size={36} />
-                  <span className="grow"><span className="title">{nameOf(c.client_id)}</span><br /><span className="meta">{d.workouts[c.workout_id]?.name ?? 'Workout'} � {niceDate(c.date)}</span></span>
-                  {c.rating && <span className="badge amber">{'?'.repeat(c.rating)}</span>}
+                  <span className="grow"><span className="title">{nameOf(c.client_id)}</span><br /><span className="meta">{d.workouts[c.workout_id]?.name ?? 'Workout'} · {niceDate(c.date)}</span></span>
+                  {c.rating && <span className="badge amber">{'\u2605'.repeat(c.rating)}</span>}
                 </Link>
               ))}
             </div>
@@ -175,7 +204,7 @@ export default function Dashboard() {
                 return (
                   <Link key={id} to={`/inbox/${id}`} className="item">
                     <Avatar name={nameOf(id)} size={36} />
-                    <span className="grow"><span className="title">{nameOf(id)}</span><br /><span className="meta truncate" style={{ display: 'block' }}>{last.body} � {timeAgo(last.created_at)}</span></span>
+                    <span className="grow"><span className="title">{nameOf(id)}</span><br /><span className="meta truncate" style={{ display: 'block' }}>{last.body} · {timeAgo(last.created_at)}</span></span>
                     <span className="dot">{n}</span>
                   </Link>
                 )
@@ -188,7 +217,7 @@ export default function Dashboard() {
             {d.sessions.length === 0 && <Empty icon="calendar" title="No sessions scheduled" />}
             <div className="list">
               {d.sessions.map(s => (
-                <div key={s.id} className="item"><span className="grow"><span className="title">{new Date(s.starts_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span><br /><span className="meta">{s.title} � {s.duration_min} min</span></span></div>
+                <div key={s.id} className="item"><span className="grow"><span className="title">{new Date(s.starts_at).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span><br /><span className="meta">{s.title} · {s.duration_min} min</span></span></div>
               ))}
             </div>
           </div>
