@@ -12,6 +12,7 @@ import { CheckinForm, Habits } from '../../components/Daily'
 import Icon from '../../components/Icon'
 import WeeklyCheckins from '../../components/WeeklyCheckins'
 import ClientOnboarding from '../../components/ClientOnboarding'
+import SessionBalance from '../../components/SessionBalance'
 
 export default function Home() {
   const { profile } = useAuth()
@@ -107,8 +108,9 @@ export default function Home() {
         </div>
       )}
 
-      <div className="grid g2" style={{ marginBottom: 12 }}>
+      <div className="grid g3" style={{ marginBottom: 12 }}>
         <Tile label="This week" value={`${doneWeek}/${thisWeek.length}`} foot="workouts done" />
+        {profile && <SessionBalance clientId={profile.id} />}
         <Tile label="Calories" value={Math.round(eaten.kcal)} unit={targets?.kcal ? ` / ${targets.kcal}` : ' kcal'} foot="eaten today" />
       </div>
 
