@@ -15,6 +15,7 @@ PTPN is a premium dark, phone-first personal training app for one coach (Pedro N
 4. Confirm before destructive or outward-facing actions (drops, deletes, sending anything to third parties). Tell the user when a step needs their approval and give them the SQL plus the SQL editor link: https://supabase.com/dashboard/project/dstxexfkxejmolnulwli/sql/new
 5. Mention one improvement or automation idea when it is relevant, not every time.
 6. Do not claim you saw something on a real phone. The sandbox has only desktop Chromium, cannot reach github.io, Instagram or Pexels, and has no Android SDK. Say which things need a real-device check.
+7. Read `AGENTS.md` at the repo root first. It holds the standing rules: one scoped change at a time, no polling loops (check CI or a deploy once after its normal window), stop and re-diagnose when the same approach fails twice, never claim passed, merged or live without checking once.
 
 ## Code map
 
@@ -40,6 +41,9 @@ Dark premium look: background #0b0b0d, chalk #f4f4f5, PTPN red #e11d2e, steel #8
 - Schema change = three places: append to `supabase/schema.sql` (fresh installs), add `supabase/migrate_vN_<name>.sql` (existing DB), and apply it to the live project with the Supabase `apply_migration` tool. Apply the migration before the app that needs it is deployed, or saves will fail.
 - Server-only data (for example `push_config`) uses RLS with no policies and `revoke all` from anon and authenticated. Secrets never go in the repo. A one-off secrets SQL file is sent to the user, not committed.
 - Seed ids are deterministic: `extensions.uuid_generate_v5('6f1c1e4a-8d3b-4c55-9a9e-5b1d2e7c0a11', 'kind:name')`, wrapped as `pg_temp.sid(text)` (redefine it in every `apply_migration` chunk). Seeds use `on conflict (id) do nothing` so they are safe to re-run.
+- **New tables inherit wide default grants.** Supabase gives `anon` and `authenticated` all privileges on every new table in `public`, so RLS is the only guard. In each migration `revoke all ... from public, anon, authenticated` and grant back only what is needed (look at `migrate_v7_client_archives.sql`). Views need `with (security_invoker = true)`. Audit with `get_advisors` after DDL.
+- **Private columns:** anything the coach must keep from a client (notes, internal remarks) goes in its own coach-only table, never a column of a table the client can read. The app hiding it is not protection, `select *` returns it.
+- **Approvals:** Supabase `apply_migration` and `execute_sql` ask the user to approve some statements (destructive ones such as drop column). If the prompt is never answered the call times out after 230 seconds. Do not retry the same call. Plain `create table` and policy statements went through; for the rest, add the new things first, deploy, then hand the user the destructive SQL as a file. Add before you remove, so the live app never breaks between steps.
 - `execute_sql` returns only the last statement's result. Some writes and DDL need the user's approval in the session; if blocked, hand the user the SQL.
 - Things that need pg_net or pg_cron (triggers that call edge functions, schedules) go in a migration file only, not in `schema.sql`, because the in-memory test database does not have them.
 
@@ -69,6 +73,10 @@ Dark premium look: background #0b0b0d, chalk #f4f4f5, PTPN red #e11d2e, steel #8
 - Push: `send-push` edge function plus triggers and cron in `migrate_v4_push.sql`; keys live in `push_config`. iPhone only gets push after the app is added to the Home Screen. The Android APK has no web push; the Chrome install does.
 - iPhone has no free downloadable file. App Store or TestFlight needs an Apple Developer account (about $99 a year) and a Mac or cloud build. The user chose to pay for nothing, so iPhone stays Add to Home Screen.
 - No credits, "inspired by" lines or photo credits are shown anywhere in the app.
+- Coach ticks (29 October): `coach_acknowledgements` keyed by item and fingerprint (`src/lib/ack.ts`). A tick is valid only while the fingerprint still matches, which is how new items show as unchecked.
+- Health screening lives in `taster_sessions` (PAR-Q answers and two consent flags). Coach edits it in the taster tab, clients get a read-only view on Account and `/taster-session`. Coach private notes are in `taster_session_notes`.
+- `/` redirects to `/home` for clients. Tests must accept either pathname.
+- Source files must stay valid UTF-8. A previous tool corrupted the middle dot into U+FFFD; check with `grep -rn $'\xef\xbf\xbd' src`.
 - Logo: rising P (three bars, tallest becomes a red P) with a custom wordmark. Regenerate all icons with `node branding/make-icons.mjs`.
 
 ## Meal plan import (build meal plans from a recipe site)
