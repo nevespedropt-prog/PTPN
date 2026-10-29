@@ -1,6 +1,6 @@
 # PTPN app: project handoff
 
-Read this first when picking the project up in a new chat. Last updated 5 October 2026.
+Read this first when picking the project up in a new chat. Last updated 29 October 2026. Read AGENTS.md first for the working standard (efficiency, no polling loops, no claims without checking).
 
 ## What it is
 
@@ -54,11 +54,16 @@ Navigation on phones: bottom bar Home, Train, Nutrition, Progress, More. More op
 
 ## Still open
 
-1. Leaked-password protection: a Supabase dashboard switch (Authentication, password settings, "Prevent use of leaked passwords"). Only the user can turn it on, may need a Pro plan.
+1. Leaked-password protection: a Supabase dashboard switch (Authentication, Sign In / Providers, Password security). The project is on the Free plan and Supabase documents this setting as Pro and above, so it may need an upgrade. Not confirmed in the dashboard. Only the user can change it.
 2. Test password change (Account) and a real photo upload from the phone on the live site.
 3. The egg muffins photo is only a close match (an egg bake). Replace it if the user sends a better Pexels link.
 4. Optional: AI-generated meals (see decisions).
-5. Optional: lint warnings in a few pages (setState in effects), harmless.
+5. Optional: lint warnings (oxlint, 0 errors, about 60 style warnings such as setState in effects), harmless.
+6. Not yet seen on the live site: the 29 October features (ticks, minimisable weekly check-in, client health screening view). Everything was tested locally and deployed, but nobody has looked at the deployed pages on a phone.
+7. After the first real website enquiry, check the coach email arrives (pg_net was reinstalled in the extensions schema on 29 October).
+8. Legal review of the health screening and consent wording.
+9. Packages and payments have free-text notes columns that a client can read for their own rows. The app never shows them. Move them to a coach-only table if they will hold internal remarks.
+10. Remote Control from the user's computer was never connected, so database changes that need the user's approval must be handed over as SQL.
 
 ## How the user likes to work
 
@@ -78,7 +83,7 @@ The app installs to the home screen on Android (Chrome install prompt) and iPhon
 - iPhone: Apple has no free route to a downloadable file, so it is Add to Home Screen only. A TestFlight or App Store app needs an Apple Developer account (about $99 a year) and a Mac or cloud build.
 
 ## Skills
-`.claude/skills/app-builder/SKILL.md` (APP BUILDER SKILL) describes how to build, test and ship features in this app. `.claude/skills/import-meal-plans/SKILL.md` covers importing meal plan sites.
+`.claude/skills/app-builder/SKILL.md` (APP BUILDER SKILL) describes how to build, test and ship features in this app. `.claude/skills/import-meal-plans/SKILL.md` covers importing meal plan sites (the same steps are also a section of app-builder). A separate claude.ai skill, mygym-client-meal-plan, builds MyGym London client meal plans in Canva and lives outside this repo. AGENTS.md holds the standing working rules.
 
 ## Client archive (24 October 2026)
 
@@ -319,3 +324,29 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - Supersets require two exercises; tri-sets require three. Only the final exercise accepts 60-90 seconds rest, while earlier exercises are locked to zero rest.
 - The workout builder validates incomplete blocks before saving, and the client player uses the same saved block structure.
 - Existing built-in templates were audited: Push, Pull and Home bodyweight use complete supersets; the other set-based templates remain single sets.
+
+## 2026-10-28 and 29 October: coach calendar and taster sessions
+
+- Coach sessions calendar (#65). Connected taster session workflow (#66): goal, target date, measurements, calories and macros, fitness assessment items, emergency contact, a summary the client can read. Saving a taster session also writes the progress measurement and the nutrition targets.
+- Paid session balance (#67): `client_session_credits` plus the Sessions left tile. A session is used only when its workout is marked complete.
+- Personal details, current and target measurements, target body fat, activity-adjusted maintenance calories (#68, #69 and later commits).
+- Health screening in the taster session: 12 PAR-Q questions with details and two explicit consents (storage of health information, personal-training and exercise consent). Alerts surface on the coach dashboard and the client overview. Client view: `/taster-session` and, from 29 October, a read-only copy under Health information on the Account page.
+- Migrations: v16 to v23 cover superset single sets, mixed set styles, taster sessions, session credits, taster personal details, target body fat, health screening and storage consent.
+
+## 2026-10-29 website backend brought into the repo, security fixes (migrate_v24)
+
+- `enquiries`, `client_packages`, `payments`, the `client_balances` view and the enquiry email trigger (`notify_new_enquiry`, calls the `send-enquiry-email` edge function through pg_net) existed only in Supabase. They are now in `migrate_v24_website_backend.sql` and `schema.sql`.
+- Fixed: `client_balances` ran with its owner's rights and `anon` had full privileges, so signed-out visitors could read every client's balance. It is now `security_invoker`, `anon` has no access.
+- Fixed: `admin_recent_enquiries()` had no coach check, so any signed-in client could read all enquiries. It now returns rows to the coach only.
+- `anon` keeps INSERT on `enquiries` for the public website form (policy "enquiries insert anyone").
+- pg_net was reinstalled in the `extensions` schema (it cannot be moved in place).
+
+## 2026-10-29 dashboard ticks, collapsible check-in, health screening view, private notes (migrate_v25 and v26)
+
+- Coach dashboard: Today's priorities and the health-screening alerts have a tick ("I have looked at this"). Ticks live in `coach_acknowledgements` (coach only, one row per item). Each tick stores a fingerprint of what was looked at, so it unticks itself when new items arrive or a screening changes. Code: `src/lib/ack.ts` (fingerprint and `useAcks`), `src/components/AckBox.tsx`.
+- Client Home: the weekly check-in is a `details` box that can be minimised and shows its review status when closed.
+- Client Account: read-only health screening, `src/components/HealthScreeningView.tsx`.
+- Privacy fix: taster coach notes were a column on a table clients can read, so the API returned them even though screens hid them. They now live in `taster_session_notes` (coach only) and the column is dropped. Rule: never keep coach-private text in a column of a client-readable table.
+- Fixed corrupted separator characters (U+FFFD) in 9 source files and the dashboard star rating.
+- The client Home "Back" test no longer races the `/` to `/home` redirect.
+- Tests at the end of this work: 289 database checks, 513 browser checks.
