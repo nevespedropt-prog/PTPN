@@ -62,7 +62,8 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     const currentBmr = restingCalories(Number(draft.weight_kg), Number(draft.height_cm), age, draft.sex)
     const targetBmi = draft.target_weight_kg ? bmi(Number(draft.target_weight_kg), Number(draft.height_cm)) : null
     const targetBmr = draft.target_weight_kg ? restingCalories(Number(draft.target_weight_kg), Number(draft.height_cm), age, draft.sex) : null
-    return { age, bmi: currentBmi, targetBmi, bmr: currentBmr, targetBmr, maintenance: maintenanceCalories(Number(draft.weight_kg), Number(draft.height_cm), age, draft.sex, draft.activity_level) }
+    const targetMaintenance = draft.target_weight_kg ? maintenanceCalories(Number(draft.target_weight_kg), Number(draft.height_cm), age, draft.sex, draft.activity_level) : null
+    return { age, bmi: currentBmi, targetBmi, bmr: currentBmr, targetBmr, maintenance: maintenanceCalories(Number(draft.weight_kg), Number(draft.height_cm), age, draft.sex, draft.activity_level), targetMaintenance }
   }, [draft])
 
   function suggestMacros() {
@@ -166,9 +167,9 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
           <label className="field">Starting weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.weight_kg || ''} onChange={e => setDraft({ ...draft, weight_kg: Number(e.target.value) })} /></label>
           <label className="field">Starting body fat %<input type="number" min="0" max="100" step="0.1" value={draft.body_fat_pct ?? ''} onChange={e => setDraft({ ...draft, body_fat_pct: e.target.value ? Number(e.target.value) : null })} /></label>
           <div className="measurement-stat"><span>BMI</span><strong>{calculated?.bmi ?? '-'}</strong></div>
-          <div className="measurement-stat"><span>BMR</span><strong>{calculated?.bmr ?? '-'}{calculated && <small> kcal</small>}</strong></div>
+          <div className="measurement-stat"><span>Maintenance calories</span><strong>{calculated?.maintenance ?? '-'}{calculated && <small> kcal/day</small>}</strong></div>
           <label className="field">Target weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.target_weight_kg || ''} onChange={e => setDraft({ ...draft, target_weight_kg: Number(e.target.value) })} /></label>
-          <div className="measurement-stat"><span>Target BMR</span><strong>{calculated?.targetBmr ?? '-'}{calculated?.targetBmr && <small> kcal</small>}</strong></div>
+          <div className="measurement-stat"><span>Target maintenance</span><strong>{calculated?.targetMaintenance ?? '-'}{calculated?.targetMaintenance && <small> kcal/day</small>}</strong></div>
         </div>
         <h3 style={{ margin: '6px 0 0' }}>Goal highlights</h3>
         <div className="inline-inputs">
