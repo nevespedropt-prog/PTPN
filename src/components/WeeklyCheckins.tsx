@@ -112,7 +112,7 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
         <p className="mute">{coach ? 'No weekly check-in submitted for this week.' : 'Share your wins, challenges and how you have been feeling.'}</p>
         {!coach && <button onClick={() => { setError(''); setOpen(true) }}>Complete weekly check-in</button>}
       </> : <>
-        <span className={'badge ' + (review ? 'green' : 'amber')}>{review ? 'Reviewed by coach' : 'Awaiting coach review'}</span>
+        {coach && <span className={'badge ' + (review ? 'green' : 'amber')}>{review ? 'Reviewed by coach' : 'Awaiting coach review'}</span>}
         <p className="mute small">Submitted {niceDate(localDate(new Date(checkin.submitted_at)))}</p>
         {summary && <div className="stack small">
           <p><b>Workouts:</b> {summary.done} of {summary.due} due completed</p>

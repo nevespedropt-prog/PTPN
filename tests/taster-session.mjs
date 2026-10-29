@@ -99,6 +99,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   for (let i = 0; i < 40 && (await sql('select 1 from coach_acknowledgements where item_key=$1', ['health:' + IDS.ana])).length; i++) await new Promise(r => setTimeout(r, 100))
   ok((await sql('select 1 from coach_acknowledgements where item_key=$1', ['health:' + IDS.ana])).length === 0, 'ticks: unticking removes the saved tick')
   await shot(coach.page, 'coach-dashboard-ticks')
+  await sql("update taster_sessions set parq_allergy_details = replace(parq_allergy_details, ' Also peanuts.', '') where id=$1", [taster.id])
   clean('taster coach', coach.errors); await coach.ctx.close()
 
   await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
