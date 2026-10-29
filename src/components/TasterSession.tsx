@@ -182,7 +182,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
         <div className="grid g3">
           <Tile label="Age" value={calculated?.age ?? '-'} foot="from date of birth" />
           <Tile label={draft.goal_metric_label || 'Goal metric'} value={draft.goal_metric_target || '-'} unit={draft.goal_metric_unit ? ` ${draft.goal_metric_unit}` : ''} foot={draft.goal_metric_current ? `Current ${draft.goal_metric_current}` : 'Set the key outcome'} />
-          <Tile label="New habit" value={draft.new_habit || '-'} foot="first behaviour target" />
+          <Tile label="New habit" value={<span style={{ display: 'block', fontSize: draft.new_habit.length > 90 ? '.9rem' : draft.new_habit.length > 45 ? '1.05rem' : '1.25rem', lineHeight: 1.35, overflowWrap: 'anywhere' }}>{draft.new_habit || '-'}</span>} foot="first behaviour target" />
         </div>
       </div>
 
