@@ -94,12 +94,12 @@ export default function Dashboard() {
   const urgentAttention = attention.filter(item => item.priority >= 3).length
   const routineAttention = attention.length - urgentAttention
   const priorities = [
-    healthRisks.length > 0 ? { label: 'Health-screening alerts', detail: 'Important client risks to review before coaching', count: healthRisks.length, href: '#health-alerts' } : null,
-    urgentAttention > 0 ? { label: 'Urgent client follow-up', detail: 'Low mood or multiple missed workouts', count: urgentAttention, href: '#needs-attention' } : null,
-    d.msgs.length > 0 ? { label: 'Unread messages', detail: `${unreadBy.size} conversation${unreadBy.size === 1 ? '' : 's'} awaiting a reply`, count: d.msgs.length, href: '#dashboard-inbox' } : null,
-    (queueCounts.weekly ?? 0) > 0 ? { label: 'Weekly reviews', detail: 'Client check-ins awaiting feedback', count: queueCounts.weekly!, href: '#weekly-reviews' } : null,
-    (queueCounts.technique ?? 0) > 0 ? { label: 'Technique reviews', detail: 'Exercise videos awaiting feedback', count: queueCounts.technique!, href: '#technique-reviews' } : null,
-    routineAttention > 0 ? { label: 'Routine client follow-up', detail: 'Training inactivity or no recent schedule', count: routineAttention, href: '#needs-attention' } : null,
+    healthRisks.length > 0 ? { label: 'Health-screening alerts', detail: 'Important client risks to review before coaching', count: healthRisks.length, href: '#health-alerts', panel: '' } : null,
+    urgentAttention > 0 ? { label: 'Urgent client follow-up', detail: 'Low mood or multiple missed workouts', count: urgentAttention, href: '#needs-attention', panel: 'coach-activity' } : null,
+    d.msgs.length > 0 ? { label: 'Unread messages', detail: `${unreadBy.size} conversation${unreadBy.size === 1 ? '' : 's'} awaiting a reply`, count: d.msgs.length, href: '#dashboard-inbox', panel: 'coach-activity' } : null,
+    (queueCounts.weekly ?? 0) > 0 ? { label: 'Weekly reviews', detail: 'Client check-ins awaiting feedback', count: queueCounts.weekly!, href: '#weekly-reviews', panel: 'coach-reviews' } : null,
+    (queueCounts.technique ?? 0) > 0 ? { label: 'Technique reviews', detail: 'Exercise videos awaiting feedback', count: queueCounts.technique!, href: '#technique-reviews', panel: 'coach-reviews' } : null,
+    routineAttention > 0 ? { label: 'Routine client follow-up', detail: 'Training inactivity or no recent schedule', count: routineAttention, href: '#needs-attention', panel: 'coach-activity' } : null,
   ].filter((item): item is NonNullable<typeof item> => !!item)
   const prioritiesLoaded = queueCounts.weekly !== null && queueCounts.technique !== null
 
@@ -109,7 +109,7 @@ export default function Dashboard() {
       <section className="card tight" aria-label="Today's priorities" style={{ marginBottom: 12 }}>
         <div className="row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}><div><h2 style={{ margin: 0 }}>Today's priorities</h2><p className="mute small" style={{ margin: '4px 0 0' }}>Highest-impact coaching actions first.</p></div><button className="soft sm" onClick={() => setRefresh(n => n + 1)}>Refresh dashboard</button></div>
         {!prioritiesLoaded && priorities.length === 0 ? <p role="status" className="mute">Checking priorities...</p> : priorities.length === 0 ? <Empty icon="check" title="All caught up">No client actions need attention right now.</Empty> : <div className="list" style={{ marginTop: 10 }}>
-          {priorities.map((item, index) => <a className="item" href={item.href} key={item.label}>
+          {priorities.map((item, index) => <a className="item" href={item.href} key={item.label} onClick={() => { if (item.panel) document.getElementById(item.panel)?.setAttribute('open', '') }}>
             <span className="badge amber" aria-label={`Priority ${index + 1}`}>{index + 1}</span>
             <span className="grow"><span className="title">{item.label}</span><br /><span className="meta">{item.detail}</span></span>
             <span className="badge">{item.count}</span><Icon name="chev" />
@@ -131,9 +131,14 @@ export default function Dashboard() {
         </Link>)}</div>
       </section>}
 
-      <div id="weekly-reviews" style={{ scrollMarginTop: 80 }}><WeeklyReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, weekly: count }))} /></div>
-      <div id="technique-reviews" style={{ scrollMarginTop: 80 }}><TechniqueReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, technique: count }))} /></div>
-      <div className="split">
+      <details id="coach-reviews" className="card dashboard-disclosure">
+        <summary><span><b>Client reviews</b><small>{Math.max(0, queueCounts.weekly ?? 0) + Math.max(0, queueCounts.technique ?? 0)} awaiting feedback</small></span></summary>
+        <div className="dashboard-disclosure-body"><div id="weekly-reviews" style={{ scrollMarginTop: 80 }}><WeeklyReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, weekly: count }))} /></div>
+        <div id="technique-reviews" style={{ scrollMarginTop: 80 }}><TechniqueReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, technique: count }))} /></div></div>
+      </details>
+      <details id="coach-activity" className="card dashboard-disclosure" defaultOpen={attention.length > 0 || d.msgs.length > 0}>
+        <summary><span><b>Client activity</b><small>Follow-ups, messages, workouts and sessions</small></span></summary>
+        <div className="dashboard-disclosure-body"><div className="split">
         <div>
           <div id="needs-attention" className="section-title" style={{ marginTop: 6, scrollMarginTop: 80 }}><h2>Needs attention</h2></div>
           <p className="mute small">Active clients, based on the last 14 days of training and latest check-in in the last 7 days.</p>
@@ -193,7 +198,8 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
+        </div></div>
+      </details>
     </>
   )
 }
