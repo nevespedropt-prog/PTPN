@@ -812,7 +812,7 @@ create table public.taster_sessions (
   date_of_birth date not null, sex text not null check (sex in ('female','male')),
   activity_level text not null check (activity_level in ('sedentary','light','moderate','very','extra')),
   height_cm numeric not null check (height_cm between 100 and 250), weight_kg numeric not null check (weight_kg between 20 and 400),
-  target_weight_kg numeric not null check (target_weight_kg between 20 and 400), body_fat_pct numeric check (body_fat_pct between 0 and 100),
+  target_weight_kg numeric not null check (target_weight_kg between 20 and 400), body_fat_pct numeric check (body_fat_pct between 0 and 100), target_body_fat_pct numeric check (target_body_fat_pct between 0 and 100),
   bmi numeric not null check (bmi between 5 and 100), target_bmi numeric not null check (target_bmi between 5 and 100),
   bmr_kcal int not null check (bmr_kcal between 500 and 10000), target_bmr_kcal int not null check (target_bmr_kcal between 500 and 10000),
   estimated_maintenance_kcal int not null check (estimated_maintenance_kcal between 500 and 10000),
