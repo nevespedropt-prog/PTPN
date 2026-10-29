@@ -39,7 +39,7 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
   const client = await open('ana')
   const { page } = client
-  const openSecondary = () => page.locator('details.dashboard-disclosure').filter({ hasText: 'Progress and coaching profile' }).evaluate(element => { element.open = true })
+  const openSecondary = () => page.locator('details.dashboard-disclosure').filter({ hasText: 'Coaching profile' }).evaluate(element => { element.open = true })
   await openSecondary()
   const setup = page.getByRole('region', { name: 'Coaching setup', exact: true })
   const start = setup.getByRole('button', { name: 'Start coaching setup', exact: true })
