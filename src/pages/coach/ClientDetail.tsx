@@ -89,7 +89,8 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
             <b className="small">Taster-session health screening</b>
             {tasterAlerts.length ? <div className="health-alert-list">{tasterAlerts.map(alert => <div className="health-alert-item" key={alert}>{alert}</div>)}</div> : <span className="small">No exercise-safety concerns recorded.</span>}
             {tasterDetails.map(detail => <span className="small" key={detail}>{detail}</span>)}
-            <span className="mute small">Exercise consent {taster.parq_exercise_consent ? 'recorded' : 'not recorded'}.</span>
+            <span className="mute small">Health-information storage consent {taster.parq_health_storage_consent ? 'recorded' : 'not recorded'}.</span>
+            <span className="mute small">Personal-training and exercise consent {taster.parq_exercise_consent ? 'recorded' : 'not recorded'}.</span>
           </div></>}
         </div>
       )}
