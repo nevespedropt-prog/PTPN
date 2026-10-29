@@ -18,7 +18,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   await coach.page.getByLabel('Target weight kg', { exact: true }).fill('65')
   await coach.page.getByLabel('Body fat %', { exact: true }).fill('20')
   await coach.page.getByLabel('Job description', { exact: true }).fill('Office manager with a mostly seated working day')
-  await coach.page.getByLabel('Fitness level', { exact: true }).selectOption('intermediate')
+  await coach.page.locator('label', { hasText: 'Fitness level' }).locator('select').selectOption('intermediate')
   await coach.page.getByLabel('Diet', { exact: true }).fill('Balanced diet; avoids shellfish')
   await coach.page.getByLabel('Important metric', { exact: true }).fill('Deadlift')
   await coach.page.getByLabel('Current metric', { exact: true }).fill('90')
