@@ -157,9 +157,11 @@ export default function Home() {
         <div className="dashboard-disclosure-body"><Habits today={today} /><CheckinForm today={today} /></div>
       </details>
 
+      {profile && <WeeklyCheckins clientId={profile.id} />}
+
       <details className="card dashboard-disclosure">
-        <summary><span><b>Progress and coaching profile</b><small>Weekly review and setup information</small></span></summary>
-        <div className="dashboard-disclosure-body">{profile && <WeeklyCheckins clientId={profile.id} />}{profile && <ClientOnboarding key={profile.id} clientId={profile.id} />}</div>
+        <summary><span><b>Coaching profile</b><small>Your goals, preferences and setup information</small></span></summary>
+        <div className="dashboard-disclosure-body">{profile && <ClientOnboarding key={profile.id} clientId={profile.id} />}</div>
       </details>
     </>
   )
