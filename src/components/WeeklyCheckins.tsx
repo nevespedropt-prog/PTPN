@@ -99,8 +99,9 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
     finally { setBusy(false) }
   }
 
-  return <section className="card" aria-label="Weekly check-in">
-    <h2>Weekly check-in</h2>
+  return <details className="card collapsible-card" open={coach ? undefined : true} aria-label="Weekly check-in">
+    {coach && <summary><span><span className="eyebrow">Client review</span><b>Weekly check-in</b></span></summary>}
+    {!coach && <h2>Weekly check-in</h2>}
     <p className="mute small">Monday to Sunday. Sunday is the suggested check-in day; you can submit any day.</p>
     <label className="field"><b>Review week</b><select value={week} disabled={busy} onChange={e => setWeek(e.target.value)}>
       {weeks.map(w => <option key={w} value={w}>{weekLabel(w)}</option>)}
@@ -146,7 +147,7 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
         <button disabled={busy || questions.some(([key]) => !draft[key].trim())}>{busy ? 'Submitting...' : 'Submit weekly check-in'}</button>
       </form>
     </Sheet>
-  </section>
+  </details>
 }
 
 export function WeeklyReviewQueue({ clients, onCount }: { clients: { id: string; full_name: string }[]; onCount?: (count: number) => void }) {
@@ -188,3 +189,4 @@ export function WeeklyReviewQueue({ clients, onCount }: { clients: { id: string;
     </>}
   </section>
 }
+
