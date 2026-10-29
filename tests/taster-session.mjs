@@ -81,6 +81,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   ok(await client.page.getByText('Private coaching note.', { exact: true }).count() === 0 && await client.page.getByText('Taster bench test', { exact: true }).count() === 0, 'taster: client does not see private notes or exercise results')
   await client.page.getByRole('link', { name: /View my taster session/ }).click()
   await client.page.getByRole('heading', { name: 'Taster session', exact: true }).waitFor()
+  await client.page.getByText('Taster bench test', { exact: true }).waitFor()
   ok(await client.page.getByText('Taster bench test', { exact: true }).count() === 1 && await client.page.getByText('Shellfish allergy.', { exact: true }).count() === 1, 'taster: client can view their assessment and health record')
   ok(await client.page.getByText('Private coaching note.', { exact: true }).count() === 0, 'taster: client view keeps coach notes private')
   await client.page.goto(BASE + '/nutrition', { waitUntil: 'networkidle' })
