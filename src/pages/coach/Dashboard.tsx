@@ -136,7 +136,7 @@ export default function Dashboard() {
         <div className="dashboard-disclosure-body"><div id="weekly-reviews" style={{ scrollMarginTop: 80 }}><WeeklyReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, weekly: count }))} /></div>
         <div id="technique-reviews" style={{ scrollMarginTop: 80 }}><TechniqueReviewQueue key={refresh} clients={clients} onCount={count => setQueueCounts(current => ({ ...current, technique: count }))} /></div></div>
       </details>
-      <details id="coach-activity" className="card dashboard-disclosure" defaultOpen={attention.length > 0 || d.msgs.length > 0}>
+      <details id="coach-activity" className="card dashboard-disclosure">
         <summary><span><b>Client activity</b><small>Follow-ups, messages, workouts and sessions</small></span></summary>
         <div className="dashboard-disclosure-body"><div className="split">
         <div>
