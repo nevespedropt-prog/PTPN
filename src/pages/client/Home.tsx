@@ -72,12 +72,11 @@ export default function Home() {
     <>
       <PageHead eyebrow={longDay(today)} title={`${greeting()}, ${firstName(profile?.full_name ?? '')}`} />
 
-      {profile && <ClientOnboarding key={profile.id} clientId={profile.id} />}
-
       {taster && <div className="card goal-card">
         <span className="eyebrow">My fitness goal</span><h2>{taster.goal}</h2>
         <div className="row"><span className="badge red">Target {new Date(`${taster.target_date}T12:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
         {taster.client_summary && <><hr className="sep" /><p className="mute" style={{ margin: 0 }}>{taster.client_summary}</p></>}
+        <Link to="/taster-session" className="link" style={{ display: 'inline-block', marginTop: 12 }}>View my taster session </Link>
       </div>}
 
       {todays.length > 0 ? todays.map(cw => {
@@ -145,6 +144,7 @@ export default function Home() {
       <Habits today={today} />
       <CheckinForm today={today} />
       {profile && <WeeklyCheckins clientId={profile.id} />}
+      {profile && <ClientOnboarding key={profile.id} clientId={profile.id} />}
     </>
   )
 }
