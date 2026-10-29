@@ -14,7 +14,7 @@ type ItemDraft = Omit<FitnessAssessmentItem, 'id' | 'taster_session_id' | 'sort'
 
 const blank = (): Draft => ({
   assessed_on: localDate(), goal: '', target_date: '', date_of_birth: '', sex: 'female', activity_level: 'moderate',
-  height_cm: 0, weight_kg: 0, target_weight_kg: 0, body_fat_pct: null,
+  height_cm: 0, weight_kg: 0, target_weight_kg: 0, body_fat_pct: null, target_body_fat_pct: null,
   job_description: '', fitness_level: 'beginner', diet: '',
   goal_metric_label: '', goal_metric_current: '', goal_metric_target: '', goal_metric_unit: '', new_habit: '',
   emergency_contact_name: '', emergency_contact_phone: '', emergency_contact_email: '',
@@ -36,7 +36,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     const row = ((data ?? []) as TasterSession[])[0]
     if (!row) { setDraft(blank()); setItems([]); return }
     setDraft({
-      ...row, id: row.id, target_weight_kg: row.target_weight_kg ?? row.weight_kg,
+      ...row, id: row.id, target_weight_kg: row.target_weight_kg ?? row.weight_kg, target_body_fat_pct: row.target_body_fat_pct ?? null,
       job_description: row.job_description ?? '', fitness_level: row.fitness_level ?? 'beginner', diet: row.diet ?? '',
       goal_metric_label: row.goal_metric_label ?? '', goal_metric_current: row.goal_metric_current ?? '',
       goal_metric_target: row.goal_metric_target ?? '', goal_metric_unit: row.goal_metric_unit ?? '', new_habit: row.new_habit ?? '',
@@ -77,7 +77,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     const payload = {
       client_id: clientId, assessed_on: macros.assessed_on, goal: macros.goal.trim(), target_date: macros.target_date,
       date_of_birth: macros.date_of_birth, sex: macros.sex, activity_level: macros.activity_level,
-      height_cm: Number(macros.height_cm), weight_kg: Number(macros.weight_kg), target_weight_kg: Number(macros.target_weight_kg), body_fat_pct: macros.body_fat_pct ? Number(macros.body_fat_pct) : null,
+      height_cm: Number(macros.height_cm), weight_kg: Number(macros.weight_kg), target_weight_kg: Number(macros.target_weight_kg), body_fat_pct: macros.body_fat_pct ? Number(macros.body_fat_pct) : null, target_body_fat_pct: macros.target_body_fat_pct ? Number(macros.target_body_fat_pct) : null,
       bmi: calculated.bmi, target_bmi: calculated.targetBmi, bmr_kcal: calculated.bmr, target_bmr_kcal: calculated.targetBmr,
       estimated_maintenance_kcal: calculated.maintenance, target_kcal: Number(macros.target_kcal),
       target_protein: Number(macros.target_protein), target_carbs: Number(macros.target_carbs), target_fat: Number(macros.target_fat),
@@ -125,7 +125,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
       <div className="card stack">
         <h3 style={{ margin: 0 }}>Goal and timeframe</h3>
         <label className="field">Fitness goal<textarea required maxLength={1200} rows={3} value={draft.goal} onChange={e => setDraft({ ...draft, goal: e.target.value })} placeholder="What the client wants to achieve and how success will be measured" /></label>
-        <div className="inline-inputs">
+        <div className="taster-personal-grid">
           <label className="field">Assessment date<input required type="date" value={draft.assessed_on} onChange={e => setDraft({ ...draft, assessed_on: e.target.value })} /></label>
           <label className="field">Target date<input required type="date" value={draft.target_date} onChange={e => setDraft({ ...draft, target_date: e.target.value })} /></label>
         </div>
@@ -133,21 +133,31 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
 
       <div className="card stack">
         <h3 style={{ margin: 0 }}>Personal details</h3>
-        <div className="inline-inputs">
+        <div className="taster-personal-grid">
           <label className="field">Date of birth<input required type="date" max={localDate()} value={draft.date_of_birth} onChange={e => setDraft({ ...draft, date_of_birth: e.target.value })} /></label>
           <label className="field">Sex used for calculation<select value={draft.sex} onChange={e => setDraft({ ...draft, sex: e.target.value as AssessmentSex })}><option value="female">Female</option><option value="male">Male</option></select></label>
           <label className="field">Activity level<select value={draft.activity_level} onChange={e => setDraft({ ...draft, activity_level: e.target.value as ActivityLevel })}>{Object.entries(ACTIVITY_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-          <label className="field">Height cm<input required type="number" min="100" max="250" step="0.1" value={draft.height_cm || ''} onChange={e => setDraft({ ...draft, height_cm: Number(e.target.value) })} /></label>
-          <label className="field">Current weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.weight_kg || ''} onChange={e => setDraft({ ...draft, weight_kg: Number(e.target.value) })} /></label>
-          <label className="field">Target weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.target_weight_kg || ''} onChange={e => setDraft({ ...draft, target_weight_kg: Number(e.target.value) })} /></label>
-          <label className="field">Body fat %<input type="number" min="0" max="100" step="0.1" value={draft.body_fat_pct ?? ''} onChange={e => setDraft({ ...draft, body_fat_pct: e.target.value ? Number(e.target.value) : null })} /></label>
           <label className="field">Fitness level<select value={draft.fitness_level} onChange={e => setDraft({ ...draft, fitness_level: e.target.value as Draft['fitness_level'] })}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="athlete">Athlete</option></select></label>
         </div>
         <label className="field">Job description<input maxLength={500} value={draft.job_description} onChange={e => setDraft({ ...draft, job_description: e.target.value })} placeholder="Role, working pattern and usual activity" /></label>
         <label className="field">Diet<textarea maxLength={1200} rows={2} value={draft.diet} onChange={e => setDraft({ ...draft, diet: e.target.value })} placeholder="Current diet, preferences and restrictions" /></label>
-        <div className="calculation-comparison">
-          <div><span className="eyebrow">BMR</span><b>{calculated?.bmr ?? '-'} kcal</b><span className="mute small">Target {calculated?.targetBmr ?? '-'} kcal</span></div>
-          <div><span className="eyebrow">BMI</span><b>{calculated?.bmi ?? '-'}</b><span className="mute small">Target {calculated?.targetBmi ?? '-'}</span></div>
+        <h3 style={{ margin: '6px 0 0' }}>Measurements</h3>
+        <div className="measurement-entry-grid">
+          <label className="field">Height cm<input required type="number" min="100" max="250" step="0.1" value={draft.height_cm || ''} onChange={e => setDraft({ ...draft, height_cm: Number(e.target.value) })} /></label>
+          <label className="field">Current weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.weight_kg || ''} onChange={e => setDraft({ ...draft, weight_kg: Number(e.target.value) })} /></label>
+          <label className="field">Current body fat %<input type="number" min="0" max="100" step="0.1" value={draft.body_fat_pct ?? ''} onChange={e => setDraft({ ...draft, body_fat_pct: e.target.value ? Number(e.target.value) : null })} /></label>
+          <label className="field">Target weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.target_weight_kg || ''} onChange={e => setDraft({ ...draft, target_weight_kg: Number(e.target.value) })} /></label>
+          <label className="field">Target body fat %<input type="number" min="0" max="100" step="0.1" value={draft.target_body_fat_pct ?? ''} onChange={e => setDraft({ ...draft, target_body_fat_pct: e.target.value ? Number(e.target.value) : null })} /></label>
+        </div>
+        <div className="measurement-summary-grid">
+          <Tile label="Current weight" value={draft.weight_kg || '-'} unit={draft.weight_kg ? ' kg' : ''} />
+          <Tile label="Current body fat" value={draft.body_fat_pct ?? '-'} unit={draft.body_fat_pct != null ? '%' : ''} />
+          <Tile label="Current BMR" value={calculated?.bmr ?? '-'} unit={calculated ? ' kcal' : ''} />
+          <Tile label="Current BMI" value={calculated?.bmi ?? '-'} />
+          <Tile label="Target weight" value={draft.target_weight_kg || '-'} unit={draft.target_weight_kg ? ' kg' : ''} />
+          <Tile label="Target body fat" value={draft.target_body_fat_pct ?? '-'} unit={draft.target_body_fat_pct != null ? '%' : ''} />
+          <Tile label="Target BMR" value={calculated?.targetBmr ?? '-'} unit={calculated?.targetBmr ? ' kcal' : ''} />
+          <Tile label="Target BMI" value={calculated?.targetBmi ?? '-'} />
         </div>
         <h3 style={{ margin: '6px 0 0' }}>Goal highlights</h3>
         <div className="inline-inputs">
