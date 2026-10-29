@@ -39,6 +39,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   await coach.page.getByLabel('Emergency contact name', { exact: true }).fill('Maria Silva')
   await coach.page.getByLabel('Emergency contact number', { exact: true }).fill('07123 456789')
   await coach.page.getByLabel('Emergency contact email', { exact: true }).fill('maria@example.com')
+  await coach.page.getByText('PAR-Q and client consent', { exact: true }).click()
   const parq = coach.page.locator('.parq-question')
   for (let i = 0; i < await parq.count(); i++) await parq.nth(i).getByLabel('No', { exact: true }).check()
   await parq.filter({ hasText: 'prescribed medication' }).getByLabel('Yes', { exact: true }).check()
