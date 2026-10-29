@@ -28,6 +28,7 @@ export async function dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok }
     await page.locator('#coach-activity').evaluate(element => { element.open = true })
     const inbox = page.getByRole('region', { name: 'Unread conversations', exact: true })
     ok(await inbox.getByRole('link').getAttribute('href') === '/inbox/' + IDS.bo, 'archived unread conversation keeps the correct reply link')
+    await page.locator('#coach-reviews').evaluate(element => { element.open = true })
     const reviews = page.getByRole('region', { name: 'Weekly reviews', exact: true })
     await reviews.getByText('Ana Silva', { exact: true }).waitFor()
     ok(await reviews.getByText('Bo Jones', { exact: true }).count() === 0, 'review queue excludes archived client')
