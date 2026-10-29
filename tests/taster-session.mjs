@@ -20,6 +20,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   await coach.page.getByLabel('Job description', { exact: true }).fill('Office manager with a mostly seated working day')
   await coach.page.locator('label', { hasText: 'Fitness level' }).locator('select').selectOption('intermediate')
   await coach.page.getByLabel('Diet', { exact: true }).fill('Balanced diet; avoids shellfish')
+  ok(await coach.page.locator('.measurement-stat', { hasText: 'Maintenance calories' }).getByText('2461', { exact: false }).count() === 1 && await coach.page.locator('.measurement-stat', { hasText: 'Target maintenance' }).getByText('2383', { exact: false }).count() === 1, 'taster: current and target maintenance calories include activity level')
   await coach.page.getByLabel('Important metric', { exact: true }).fill('Deadlift')
   await coach.page.getByLabel('Current metric', { exact: true }).fill('90')
   await coach.page.getByLabel('Target metric', { exact: true }).fill('120')
