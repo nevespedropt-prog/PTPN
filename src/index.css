@@ -548,9 +548,12 @@ button:focus-visible, .btn:focus-visible, a:focus-visible { outline: 2px solid v
 button.empty-goal { width: 100%; display: flex; align-items: center; justify-content: space-between; text-align: left; color: var(--ink); }
 .empty-goal span:first-child { display: grid; gap: 5px; }
 .taster-form { padding-bottom: 24px; }
+.taster-personal-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 14px; align-items: end; }
 .assessment-row { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--field); }
 .assessment-row + .assessment-row { margin-top: 8px; }
 .calculation-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .calculation-comparison > div { display: grid; gap: 4px; padding: 13px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--field); }
 .calculation-comparison b { font-size: 1.15rem; }
+@media (max-width: 920px) { .taster-personal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .taster-personal-grid { grid-template-columns: 1fr; gap: 14px; } }
 
