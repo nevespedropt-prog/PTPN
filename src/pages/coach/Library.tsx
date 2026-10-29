@@ -92,7 +92,7 @@ function Workouts() {
               <span className={'badge ' + (w.created_by ? 'violet' : 'blue')}>{w.created_by ? 'Yours' : 'Template'}</span>
             </div>
             <Link to={`/library/workouts/${w.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} onClick={e => { e.preventDefault(); returnState.open(`/library/workouts/${w.id}`) }}><b style={{ color: 'var(--ink)', fontSize: '1.05rem' }}>{w.name}</b></Link>
-            <p className="mute small" style={{ margin: '4px 0 12px' }}>{counts[w.id] ?? 0} exercises{w.duration_min ? ` � ${w.duration_min} min` : ''}</p>
+            <p className="mute small" style={{ margin: '4px 0 12px' }}>{counts[w.id] ?? 0} exercises{w.duration_min ? ` · ${w.duration_min} min` : ''}</p>
             <div className="row" style={{ marginBottom: 0 }}>
               <button className="sm" onClick={() => setAssign(w)}>Assign</button>
               <Link className="btn soft sm" to={`/library/workouts/${w.id}?returnTo=${encodeURIComponent(returnState.returnTo)}`} onClick={e => { e.preventDefault(); returnState.open(`/library/workouts/${w.id}`) }}>{w.created_by ? 'Edit' : 'View'}</Link>
@@ -184,7 +184,7 @@ function Exercises() {
       <div className="card tight"><div className="list">
         {list.slice(0, 400).map(x => (
           <button key={x.id} className="item" onClick={() => setOpen(x)}>
-            <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta">{x.muscle} � {x.equipment}</span></span>
+            <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta">{x.muscle} · {x.equipment}</span></span>
             <span className="badge" style={{ textTransform: 'capitalize' }}>{x.category}</span>
           </button>
         ))}

@@ -91,7 +91,7 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
             </div>
             <Link to="/account" className="drawer-user" onClick={() => setMenu(false)}>
               <Avatar name={name} size={44} />
-              <span className="grow"><b>{profile?.full_name || 'Account'}</b><br /><span className="mute small">{profile?.role === 'coach' ? 'Coach' : 'Client'} � Account and password</span></span>
+              <span className="grow"><b>{profile?.full_name || 'Account'}</b><br /><span className="mute small">{profile?.role === 'coach' ? 'Coach' : 'Client'} · Account and password</span></span>
               <Icon name="chev" />
             </Link>
             <div className="drawer-list">

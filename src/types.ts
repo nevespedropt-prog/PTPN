@@ -15,7 +15,7 @@ export interface TasterSession {
   parq_health_storage_consent: boolean; parq_health_storage_consented_at: string | null
   parq_exercise_consent: boolean; parq_consented_at: string | null
   target_kcal: number; target_protein: number; target_carbs: number; target_fat: number
-  client_summary: string; coach_notes: string; created_by: string; created_at: string; updated_at: string
+  client_summary: string; created_by: string; created_at: string; updated_at: string
 }
 export interface FitnessAssessmentItem {
   id: string; taster_session_id: string; exercise_id: string | null; exercise_name: string; category: string

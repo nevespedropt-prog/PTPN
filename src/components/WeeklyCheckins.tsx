@@ -99,10 +99,9 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
     finally { setBusy(false) }
   }
 
-  const Container = coach ? 'details' : 'section'
-  return <Container className={coach ? 'card collapsible-card' : 'card'} role="region" aria-label="Weekly check-in">
-    {coach && <summary><span><span className="eyebrow">Client review</span><b>Weekly check-in</b></span></summary>}
-    {!coach && <h2>Weekly check-in</h2>}
+  const status = !loading && checkin ? <span className={'badge ' + (review ? 'green' : 'amber')} style={{ justifySelf: 'start' }}>{review ? 'Reviewed by coach' : 'Awaiting coach review'}</span> : null
+  return <details className="card collapsible-card" role="region" aria-label="Weekly check-in" open={coach ? undefined : true}>
+    <summary><span>{coach ? <span className="eyebrow">Client review</span> : <span className="eyebrow">This week</span>}<b>Weekly check-in</b>{!coach && status}</span></summary>
     <p className="mute small">Monday to Sunday. Sunday is the suggested check-in day; you can submit any day.</p>
     <label className="field"><b>Review week</b><select value={week} disabled={busy} onChange={e => setWeek(e.target.value)}>
       {weeks.map(w => <option key={w} value={w}>{weekLabel(w)}</option>)}
@@ -148,10 +147,10 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
         <button disabled={busy || questions.some(([key]) => !draft[key].trim())}>{busy ? 'Submitting...' : 'Submit weekly check-in'}</button>
       </form>
     </Sheet>
-  </Container>
+  </details>
 }
 
-export function WeeklyReviewQueue({ clients, onCount }: { clients: { id: string; full_name: string }[]; onCount?: (count: number) => void }) {
+export function WeeklyReviewQueue({ clients, onCount }: { clients: { id: string; full_name: string }[]; onCount?: (count: number, ids?: string[]) => void }) {
   const [pending, setPending] = useState<Checkin[]>([])
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -171,7 +170,7 @@ export function WeeklyReviewQueue({ clients, onCount }: { clients: { id: string;
         if (r.error || a.error) throw r.error || a.error
         const reviewed = new Set((r.data ?? []).map(x => x.checkin_id))
         const archived = new Set((a.data ?? []).map(x => x.client_id))
-        if (active) { const next = items.filter(x => !reviewed.has(x.id) && !archived.has(x.client_id)); setPending(next); onCount?.(next.length) }
+        if (active) { const next = items.filter(x => !reviewed.has(x.id) && !archived.has(x.client_id)); setPending(next); onCount?.(next.length, next.map(x => x.id)) }
       } catch { if (active) { setError(true); onCount?.(-1) } }
       finally { if (active) setLoading(false) }
     })()

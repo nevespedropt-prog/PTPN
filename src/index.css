@@ -584,3 +584,15 @@ button.empty-goal { width: 100%; display: flex; align-items: center; justify-con
 @media (max-width: 680px) { .parq-grid, .parq-details-grid { grid-template-columns: 1fr; } .taster-read-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .taster-personal-grid { grid-template-columns: 1fr; gap: 14px; } }
 
+
+/* Coach ticks: "I have looked at this" */
+.ack-row { display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--line); }
+.ack-row:first-child { border-top: 0; }
+.ack-row > a.item { flex: 1; min-width: 0; border-top: 0; }
+.ack-row.checked > a.item { opacity: .55; }
+.ack-box { appearance: none; -webkit-appearance: none; flex: 0 0 26px; width: 26px; height: 26px; min-height: 0; padding: 0; margin: 0; border: 2px solid var(--gold-light); border-radius: 7px; background: transparent; display: grid; place-items: center; cursor: pointer; }
+.ack-box:checked { background: var(--gold-light); }
+.ack-box:checked::after { content: ''; width: 6px; height: 12px; margin-top: -2px; border: solid #17120a; border-width: 0 3px 3px 0; transform: rotate(45deg); }
+.ack-box:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.ack-box:disabled { opacity: .5; cursor: progress; }
+.ack-note { margin: 4px 0 0; }

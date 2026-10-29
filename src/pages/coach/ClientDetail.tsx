@@ -103,7 +103,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
         <div className="list">
           {cws.filter(c => c.date <= addDays(today, 3)).slice(0, 8).map(c => (
             <Link key={c.id} to={`/workout/${c.id}`} className="item">
-              <span className="grow"><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)}{c.status === 'done' ? ` � ${setsDone(c)} sets` : ''}</span></span>
+              <span className="grow"><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)}{c.status === 'done' ? ` · ${setsDone(c)} sets` : ''}</span></span>
               <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' || c.date < today ? 'amber' : 'blue')}>{c.status === 'scheduled' && c.date < today ? 'Missed' : c.status}</span>
             </Link>
           ))}
@@ -183,7 +183,7 @@ function Training({ id }: { id: string }) {
   const past = cws.filter(c => c.date < today).reverse()
   const row = (c: ClientWorkout) => (
     <div key={c.id} className="item">
-      <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)} � {niceDate(c.date)}</span></Link>
+      <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)} · {niceDate(c.date)}</span></Link>
       <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' ? 'amber' : c.date < today ? 'amber' : 'blue')}>{c.status === 'scheduled' && c.date < today ? 'Missed' : c.status}</span>
       {c.status !== 'done' && <button className="link" disabled={removing} onClick={() => { setRemoveError(''); setRemoveTarget(c) }} aria-label="Remove from schedule">Remove</button>}
     </div>
@@ -213,7 +213,7 @@ function Training({ id }: { id: string }) {
       <Sheet open={!!wk} onClose={() => { setWk(null); load() }} title={`Assign ${wk?.name ?? ''}`}>{wk && client && <AssignWorkout workout={wk} clients={[client]} presetClient={id} onClose={() => { setWk(null); load() }} />}</Sheet>
       <Sheet open={progList} onClose={() => setProgList(false)} title="Choose a programme">
         <div className="list">{programs.map(p => (
-          <button key={p.id} className="item" onClick={() => choose(p)}><span className="grow"><span className="title">{p.name}</span><br /><span className="meta">{p.goal} � {p.level} � {p.weeks} weeks</span></span><Icon name="chev" /></button>
+          <button key={p.id} className="item" onClick={() => choose(p)}><span className="grow"><span className="title">{p.name}</span><br /><span className="meta">{p.goal} · {p.level} · {p.weeks} weeks</span></span><Icon name="chev" /></button>
         ))}</div>
       </Sheet>
       <Sheet open={!!prog} onClose={() => { setProg(null); load() }} title={prog ? `Assign ${prog.p.name}` : ''}>{prog && client && <AssignProgram program={prog.p} days={prog.days} clients={[client]} presetClient={id} onClose={() => { setProg(null); load() }} />}</Sheet>

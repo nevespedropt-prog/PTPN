@@ -52,7 +52,7 @@ export default function SessionBalance({ clientId, coach = false }: { clientId: 
     <div className="tile">
       <div className="label">Sessions left</div>
       <div className="value">{loading ? '-' : remaining}</div>
-      <div className="foot">{loading ? 'Loading balance' : `${used} completed � ${purchased} purchased`}</div>
+      <div className="foot">{loading ? 'Loading balance' : `${used} completed · ${purchased} purchased`}</div>
       {coach && <button type="button" className="link red sm" onClick={() => { setMessage(''); setOpen(true) }}>Add sessions</button>}
     </div>
     {coach && <Sheet open={open} onClose={() => setOpen(false)} title="Add paid sessions">

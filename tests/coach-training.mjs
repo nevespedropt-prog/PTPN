@@ -201,8 +201,10 @@ export async function tabMemoryChecks({ open, sql, IDS, BASE, ok, clean }) {
     await page.locator('a[href^="/workout/' + homeId + '"]').click()
     await reloadWithoutState()
     await page.getByRole('button', { name: 'Back', exact: true }).click()
-    await page.waitForURL(url => url.pathname === '/')
-    ok(new URL(page.url()).pathname === '/', 'workout opened from client Home returns to Home after refresh')
+    // '/' redirects to '/home', so accept either and wait for the Home screen itself.
+    await page.waitForURL(url => url.pathname === '/' || url.pathname === '/home')
+    await page.getByText('Habits', { exact: true }).first().waitFor()
+    ok(['/', '/home'].includes(new URL(page.url()).pathname), 'workout opened from client Home returns to Home after refresh')
     clean('client tab memory and detail returns', client.errors)
   } finally {
     await client.ctx.close()

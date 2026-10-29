@@ -252,7 +252,7 @@ export default function WorkoutPlayer() {
       </div>
       <div className="page-head" style={{ marginTop: 0 }}>
         <div>
-          <div className="eyebrow">{FORMAT_LABEL[w.format]}{w.duration_min ? ` � ${w.duration_min} min` : ''}</div>
+          <div className="eyebrow">{FORMAT_LABEL[w.format]}{w.duration_min ? ` · ${w.duration_min} min` : ''}</div>
           <h1>{w.name}</h1>
           {w.description && <div className="sub">{w.description}</div>}
         </div>
@@ -300,7 +300,7 @@ export default function WorkoutPlayer() {
                   <div className="row between nowrap" style={{ marginBottom: 2 }}>
                     <div className="grow">
                       <b style={{ fontSize: '1.02rem' }}>{it.exercise_name}</b>
-                      <div className="presc">{isCardio ? cardioPrescription(it, w.format) : prescription(it)}{load ? <> � <span className="load">{load} kg</span></> : load === undefined ? <span className="mute"> � no max yet</span> : null}</div>
+                      <div className="presc">{isCardio ? cardioPrescription(it, w.format) : prescription(it)}{load ? <> · <span className="load">{load} kg</span></> : load === undefined ? <span className="mute"> · no max yet</span> : null}</div>
                       {it.notes && <div className="mute small">{it.notes}</div>}
                     </div>
                     <a className="btn icon" href={demoUrl(it.exercise_name)} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${it.exercise_name} demo`}><Icon name="play" size={16} /></a>
@@ -357,7 +357,7 @@ export default function WorkoutPlayer() {
                   )}
                   {!simple && !locked && (!isCardio || CARDIO_FIELDS[w.format].includes('sets')) && <button className="link" style={{ marginTop: 8 }} onClick={() => addSet(it)}>{isCardio ? '+ Add round' : '+ Add set'}</button>}
                   <button className="soft sm" disabled={switchBusy || finishBusy || uncertainChoice} style={{ marginTop: 8 }} onClick={() => setFeedbackExercise(it)} aria-label={`Technique feedback for ${it.exercise_name}`}>Technique feedback</button>
-                  {samePreviousExercise(it, items.find(original => original.id === it.id), prev) && prev?.items?.[it.id]?.some(s => s.done) && !simple && <div className="mute small" style={{ marginTop: 6 }}>Last time: {prev.items[it.id].filter(s => s.done).map(s => isCardio ? [s.time, s.distance && `${s.distance} km`, s.speed && `${s.speed} km/h`].filter(Boolean).join(' � ') || '-' : `${s.kg || '-'}x${s.reps || '-'}`).join(isCardio ? ' | ' : ', ')}</div>}
+                  {samePreviousExercise(it, items.find(original => original.id === it.id), prev) && prev?.items?.[it.id]?.some(s => s.done) && !simple && <div className="mute small" style={{ marginTop: 6 }}>Last time: {prev.items[it.id].filter(s => s.done).map(s => isCardio ? [s.time, s.distance && `${s.distance} km`, s.speed && `${s.speed} km/h`].filter(Boolean).join(' · ') || '-' : `${s.kg || '-'}x${s.reps || '-'}`).join(isCardio ? ' | ' : ', ')}</div>}
                 </div>
               )
             })}
@@ -399,7 +399,7 @@ export default function WorkoutPlayer() {
 
       <Sheet open={finishing} onClose={() => { if (!finishingWrite.current) setFinishing(false) }} title="Nice work">
         <div className="stack">
-          <p className="mute" style={{ margin: 0 }}>{done} of {totalSets} sets logged � {fmtSeconds(elapsed)}</p>
+          <p className="mute" style={{ margin: 0 }}>{done} of {totalSets} sets logged · {fmtSeconds(elapsed)}</p>
           <b>How did it feel?</b>
           <Stars value={rating} onChange={setRating} />
           <textarea rows={3} placeholder="Notes for your coach (optional)" value={note} onChange={e => setNote(e.target.value)} />

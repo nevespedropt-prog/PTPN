@@ -55,7 +55,7 @@ export default function TasterSessionView() {
       <ReadItem label="Age" value={ageOn(taster.date_of_birth)} /><ReadItem label="Activity level" value={ACTIVITY_LABEL[taster.activity_level]} /><ReadItem label="Fitness level" value={taster.fitness_level} /><ReadItem label="Job" value={taster.job_description} /><ReadItem label="Diet" value={taster.diet} /><ReadItem label="Daily calories" value={`${taster.target_kcal} kcal`} /><ReadItem label="Protein" value={`${taster.target_protein} g`} /><ReadItem label="Carbohydrates" value={`${taster.target_carbs} g`} /><ReadItem label="Fat" value={`${taster.target_fat} g`} />
     </div></div>
 
-    <div className="card stack"><h3 style={{ margin: 0 }}>Fitness assessment</h3>{items.length ? <div className="list">{items.map(item => <div className="item" key={item.id}><span className="grow"><b>{item.exercise_name}</b><br /><span className="meta">{item.result} {item.unit}{item.notes ? ` � ${item.notes}` : ''}</span></span></div>)}</div> : <p className="mute" style={{ margin: 0 }}>No exercise results recorded.</p>}</div>
+    <div className="card stack"><h3 style={{ margin: 0 }}>Fitness assessment</h3>{items.length ? <div className="list">{items.map(item => <div className="item" key={item.id}><span className="grow"><b>{item.exercise_name}</b><br /><span className="meta">{item.result} {item.unit}{item.notes ? ` · ${item.notes}` : ''}</span></span></div>)}</div> : <p className="mute" style={{ margin: 0 }}>No exercise results recorded.</p>}</div>
 
     <div className="card stack"><h3 style={{ margin: 0 }}>Health screening and consent</h3>
       {alerts.length || detailLines.length ? <><div className="health-alert-list">{alerts.map(alert => <div className="health-alert-item" key={alert}>{alert}</div>)}</div>{detailLines.map(line => <p key={line} style={{ margin: 0 }}>{line}</p>)}</> : <p style={{ margin: 0 }}>No exercise-safety concerns were recorded.</p>}
@@ -63,7 +63,7 @@ export default function TasterSessionView() {
       <span className="mute small">Personal-training and exercise consent {taster.parq_exercise_consent ? `recorded${taster.parq_consented_at ? ` on ${niceDate(taster.parq_consented_at.slice(0, 10))}` : ''}` : 'not recorded'}.</span>
     </div>
 
-    <div className="card stack"><h3 style={{ margin: 0 }}>Emergency contact</h3><p style={{ margin: 0 }}>{taster.emergency_contact_name} � {taster.emergency_contact_phone}<br />{taster.emergency_contact_email}</p></div>
+    <div className="card stack"><h3 style={{ margin: 0 }}>Emergency contact</h3><p style={{ margin: 0 }}>{taster.emergency_contact_name} · {taster.emergency_contact_phone}<br />{taster.emergency_contact_email}</p></div>
   </>
 }
 
