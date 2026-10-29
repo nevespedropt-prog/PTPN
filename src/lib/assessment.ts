@@ -6,6 +6,7 @@ export const ACTIVITY_LABEL: Record<ActivityLevel, string> = {
 }
 
 const ACTIVITY_FACTOR: Record<ActivityLevel, number> = { sedentary: 1.2, light: 1.375, moderate: 1.55, very: 1.725, extra: 1.9 }
+const restingEstimate = (weightKg: number, heightCm: number, age: number, sex: AssessmentSex) => 10 * weightKg + 6.25 * heightCm - 5 * age + (sex === 'male' ? 5 : -161)
 
 export function ageOn(dateOfBirth: string, today = new Date()) {
   const born = new Date(`${dateOfBirth}T12:00:00`)
@@ -18,9 +19,13 @@ export function bmi(weightKg: number, heightCm: number) {
   return Math.round((weightKg / ((heightCm / 100) ** 2)) * 10) / 10
 }
 
+/** Mifflin-St Jeor resting metabolic rate (kcal/day). */
+export function restingCalories(weightKg: number, heightCm: number, age: number, sex: AssessmentSex) {
+  return Math.max(0, Math.round(restingEstimate(weightKg, heightCm, age, sex)))
+}
+
 /** Mifflin-St Jeor resting energy expenditure multiplied by activity level. */
 export function maintenanceCalories(weightKg: number, heightCm: number, age: number, sex: AssessmentSex, activity: ActivityLevel) {
-  const resting = 10 * weightKg + 6.25 * heightCm - 5 * age + (sex === 'male' ? 5 : -161)
-  return Math.max(0, Math.round(resting * ACTIVITY_FACTOR[activity]))
+  return Math.max(0, Math.round(restingEstimate(weightKg, heightCm, age, sex) * ACTIVITY_FACTOR[activity]))
 }
 

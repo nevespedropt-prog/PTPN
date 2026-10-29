@@ -132,8 +132,8 @@ ok((await as(A, `insert into meal_plan_items (client_id, day, meal_type, recipe_
 ok(!(await as(A, `insert into foods (name, kcal, created_by) values ('My bar', 200, '${A}')`)).error, 'client adds custom food')
 
 // Taster sessions: coach controls the assessment; clients only see their own summary row.
-const tasterSql = `(client_id,assessed_on,goal,target_date,date_of_birth,sex,activity_level,height_cm,weight_kg,body_fat_pct,bmi,estimated_maintenance_kcal,target_kcal,target_protein,target_carbs,target_fat,client_summary,created_by)
-  values ('${A}',current_date,'Improve strength',current_date + 90,'1990-01-01','female','moderate',165,65,25,23.9,2100,1800,130,185,58,'Good starting point','${C}')`
+const tasterSql = `(client_id,assessed_on,goal,target_date,date_of_birth,sex,activity_level,height_cm,weight_kg,target_weight_kg,body_fat_pct,bmi,target_bmi,bmr_kcal,target_bmr_kcal,estimated_maintenance_kcal,target_kcal,target_protein,target_carbs,target_fat,client_summary,created_by)
+  values ('${A}',current_date,'Improve strength',current_date + 90,'1990-01-01','female','moderate',165,65,60,25,23.9,22,1350,1300,2100,1800,130,185,58,'Good starting point','${C}')`
 ok((await as(A, `insert into taster_sessions ${tasterSql}`)).error, 'client cannot create a taster session')
 const taster = (await as(C, `insert into taster_sessions ${tasterSql} returning id`)).rows[0].id
 ok(await count(A, `select id from taster_sessions where id='${taster}'`) === 1 && await count(B, `select id from taster_sessions where id='${taster}'`) === 0, 'client reads only their own taster summary')

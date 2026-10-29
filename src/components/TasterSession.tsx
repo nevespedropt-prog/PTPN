@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../auth'
-import { ACTIVITY_LABEL, ageOn, bmi, maintenanceCalories, type ActivityLevel, type AssessmentSex } from '../lib/assessment'
+import { ACTIVITY_LABEL, ageOn, bmi, maintenanceCalories, restingCalories, type ActivityLevel, type AssessmentSex } from '../lib/assessment'
 import { localDate } from '../lib/dates'
 import { suggestTargets } from '../lib/nutrition'
 import { supabase } from '../lib/supabase'
@@ -9,12 +9,16 @@ import { ExercisePicker } from './Pickers'
 import Icon from './Icon'
 import { Empty, Skeleton, Tile } from './ui'
 
-type Draft = Omit<TasterSession, 'id' | 'client_id' | 'bmi' | 'estimated_maintenance_kcal' | 'created_by' | 'created_at' | 'updated_at'> & { id?: string }
+type Draft = Omit<TasterSession, 'id' | 'client_id' | 'bmi' | 'target_bmi' | 'bmr_kcal' | 'target_bmr_kcal' | 'estimated_maintenance_kcal' | 'created_by' | 'created_at' | 'updated_at'> & { id?: string }
 type ItemDraft = Omit<FitnessAssessmentItem, 'id' | 'taster_session_id' | 'sort'> & { id?: string }
 
 const blank = (): Draft => ({
   assessed_on: localDate(), goal: '', target_date: '', date_of_birth: '', sex: 'female', activity_level: 'moderate',
-  height_cm: 0, weight_kg: 0, body_fat_pct: null, target_kcal: 0, target_protein: 0, target_carbs: 0, target_fat: 0,
+  height_cm: 0, weight_kg: 0, target_weight_kg: 0, body_fat_pct: null,
+  job_description: '', fitness_level: 'beginner', diet: '',
+  goal_metric_label: '', goal_metric_current: '', goal_metric_target: '', goal_metric_unit: '', new_habit: '',
+  emergency_contact_name: '', emergency_contact_phone: '', emergency_contact_email: '',
+  target_kcal: 0, target_protein: 0, target_carbs: 0, target_fat: 0,
   client_summary: '', coach_notes: '',
 })
 
@@ -31,7 +35,13 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     if (error) { setMessage('Could not load the taster session.'); setDraft(blank()); return }
     const row = ((data ?? []) as TasterSession[])[0]
     if (!row) { setDraft(blank()); setItems([]); return }
-    setDraft({ ...row, id: row.id })
+    setDraft({
+      ...row, id: row.id, target_weight_kg: row.target_weight_kg ?? row.weight_kg,
+      job_description: row.job_description ?? '', fitness_level: row.fitness_level ?? 'beginner', diet: row.diet ?? '',
+      goal_metric_label: row.goal_metric_label ?? '', goal_metric_current: row.goal_metric_current ?? '',
+      goal_metric_target: row.goal_metric_target ?? '', goal_metric_unit: row.goal_metric_unit ?? '', new_habit: row.new_habit ?? '',
+      emergency_contact_name: row.emergency_contact_name ?? '', emergency_contact_phone: row.emergency_contact_phone ?? '', emergency_contact_email: row.emergency_contact_email ?? '',
+    })
     const result = await supabase.from('fitness_assessment_items').select('*').eq('taster_session_id', row.id).order('sort')
     setItems((result.data ?? []) as FitnessAssessmentItem[])
   }, [clientId])
@@ -41,7 +51,11 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     if (!draft?.date_of_birth || !draft.height_cm || !draft.weight_kg) return null
     const age = ageOn(draft.date_of_birth)
     if (age < 14 || age > 100) return null
-    return { age, bmi: bmi(Number(draft.weight_kg), Number(draft.height_cm)), maintenance: maintenanceCalories(Number(draft.weight_kg), Number(draft.height_cm), age, draft.sex, draft.activity_level) }
+    const currentBmi = bmi(Number(draft.weight_kg), Number(draft.height_cm))
+    const currentBmr = restingCalories(Number(draft.weight_kg), Number(draft.height_cm), age, draft.sex)
+    const targetBmi = draft.target_weight_kg ? bmi(Number(draft.target_weight_kg), Number(draft.height_cm)) : null
+    const targetBmr = draft.target_weight_kg ? restingCalories(Number(draft.target_weight_kg), Number(draft.height_cm), age, draft.sex) : null
+    return { age, bmi: currentBmi, targetBmi, bmr: currentBmr, targetBmr, maintenance: maintenanceCalories(Number(draft.weight_kg), Number(draft.height_cm), age, draft.sex, draft.activity_level) }
   }, [draft])
 
   function suggestMacros() {
@@ -63,9 +77,13 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     const payload = {
       client_id: clientId, assessed_on: macros.assessed_on, goal: macros.goal.trim(), target_date: macros.target_date,
       date_of_birth: macros.date_of_birth, sex: macros.sex, activity_level: macros.activity_level,
-      height_cm: Number(macros.height_cm), weight_kg: Number(macros.weight_kg), body_fat_pct: macros.body_fat_pct ? Number(macros.body_fat_pct) : null,
-      bmi: calculated.bmi, estimated_maintenance_kcal: calculated.maintenance, target_kcal: Number(macros.target_kcal),
+      height_cm: Number(macros.height_cm), weight_kg: Number(macros.weight_kg), target_weight_kg: Number(macros.target_weight_kg), body_fat_pct: macros.body_fat_pct ? Number(macros.body_fat_pct) : null,
+      bmi: calculated.bmi, target_bmi: calculated.targetBmi, bmr_kcal: calculated.bmr, target_bmr_kcal: calculated.targetBmr,
+      estimated_maintenance_kcal: calculated.maintenance, target_kcal: Number(macros.target_kcal),
       target_protein: Number(macros.target_protein), target_carbs: Number(macros.target_carbs), target_fat: Number(macros.target_fat),
+      job_description: macros.job_description.trim(), fitness_level: macros.fitness_level, diet: macros.diet.trim(),
+      goal_metric_label: macros.goal_metric_label.trim(), goal_metric_current: macros.goal_metric_current.trim(), goal_metric_target: macros.goal_metric_target.trim(), goal_metric_unit: macros.goal_metric_unit.trim(), new_habit: macros.new_habit.trim(),
+      emergency_contact_name: macros.emergency_contact_name.trim(), emergency_contact_phone: macros.emergency_contact_phone.trim(), emergency_contact_email: macros.emergency_contact_email.trim(),
       client_summary: macros.client_summary.trim(), coach_notes: macros.coach_notes.trim(), created_by: profile.id, updated_at: new Date().toISOString(),
     }
     const saved = draft.id
@@ -120,13 +138,29 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
           <label className="field">Sex used for calculation<select value={draft.sex} onChange={e => setDraft({ ...draft, sex: e.target.value as AssessmentSex })}><option value="female">Female</option><option value="male">Male</option></select></label>
           <label className="field">Activity level<select value={draft.activity_level} onChange={e => setDraft({ ...draft, activity_level: e.target.value as ActivityLevel })}>{Object.entries(ACTIVITY_LABEL).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
           <label className="field">Height cm<input required type="number" min="100" max="250" step="0.1" value={draft.height_cm || ''} onChange={e => setDraft({ ...draft, height_cm: Number(e.target.value) })} /></label>
-          <label className="field">Weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.weight_kg || ''} onChange={e => setDraft({ ...draft, weight_kg: Number(e.target.value) })} /></label>
+          <label className="field">Current weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.weight_kg || ''} onChange={e => setDraft({ ...draft, weight_kg: Number(e.target.value) })} /></label>
+          <label className="field">Target weight kg<input required type="number" min="20" max="400" step="0.1" value={draft.target_weight_kg || ''} onChange={e => setDraft({ ...draft, target_weight_kg: Number(e.target.value) })} /></label>
           <label className="field">Body fat %<input type="number" min="0" max="100" step="0.1" value={draft.body_fat_pct ?? ''} onChange={e => setDraft({ ...draft, body_fat_pct: e.target.value ? Number(e.target.value) : null })} /></label>
+          <label className="field">Fitness level<select value={draft.fitness_level} onChange={e => setDraft({ ...draft, fitness_level: e.target.value as Draft['fitness_level'] })}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="athlete">Athlete</option></select></label>
         </div>
+        <label className="field">Job description<input maxLength={500} value={draft.job_description} onChange={e => setDraft({ ...draft, job_description: e.target.value })} placeholder="Role, working pattern and usual activity" /></label>
+        <label className="field">Diet<textarea maxLength={1200} rows={2} value={draft.diet} onChange={e => setDraft({ ...draft, diet: e.target.value })} placeholder="Current diet, preferences and restrictions" /></label>
+        <div className="calculation-comparison">
+          <div><span className="eyebrow">BMR</span><b>{calculated?.bmr ?? '-'} kcal</b><span className="mute small">Target {calculated?.targetBmr ?? '-'} kcal</span></div>
+          <div><span className="eyebrow">BMI</span><b>{calculated?.bmi ?? '-'}</b><span className="mute small">Target {calculated?.targetBmi ?? '-'}</span></div>
+        </div>
+        <h3 style={{ margin: '6px 0 0' }}>Goal highlights</h3>
+        <div className="inline-inputs">
+          <label className="field">Important metric<input required maxLength={80} value={draft.goal_metric_label} onChange={e => setDraft({ ...draft, goal_metric_label: e.target.value })} placeholder="Weight, body fat, 5 km time, deadlift" /></label>
+          <label className="field">Current metric<input required maxLength={80} value={draft.goal_metric_current} onChange={e => setDraft({ ...draft, goal_metric_current: e.target.value })} placeholder="Current result" /></label>
+          <label className="field">Target metric<input required maxLength={80} value={draft.goal_metric_target} onChange={e => setDraft({ ...draft, goal_metric_target: e.target.value })} placeholder="Target result" /></label>
+          <label className="field">Metric unit<input maxLength={40} value={draft.goal_metric_unit} onChange={e => setDraft({ ...draft, goal_metric_unit: e.target.value })} placeholder="kg, %, km, minutes" /></label>
+        </div>
+        <label className="field">New habit<input required maxLength={200} value={draft.new_habit} onChange={e => setDraft({ ...draft, new_habit: e.target.value })} placeholder="The first behaviour that supports this goal" /></label>
         <div className="grid g3">
           <Tile label="Age" value={calculated?.age ?? '-'} foot="from date of birth" />
-          <Tile label="BMI" value={calculated?.bmi ?? '-'} foot="screening estimate" />
-          <Tile label="Maintenance" value={calculated?.maintenance ?? '-'} unit={calculated ? ' kcal' : ''} foot="estimated daily calories" />
+          <Tile label={draft.goal_metric_label || 'Goal metric'} value={draft.goal_metric_target || '-'} unit={draft.goal_metric_unit ? ` ${draft.goal_metric_unit}` : ''} foot={draft.goal_metric_current ? `Current ${draft.goal_metric_current}` : 'Set the key outcome'} />
+          <Tile label="New habit" value={draft.new_habit || '-'} foot="first behaviour target" />
         </div>
       </div>
 
@@ -153,6 +187,14 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
       <div className="card stack">
         <label className="field">Client summary<textarea maxLength={2400} rows={3} value={draft.client_summary} onChange={e => setDraft({ ...draft, client_summary: e.target.value })} placeholder="Short assessment summary visible to the client" /></label>
         <label className="field">Coach notes<textarea maxLength={4000} rows={3} value={draft.coach_notes} onChange={e => setDraft({ ...draft, coach_notes: e.target.value })} placeholder="Private coaching notes" /></label>
+      </div>
+      <div className="card stack">
+        <h3 style={{ margin: 0 }}>Emergency contact</h3>
+        <div className="inline-inputs">
+          <label className="field">Emergency contact name<input required maxLength={160} value={draft.emergency_contact_name} onChange={e => setDraft({ ...draft, emergency_contact_name: e.target.value })} /></label>
+          <label className="field">Emergency contact number<input required type="tel" maxLength={80} value={draft.emergency_contact_phone} onChange={e => setDraft({ ...draft, emergency_contact_phone: e.target.value })} /></label>
+          <label className="field">Emergency contact email<input required type="email" maxLength={320} value={draft.emergency_contact_email} onChange={e => setDraft({ ...draft, emergency_contact_email: e.target.value })} /></label>
+        </div>
       </div>
       {message && <p className={message.includes('saved') || message.includes('added') ? 'ok' : 'err'} role="status">{message}</p>}
       <button disabled={busy} style={{ minHeight: 50 }}>{busy ? 'Saving...' : 'Save taster session'}</button>
