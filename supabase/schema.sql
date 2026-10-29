@@ -834,6 +834,8 @@ create table public.taster_sessions (
   parq_injury_details text not null default '' check (length(parq_injury_details) <= 1600),
   parq_medication_details text not null default '' check (length(parq_medication_details) <= 1600),
   parq_allergy_details text not null default '' check (length(parq_allergy_details) <= 1600),
+  parq_health_storage_consent boolean not null default false,
+  parq_health_storage_consented_at timestamptz,
   parq_exercise_consent boolean not null default false,
   parq_consented_at timestamptz,
   client_summary text not null default '' check (length(client_summary) <= 2400), coach_notes text not null default '' check (length(coach_notes) <= 4000),
