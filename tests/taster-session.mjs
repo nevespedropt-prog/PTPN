@@ -26,6 +26,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   await coach.page.getByLabel('Target metric', { exact: true }).fill('120')
   await coach.page.getByLabel('Metric unit', { exact: true }).fill('kg')
   await coach.page.getByLabel('New habit', { exact: true }).fill('Walk 8,000 steps daily')
+  ok(Number.parseFloat(await coach.page.getByText('Walk 8,000 steps daily', { exact: true }).evaluate(el => getComputedStyle(el).fontSize)) < Number.parseFloat(await coach.page.locator('.tile .value').first().evaluate(el => getComputedStyle(el).fontSize)), 'taster: new habit uses a smaller readable font')
   await coach.page.getByLabel('Target calories', { exact: true }).fill('2000')
   await coach.page.getByRole('button', { name: 'Suggest macros', exact: true }).click()
   ok(await coach.page.getByLabel('Protein g', { exact: true }).inputValue() === '140', 'taster: macros are suggested from target calories and weight')
