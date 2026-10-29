@@ -120,6 +120,18 @@ nav.nav .nav-label { display: none; }
 .card.click { cursor: pointer; transition: border-color .15s, transform .15s; }
 .card.click:hover { border-color: var(--line-2); }
 .card.click:active { transform: scale(.99); }
+.dashboard-disclosure { padding: 0; overflow: hidden; }
+.dashboard-disclosure > summary {
+  min-height: 64px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  cursor: pointer; list-style: none; color: var(--ink);
+}
+.dashboard-disclosure > summary::-webkit-details-marker { display: none; }
+.dashboard-disclosure > summary::after { content: '+'; color: var(--gold); font-size: 1.35rem; font-weight: 500; }
+.dashboard-disclosure[open] > summary::after { content: '\2212'; }
+.dashboard-disclosure > summary span { display: grid; gap: 2px; }
+.dashboard-disclosure > summary small { color: var(--mute); font-size: .8rem; font-weight: 400; }
+.dashboard-disclosure-body { padding: 0 12px 12px; border-top: 1px solid var(--line); }
+.dashboard-disclosure-body > .card:first-child { margin-top: 12px; }
 .grid { display: grid; gap: 12px; }
 .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
