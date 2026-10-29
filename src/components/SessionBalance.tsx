@@ -39,13 +39,9 @@ export default function SessionBalance({ clientId, coach = false }: { clientId: 
     const add = Number(quantity)
     if (!Number.isInteger(add) || add < 1 || add > 100) return setMessage('Enter between 1 and 100 sessions.')
     setSaving(true); setMessage('')
-    const payload = row
-      ? { sessions_purchased: purchased + add, updated_at: new Date().toISOString() }
-      : { client_id: clientId, sessions_purchased: add, completed_baseline: completed }
-    const request = row
-      ? supabase.from('client_session_credits').update(payload).eq('client_id', clientId)
-      : supabase.from('client_session_credits').insert(payload)
-    const { error } = await request
+    const { error } = row
+      ? await supabase.from('client_session_credits').update({ sessions_purchased: purchased + add, updated_at: new Date().toISOString() }).eq('client_id', clientId)
+      : await supabase.from('client_session_credits').insert({ client_id: clientId, sessions_purchased: add, completed_baseline: completed })
     setSaving(false)
     if (error) return setMessage('Could not add sessions. Please try again.')
     setQuantity(''); setMessage(`${add} session${add === 1 ? '' : 's'} added.`)
