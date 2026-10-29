@@ -43,9 +43,9 @@ export async function weeklyDbChecks(db, ids, ok) {
 
 export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok }) {
   const { ctx, page, errors } = await open('ana')
-  const openSecondary = () => page.locator('details.dashboard-disclosure').filter({ hasText: 'Progress and coaching profile' }).evaluate(element => { element.open = true })
-  await openSecondary()
   const weekly = page.getByRole('region', { name: 'Weekly check-in', exact: true })
+  ok(await weekly.evaluate(element => !element.open), 'weekly: client check-in starts minimized')
+  await weekly.getByText('Weekly check-in', { exact: true }).click()
   await weekly.getByRole('button', { name: 'Complete weekly check-in', exact: true }).waitFor()
   const week = await weekly.getByLabel('Review week').inputValue()
   const monday = new Date(week + 'T12:00:00')
@@ -72,7 +72,7 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await weekly.getByText('Awaiting coach review', { exact: true }).waitFor()
   ok(await weekly.getByRole('button', { name: 'Complete weekly check-in', exact: true }).count() === 0, 'weekly: duplicate submission not offered')
   await page.reload({ waitUntil: 'networkidle' })
-  await openSecondary()
+  await weekly.getByText('Weekly check-in', { exact: true }).click()
   await weekly.getByText('More consistent this week.', { exact: true }).waitFor()
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'weekly: client fits phone width')
   await shot(page, 'weekly-client-submitted-phone')
@@ -109,8 +109,8 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await coach.ctx.close()
 
   const client = await open('ana')
-  await client.page.locator('details.dashboard-disclosure').filter({ hasText: 'Progress and coaching profile' }).evaluate(element => { element.open = true })
   const feedback = client.page.getByRole('region', { name: 'Weekly check-in', exact: true })
+  await feedback.getByText('Weekly check-in', { exact: true }).click()
   await feedback.getByText('Excellent consistency. Keep your preparation routine.', { exact: true }).waitFor()
   await feedback.getByText('Plan three training sessions.', { exact: true }).waitFor()
   ok(true, 'weekly: client sees coach feedback and next focus after reload')
