@@ -16,6 +16,7 @@ import CoachHabits from '../CoachHabits'
 import Progress from '../Progress'
 import { AssignProgram, AssignWorkout } from './Assign'
 import TasterSessionForm from '../../components/TasterSession'
+import SessionBalance from '../../components/SessionBalance'
 
 type Tab = 'overview' | 'taster' | 'training' | 'nutrition' | 'habits' | 'progress'
 
@@ -67,7 +68,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
         <Tile label="Compliance" value={recent.length ? `${Math.round((done / recent.length) * 100)}%` : '-'} foot="last 14 days" />
         <Tile label="Weight" value={weight ? Number(weight.weight_kg) : '-'} unit={weight ? 'kg' : ''} foot={weight ? niceDate(weight.date) : 'Not logged'} />
         <Tile label="Avg calories" value={kcal ?? '-'} foot="logged days, last 7" />
-        <Tile label="Latest mood" value={checkin?.mood ? `${checkin.mood}/5` : '-'} foot={checkin ? `Energy ${checkin.energy ?? '-'}/5 � ${niceDate(checkin.date)}` : 'No check-ins'} />
+        <SessionBalance clientId={id} coach />
       </div>
       {health !== undefined && (
         <div className={'card tight' + (health && (flagged(health.allergies) || flagged(health.health_conditions)) ? ' consent-card' : '')}>

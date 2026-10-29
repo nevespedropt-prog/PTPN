@@ -14,6 +14,7 @@ import { coachTrainingChecks, tabMemoryChecks } from './coach-training.mjs'
 import { dashboardBrowserChecks } from './dashboard.mjs'
 import { notificationBrowserChecks } from './notifications.mjs'
 import { tasterSessionChecks } from './taster-session.mjs'
+import { sessionBalanceChecks } from './session-balance.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -64,6 +65,7 @@ await tabMemoryChecks({ open, sql, IDS, BASE, ok, clean })
 await dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok })
 await notificationBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await sessionBalanceChecks({ open, sql, IDS, BASE, clean, ok })
 await alternativeBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
