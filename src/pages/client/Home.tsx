@@ -152,7 +152,7 @@ export default function Home() {
         </Link>
       )}
 
-      <details className="card dashboard-disclosure" defaultOpen>
+      <details className="card dashboard-disclosure" open>
         <summary><span><b>Today's coaching actions</b><small>Habits and daily check-in</small></span></summary>
         <div className="dashboard-disclosure-body"><Habits today={today} /><CheckinForm today={today} /></div>
       </details>
