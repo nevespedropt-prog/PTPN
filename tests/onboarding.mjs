@@ -39,6 +39,8 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now())", [IDS.ana])
   const client = await open('ana')
   const { page } = client
+  const openSecondary = () => page.locator('details.dashboard-disclosure').filter({ hasText: 'Progress and coaching profile' }).evaluate(element => { element.open = true })
+  await openSecondary()
   const setup = page.getByRole('region', { name: 'Coaching setup', exact: true })
   const start = setup.getByRole('button', { name: 'Start coaching setup', exact: true })
   await start.waitFor()
@@ -46,6 +48,7 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   await page.route('**/rest/v1/client_onboarding*', route => route.request().method() === 'GET'
     ? route.fulfill({ status: 503, contentType: 'application/json', body: '{"message":"Offline"}' }) : route.continue())
   await page.reload({ waitUntil: 'networkidle' })
+  await openSecondary()
   await setup.getByRole('alert').waitFor()
   ok(await start.count() === 0, 'onboarding: failed read does not pretend profile is missing')
   await page.unroute('**/rest/v1/client_onboarding*')
@@ -84,6 +87,7 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   const saved = (await sql('select * from client_onboarding where client_id=$1', [IDS.ana]))[0]
   ok(saved?.experience === 'returning' && saved.preferred_days.join(',') === '1,3', 'onboarding: answers and ordered days saved once')
   await page.reload({ waitUntil: 'networkidle' })
+  await openSecondary()
   await setup.getByText('Vegetarian, quick meals for work.', { exact: false }).waitFor()
   ok(await setup.getByRole('link', { name: 'View training', exact: true }).getAttribute('href') === '/train', 'onboarding: checklist links to existing training page')
   const training = setup.getByLabel('I have reviewed my training page', { exact: true })
@@ -103,13 +107,14 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   await form.waitFor({ state: 'hidden' })
   ok((await sql('select training_ready from client_onboarding where client_id=$1', [IDS.ana]))[0].training_ready, 'onboarding: profile edits preserve checklist progress')
   await setup.getByLabel('I have explored my food diary', { exact: true }).click()
-  await setup.getByText('Your first week · 2/3 complete', { exact: true }).waitFor()
+  await setup.getByText('Your first week � 2/3 complete', { exact: true }).waitFor()
   await setup.getByLabel('I know how to contact my coach', { exact: true }).click()
-  await setup.getByText('Your first week · 3/3 complete', { exact: true }).waitFor()
+  await setup.getByText('Your first week � 3/3 complete', { exact: true }).waitFor()
   ok(await setup.locator('details').getAttribute('open') === null, 'onboarding: finished checklist collapses')
   await shot(page, 'onboarding-complete-phone')
   await page.reload({ waitUntil: 'networkidle' })
-  await setup.getByText('Your first week · 3/3 complete', { exact: true }).waitFor()
+  await openSecondary()
+  await setup.getByText('Your first week � 3/3 complete', { exact: true }).waitFor()
   ok(true, 'onboarding: completed checklist persists after reload')
   client.errors.splice(0, client.errors.length, ...client.errors.filter(e => !/503/.test(e)))
   clean('onboarding client', client.errors)
@@ -129,3 +134,4 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   await sql('delete from client_onboarding where client_id=$1', [IDS.ana])
   await sql('delete from client_health where client_id=$1', [IDS.ana])
 }
+
