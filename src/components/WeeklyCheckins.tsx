@@ -100,7 +100,7 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
   }
 
   const Container = coach ? 'details' : 'section'
-  return <Container className={coach ? 'card collapsible-card' : 'card'} aria-label="Weekly check-in">
+  return <Container className={coach ? 'card collapsible-card' : 'card'} role="region" aria-label="Weekly check-in">
     {coach && <summary><span><span className="eyebrow">Client review</span><b>Weekly check-in</b></span></summary>}
     {!coach && <h2>Weekly check-in</h2>}
     <p className="mute small">Monday to Sunday. Sunday is the suggested check-in day; you can submit any day.</p>
