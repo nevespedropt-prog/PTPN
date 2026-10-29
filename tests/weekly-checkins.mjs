@@ -43,6 +43,8 @@ export async function weeklyDbChecks(db, ids, ok) {
 
 export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok }) {
   const { ctx, page, errors } = await open('ana')
+  const openSecondary = () => page.locator('details.dashboard-disclosure').filter({ hasText: 'Progress and coaching profile' }).evaluate(element => { element.open = true })
+  await openSecondary()
   const weekly = page.getByRole('region', { name: 'Weekly check-in', exact: true })
   await weekly.getByRole('button', { name: 'Complete weekly check-in', exact: true }).waitFor()
   const week = await weekly.getByLabel('Review week').inputValue()
@@ -70,6 +72,7 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await weekly.getByText('Awaiting coach review', { exact: true }).waitFor()
   ok(await weekly.getByRole('button', { name: 'Complete weekly check-in', exact: true }).count() === 0, 'weekly: duplicate submission not offered')
   await page.reload({ waitUntil: 'networkidle' })
+  await openSecondary()
   await weekly.getByText('More consistent this week.', { exact: true }).waitFor()
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'weekly: client fits phone width')
   await shot(page, 'weekly-client-submitted-phone')
@@ -79,6 +82,7 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await ctx.close()
 
   const coach = await open('coach', { w: 1280, h: 860 })
+  await coach.page.locator('#coach-reviews').evaluate(element => { element.open = true })
   const queue = coach.page.getByRole('region', { name: 'Weekly reviews', exact: true })
   await queue.getByRole('link', { name: /Ana Silva/ }).waitFor()
   await queue.getByRole('link', { name: /Ana Silva/ }).click()
@@ -98,12 +102,14 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   ok(await coach.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'weekly: coach review fits phone width')
   await shot(coach.page, 'weekly-coach-review-phone')
   await coach.page.goto(BASE + '/', { waitUntil: 'networkidle' })
+  await coach.page.locator('#coach-reviews').evaluate(element => { element.open = true })
   await coach.page.getByRole('region', { name: 'Weekly reviews', exact: true }).getByText('No pending reviews among the latest 100 check-ins.', { exact: true }).waitFor()
   ok(true, 'weekly: reviewed submission leaves pending list')
   clean('weekly coach', coach.errors)
   await coach.ctx.close()
 
   const client = await open('ana')
+  await client.page.locator('details.dashboard-disclosure').filter({ hasText: 'Progress and coaching profile' }).evaluate(element => { element.open = true })
   const feedback = client.page.getByRole('region', { name: 'Weekly check-in', exact: true })
   await feedback.getByText('Excellent consistency. Keep your preparation routine.', { exact: true }).waitFor()
   await feedback.getByText('Plan three training sessions.', { exact: true }).waitFor()
