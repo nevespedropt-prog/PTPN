@@ -138,7 +138,7 @@ ok((await as(A, `insert into taster_sessions ${tasterSql}`)).error, 'client cann
 const taster = (await as(C, `insert into taster_sessions ${tasterSql} returning id`)).rows[0].id
 ok(await count(A, `select id from taster_sessions where id='${taster}'`) === 1 && await count(B, `select id from taster_sessions where id='${taster}'`) === 0, 'client reads only their own taster summary')
 ok(!(await as(C, `insert into fitness_assessment_items(taster_session_id,exercise_name,result,unit) values('${taster}','Sit to stand','12','reps')`)).error, 'coach adds a flexible fitness assessment result')
-ok(await count(A, `select id from fitness_assessment_items where taster_session_id='${taster}'`) === 0, 'client cannot read detailed assessment exercises')
+ok(await count(A, `select id from fitness_assessment_items where taster_session_id='${taster}'`) === 1 && await count(B, `select id from fitness_assessment_items where taster_session_id='${taster}'`) === 0, 'client reads only their own detailed assessment exercises')
 ok(!(await as(C, `insert into measurements(client_id,weight_kg,body_fat_pct,taster_session_id) values('${A}',65,25,'${taster}')`)).error, 'coach records taster measurements in progress history')
 
 // messages
