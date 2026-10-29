@@ -25,6 +25,7 @@ export async function dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok }
     ok(await tile('Unread').innerText() === '55', 'dashboard includes unread conversations beyond the old 50 message cap')
     ok(await attention.getByText('Ana Silva', { exact: true }).count() === 0, 'latest recovered mood clears an older low mood flag')
     ok(await attention.getByText('Bo Jones', { exact: true }).count() === 0, 'archived client excluded from attention queue')
+    await page.locator('#coach-activity').evaluate(element => { element.open = true })
     const inbox = page.getByRole('region', { name: 'Unread conversations', exact: true })
     ok(await inbox.getByRole('link').getAttribute('href') === '/inbox/' + IDS.bo, 'archived unread conversation keeps the correct reply link')
     const reviews = page.getByRole('region', { name: 'Weekly reviews', exact: true })
