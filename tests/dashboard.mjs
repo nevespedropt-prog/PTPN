@@ -43,6 +43,8 @@ export async function dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok }
     await sql('update checkins set mood=1 where id=$1', [id(5)])
     await sql('insert into weekly_reviews(checkin_id,feedback,next_focus) values($1,$2,$3)', [id(6), 'Reviewed', 'Next week'])
     await actions.getByRole('button', { name: 'Refresh dashboard' }).click()
+    await page.locator('#coach-activity').evaluate(element => { element.open = true })
+    await page.locator('#coach-reviews').evaluate(element => { element.open = true })
     await attention.getByText('Latest check-in: low mood', { exact: true }).waitFor()
     await reviews.getByText('No pending reviews among the latest 100 check-ins.').waitFor()
     ok(await attention.getByText('Ana Silva', { exact: true }).count() === 1, 'refresh updates client attention and review queues together')
