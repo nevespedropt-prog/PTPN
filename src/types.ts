@@ -5,7 +5,7 @@ export interface Measurement { id: string; client_id: string; date: string; weig
 export interface TasterSession {
   id: string; client_id: string; assessed_on: string; goal: string; target_date: string; date_of_birth: string
   sex: 'female' | 'male'; activity_level: 'sedentary' | 'light' | 'moderate' | 'very' | 'extra'
-  height_cm: number; weight_kg: number; target_weight_kg: number; body_fat_pct: number | null
+  height_cm: number; weight_kg: number; target_weight_kg: number; body_fat_pct: number | null; target_body_fat_pct: number | null
   bmi: number; target_bmi: number; bmr_kcal: number; target_bmr_kcal: number; estimated_maintenance_kcal: number
   job_description: string; fitness_level: 'beginner' | 'intermediate' | 'advanced' | 'athlete'; diet: string
   goal_metric_label: string; goal_metric_current: string; goal_metric_target: string; goal_metric_unit: string; new_habit: string
