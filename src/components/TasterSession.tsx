@@ -81,7 +81,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
     if (draft.parq_answers.bone_joint_injury && !draft.parq_injury_details.trim()) return setMessage('Add the injury or pain details.')
     if (draft.parq_answers.medication && !draft.parq_medication_details.trim()) return setMessage('Add the relevant medication details.')
     if (draft.parq_answers.allergies && !draft.parq_allergy_details.trim()) return setMessage('Add the allergy details.')
-    if (!draft.parq_exercise_consent) return setMessage('Record the client's exercise consent before saving.')
+    if (!draft.parq_exercise_consent) return setMessage("Record the client's exercise consent before saving.")
     setBusy(true)
     const suggested = suggestTargets(Number(draft.target_kcal), Number(draft.weight_kg))
     const macros = draft.target_protein || draft.target_carbs || draft.target_fat ? draft : {
