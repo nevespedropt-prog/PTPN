@@ -254,6 +254,25 @@ await monthlyDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 alternativeUnitChecks(ok)
 await alternativeDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 
+// website backend: money and enquiry data stay private
+await db.exec(`insert into client_packages (client_id, package_name, sessions_total, total_gbp) values ('${A}','Express',10,500);
+insert into payments (client_id, amount_gbp, created_by) values ('${A}',200,'${C}');
+insert into enquiries (name, email) values ('Lead One','lead@x.com');`)
+ok(await count(null, 'select * from client_balances') !== 1 && (await as(null, 'select * from client_balances')).error, 'anon cannot read client balances')
+ok((await as(null, 'select * from payments')).error, 'anon cannot read payments')
+ok((await as(null, 'select * from client_packages')).error, 'anon cannot read packages')
+ok((await as(null, 'select * from enquiries')).error, 'anon cannot read enquiries')
+const own = (await as(A, 'select client_id, owed_gbp from client_balances')).rows
+ok(own?.length === 1 && own[0].client_id === A && Number(own[0].owed_gbp) === 500, 'client sees only their own balance row')
+ok(!(await as(null, "insert into enquiries (name, email) values ('Web Lead','web@x.com')")).error, 'the public website form can still insert an enquiry')
+ok(await count(A, 'select * from payments') === 1 && await count(B, 'select * from payments') === 0, 'client reads only their own payments')
+ok((await as(A, 'select * from admin_recent_enquiries(10)')).rows?.length === 0, 'client gets no enquiries from the admin list')
+ok((await as(A, `insert into payments (client_id, amount_gbp) values ('${A}', 1)`)).error, 'client cannot add a payment')
+const bal = (await as(C, `select owed_gbp, paid_gbp, balance_gbp from client_balances where client_id = '${A}'`)).rows
+ok(bal?.length === 1 && Number(bal[0].owed_gbp) === 500 && Number(bal[0].paid_gbp) === 200 && Number(bal[0].balance_gbp) === 300, 'coach sees correct client balance')
+ok((await as(C, 'select * from admin_recent_enquiries(10)')).rows?.length === 2, 'coach reads enquiries through the admin list')
+ok((await as(null, 'select * from admin_recent_enquiries(10)')).error, 'anon cannot call the admin enquiries list')
+
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)
 ok((await db.query(`select count(*)::int n from client_archives where client_id = '${A}'`)).rows[0].n === 0, 'user deletion removes archive marker')
