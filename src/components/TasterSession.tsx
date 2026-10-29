@@ -217,8 +217,9 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
           <label className="field">Emergency contact email<input required type="email" maxLength={320} value={draft.emergency_contact_email} onChange={e => setDraft({ ...draft, emergency_contact_email: e.target.value })} /></label>
         </div>
       </div>
-      <div className="card stack parq-card">
-        <div><span className="eyebrow">Health screening</span><h3 style={{ margin: '4px 0' }}>PAR-Q and exercise consent</h3><p className="mute small" style={{ margin: 0 }}>Record the client's answers before exercise. A Yes answer is a prompt to review the detail and, where appropriate, seek medical guidance; it is not a diagnosis.</p></div>
+      <details className="card stack parq-card collapsible-card">
+        <summary><span><span className="eyebrow">Health screening</span><b>PAR-Q and client consent</b></span></summary>
+        <p className="mute small" style={{ margin: 0 }}>Record the client's answers before exercise. A Yes answer is a prompt to review the detail and, where appropriate, seek medical guidance; it is not a diagnosis.</p>
         <div className="parq-grid">
           {PARQ_QUESTIONS.map(question => <fieldset className="parq-question" key={question.key}>
             <legend>{question.text}</legend>
@@ -236,7 +237,7 @@ export default function TasterSessionForm({ clientId }: { clientId: string }) {
         </div>
         <label className="tick parq-consent"><input type="checkbox" checked={draft.parq_health_storage_consent} onChange={e => setDraft({ ...draft, parq_health_storage_consent: e.target.checked, parq_health_storage_consented_at: e.target.checked ? (draft.parq_health_storage_consented_at ?? new Date().toISOString()) : null })} /><span>The client consents to the coach and PTPN securely storing and using their health information to provide safe, personalised coaching.</span></label>
         <label className="tick parq-consent"><input type="checkbox" checked={draft.parq_exercise_consent} onChange={e => setDraft({ ...draft, parq_exercise_consent: e.target.checked, parq_consented_at: e.target.checked ? (draft.parq_consented_at ?? new Date().toISOString()) : null })} /><span>The client confirms these answers are accurate, will report changes, and agrees to participate in personal training and exercise planned within the coach's professional scope.</span></label>
-      </div>
+      </details>
       {message && <p className={message.includes('saved') || message.includes('added') ? 'ok' : 'err'} role="status">{message}</p>}
       <button disabled={busy} style={{ minHeight: 50 }}>{busy ? 'Saving...' : 'Save taster session'}</button>
       <ExercisePicker open={picker} onClose={() => setPicker(false)} onPick={addExercise} />
