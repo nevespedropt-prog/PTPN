@@ -7,7 +7,7 @@ import { firstName, greeting } from '../../lib/util'
 import { sum } from '../../lib/nutrition'
 import { FORMAT_LABEL } from '../../lib/training'
 import type { ClientWorkout, FoodLog, Message, Session, Targets, TasterSession, Workout } from '../../types'
-import { MacroBar, PageHead, Ring, Tile } from '../../components/ui'
+import { MacroBar, PageHead, Ring, Skeleton, Tile } from '../../components/ui'
 import { CheckinForm, Habits } from '../../components/Daily'
 import Icon from '../../components/Icon'
 import WeeklyCheckins from '../../components/WeeklyCheckins'
@@ -25,41 +25,49 @@ export default function Home() {
   const [msg, setMsg] = useState<Message | null>(null)
   const [nextSession, setNextSession] = useState<Session | null>(null)
   const [taster, setTaster] = useState<TasterSession | null>(null)
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading')
+  const [retry, setRetry] = useState(0)
 
   useEffect(() => {
     if (!profile) return
+    let active = true
     const week = weekOf(today)
     ;(async () => {
-      const [cw, t, fl, m, b, ts] = await Promise.all([
-        supabase.from('client_workouts').select('*').eq('client_id', profile.id).gte('date', week[0]).order('date').limit(40),
-        supabase.from('nutrition_targets').select('*').eq('client_id', profile.id).maybeSingle(),
-        supabase.from('food_logs').select('*').eq('client_id', profile.id).eq('date', today),
-        supabase.from('messages').select('*').neq('sender_id', profile.id).order('created_at', { ascending: false }).limit(1),
-        supabase.from('bookings').select('session_id').eq('client_id', profile.id),
-        supabase.from('taster_sessions').select('*').eq('client_id', profile.id).order('assessed_on', { ascending: false }).order('created_at', { ascending: false }).limit(1),
-      ])
-      const list = (cw.data ?? []) as ClientWorkout[]
-      setCws(list); setTargets(t.data as Targets | null); setLogs((fl.data ?? []) as FoodLog[])
-      setMsg(((m.data ?? []) as Message[])[0] ?? null)
-      setTaster(((ts.data ?? []) as TasterSession[])[0] ?? null)
-      const ids = [...new Set(list.map(x => x.workout_id))]
-      if (ids.length) {
-        const [w, it] = await Promise.all([
-          supabase.from('workouts').select('*').in('id', ids),
-          supabase.from('workout_items').select('workout_id').in('workout_id', ids),
+      setLoadState('loading')
+      try {
+        const results = await Promise.all([
+          supabase.from('client_workouts').select('*').eq('client_id', profile.id).gte('date', week[0]).order('date').limit(40),
+          supabase.from('nutrition_targets').select('*').eq('client_id', profile.id).maybeSingle(),
+          supabase.from('food_logs').select('*').eq('client_id', profile.id).eq('date', today),
+          supabase.from('messages').select('*').neq('sender_id', profile.id).order('created_at', { ascending: false }).limit(1),
+          supabase.from('bookings').select('session_id').eq('client_id', profile.id),
+          supabase.from('taster_sessions').select('*').eq('client_id', profile.id).order('assessed_on', { ascending: false }).order('created_at', { ascending: false }).limit(1),
         ])
-        setWorkouts(Object.fromEntries(((w.data ?? []) as Workout[]).map(x => [x.id, x])))
+        if (results.some(result => result.error)) throw new Error('home read failed')
+        const [cw, t, fl, m, b, ts] = results
+        const list = (cw.data ?? []) as ClientWorkout[]
+        const ids = [...new Set(list.map(x => x.workout_id))]
+        const sessionIds = ((b.data ?? []) as { session_id: string }[]).map(x => x.session_id)
+        const [w, it, se] = await Promise.all([
+          ids.length ? supabase.from('workouts').select('*').in('id', ids) : Promise.resolve({ data: [], error: null }),
+          ids.length ? supabase.from('workout_items').select('workout_id').in('workout_id', ids) : Promise.resolve({ data: [], error: null }),
+          sessionIds.length ? supabase.from('sessions').select('*').in('id', sessionIds).gte('starts_at', new Date().toISOString()).order('starts_at').limit(1) : Promise.resolve({ data: [], error: null }),
+        ])
+        if (w.error || it.error || se.error) throw new Error('home detail read failed')
+        if (!active) return
         const counts: Record<string, number> = {}
-        for (const r of (it.data ?? []) as { workout_id: string }[]) counts[r.workout_id] = (counts[r.workout_id] ?? 0) + 1
-        setItemCounts(counts)
-      }
-      const sessionIds = ((b.data ?? []) as { session_id: string }[]).map(x => x.session_id)
-      if (sessionIds.length) {
-        const { data } = await supabase.from('sessions').select('*').in('id', sessionIds).gte('starts_at', new Date().toISOString()).order('starts_at').limit(1)
-        setNextSession(((data ?? []) as Session[])[0] ?? null)
+        for (const row of (it.data ?? []) as { workout_id: string }[]) counts[row.workout_id] = (counts[row.workout_id] ?? 0) + 1
+        setCws(list); setTargets(t.data as Targets | null); setLogs((fl.data ?? []) as FoodLog[])
+        setMsg(((m.data ?? []) as Message[])[0] ?? null); setTaster(((ts.data ?? []) as TasterSession[])[0] ?? null)
+        setWorkouts(Object.fromEntries(((w.data ?? []) as Workout[]).map(x => [x.id, x])))
+        setItemCounts(counts); setNextSession(((se.data ?? []) as Session[])[0] ?? null)
+        setLoadState('ready')
+      } catch {
+        if (active) setLoadState('error')
       }
     })()
-  }, [profile, today])
+    return () => { active = false }
+  }, [profile, today, retry])
 
   const week = weekOf(today)
   const todays = cws.filter(c => c.date === today)
@@ -67,6 +75,9 @@ export default function Home() {
   const thisWeek = cws.filter(c => c.date >= week[0] && c.date <= week[6])
   const doneWeek = thisWeek.filter(c => c.status === 'done').length
   const eaten = sum(logs)
+
+  if (loadState === 'loading') return <><PageHead eyebrow={longDay(today)} title={`${greeting()}, ${firstName(profile?.full_name ?? '')}`} /><Skeleton n={5} /></>
+  if (loadState === 'error') return <><PageHead eyebrow={longDay(today)} title={`${greeting()}, ${firstName(profile?.full_name ?? '')}`} /><section className="card" role="alert"><h2>We could not load your dashboard</h2><p className="mute">Your information has not been replaced or shown as empty. Check your connection and try again.</p><button onClick={() => setRetry(value => value + 1)}>Retry dashboard</button></section></>
 
   return (
     <>
@@ -141,10 +152,15 @@ export default function Home() {
         </Link>
       )}
 
-      <Habits today={today} />
-      <CheckinForm today={today} />
-      {profile && <WeeklyCheckins clientId={profile.id} />}
-      {profile && <ClientOnboarding key={profile.id} clientId={profile.id} />}
+      <details className="card dashboard-disclosure" defaultOpen>
+        <summary><span><b>Today's coaching actions</b><small>Habits and daily check-in</small></span></summary>
+        <div className="dashboard-disclosure-body"><Habits today={today} /><CheckinForm today={today} /></div>
+      </details>
+
+      <details className="card dashboard-disclosure">
+        <summary><span><b>Progress and coaching profile</b><small>Weekly review and setup information</small></span></summary>
+        <div className="dashboard-disclosure-body">{profile && <WeeklyCheckins clientId={profile.id} />}{profile && <ClientOnboarding key={profile.id} clientId={profile.id} />}</div>
+      </details>
     </>
   )
 }
