@@ -12,6 +12,7 @@ export interface TasterSession {
   emergency_contact_name: string; emergency_contact_phone: string; emergency_contact_email: string
   parq_answers: import('./lib/parq').ParqAnswers
   parq_health_details: string; parq_injury_details: string; parq_medication_details: string; parq_allergy_details: string
+  parq_health_storage_consent: boolean; parq_health_storage_consented_at: string | null
   parq_exercise_consent: boolean; parq_consented_at: string | null
   target_kcal: number; target_protein: number; target_carbs: number; target_fat: number
   client_summary: string; coach_notes: string; created_by: string; created_at: string; updated_at: string

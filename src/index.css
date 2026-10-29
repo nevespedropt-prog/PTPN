@@ -563,6 +563,12 @@ button.empty-goal { width: 100%; display: flex; align-items: center; justify-con
 .parq-choice input { width: auto; min-height: auto; margin: 0; }
 .parq-details-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .parq-consent { padding: 12px; border: 1px solid rgba(215,185,120,.35); border-radius: 12px; background: var(--gold-soft); font-size: .8rem; line-height: 1.45; }
+.collapsible-card > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; list-style: none; }
+.collapsible-card > summary::-webkit-details-marker { display: none; }
+.collapsible-card > summary span:first-child { display: grid; gap: 4px; }
+.collapsible-card > summary::after { content: '+'; display: grid; place-items: center; width: 28px; height: 28px; flex: 0 0 28px; border: 1px solid var(--line); border-radius: 50%; color: var(--gold-light); font-size: 1.1rem; }
+.collapsible-card[open] > summary { margin-bottom: 14px; }
+.collapsible-card[open] > summary::after { content: '-'; }
 .health-alert-list { display: grid; gap: 6px; margin-top: 8px; }
 .health-alert-item { padding: 9px 11px; border-left: 3px solid #ff7a87; border-radius: 8px; background: rgba(225,29,46,.08); font-size: .82rem; }
 .taster-read-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
