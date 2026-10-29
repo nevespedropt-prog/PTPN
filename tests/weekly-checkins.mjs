@@ -83,6 +83,7 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await queue.getByRole('link', { name: /Ana Silva/ }).waitFor()
   await queue.getByRole('link', { name: /Ana Silva/ }).click()
   const review = coach.page.getByRole('region', { name: 'Weekly check-in', exact: true })
+  await review.getByText('Weekly check-in', { exact: true }).click()
   await review.getByLabel('Coach feedback').waitFor()
   ok(await review.getByLabel('Review week').inputValue() === week, 'weekly: queue opens correct week')
   await review.getByLabel('Coach feedback').fill('Great consistency. Keep your preparation routine.')
@@ -118,3 +119,4 @@ export async function weeklyBrowserChecks({ open, sql, IDS, BASE, shot, clean, o
   await client.ctx.close()
   assert.ok(checkin.id)
 }
+
