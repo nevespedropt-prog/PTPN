@@ -73,6 +73,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
         <Tile label="Avg calories" value={kcal ?? '-'} foot="logged days, last 7" />
         <SessionBalance clientId={id} coach />
       </div>
+      <ClientOnboarding key={`onboarding-${id}`} clientId={id} coach />
       {health !== undefined && (
         <div className={'card tight' + ((health && (flagged(health.allergies) || flagged(health.health_conditions))) || tasterAlerts.length ? ' consent-card' : '')}>
           <span className="eyebrow">Health and consent</span>
@@ -96,7 +97,6 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
       )}
       {checkin?.note && <div className="card tight"><span className="eyebrow">Latest check-in note</span><p style={{ margin: 0 }}>{checkin.note}</p></div>}
       <WeeklyCheckins key={id} clientId={id} coach />
-      <ClientOnboarding key={`onboarding-${id}`} clientId={id} coach />
       <div className="section-title"><h2>Recent workouts</h2><button className="link red" onClick={() => go('training')}>Manage</button></div>
       <div className="card tight">
         {cws.length === 0 && <Empty icon="train" title="No workouts assigned">Open Training to schedule one.</Empty>}
