@@ -58,7 +58,8 @@ export default function TasterSessionView() {
 
     <div className="card stack"><h3 style={{ margin: 0 }}>Health screening and consent</h3>
       {alerts.length || detailLines.length ? <><div className="health-alert-list">{alerts.map(alert => <div className="health-alert-item" key={alert}>{alert}</div>)}</div>{detailLines.map(line => <p key={line} style={{ margin: 0 }}>{line}</p>)}</> : <p style={{ margin: 0 }}>No exercise-safety concerns were recorded.</p>}
-      <span className="mute small">Exercise consent {taster.parq_exercise_consent ? `recorded${taster.parq_consented_at ? ` on ${niceDate(taster.parq_consented_at.slice(0, 10))}` : ''}` : 'not recorded'}.</span>
+      <span className="mute small">Health-information storage consent {taster.parq_health_storage_consent ? `recorded${taster.parq_health_storage_consented_at ? ` on ${niceDate(taster.parq_health_storage_consented_at.slice(0, 10))}` : ''}` : 'not recorded'}.</span>
+      <span className="mute small">Personal-training and exercise consent {taster.parq_exercise_consent ? `recorded${taster.parq_consented_at ? ` on ${niceDate(taster.parq_consented_at.slice(0, 10))}` : ''}` : 'not recorded'}.</span>
     </div>
 
     <div className="card stack"><h3 style={{ margin: 0 }}>Emergency contact</h3><p style={{ margin: 0 }}>{taster.emergency_contact_name} � {taster.emergency_contact_phone}<br />{taster.emergency_contact_email}</p></div>
