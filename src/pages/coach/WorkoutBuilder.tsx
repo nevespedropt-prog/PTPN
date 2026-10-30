@@ -31,6 +31,10 @@ export default function WorkoutBuilder() {
   const [alternativeItem, setAlternativeItem] = useState<Row | null>(null)
   const [compact, setCompact] = useState(false)
   const [addStyle, setAddStyle] = useState<SetStyle>('single')
+  // A client building their own workout can choose the day it is scheduled for (?cw= is their scheduled session).
+  const [cwDate, setCwDate] = useState('')
+  const [cwSaved, setCwSaved] = useState('')
+  const [cwDone, setCwDone] = useState(false)
   const { clients } = useClients()
   const coach = profile?.role === 'coach'
   const assignTo = coach ? sp.get('assignTo') : null
@@ -53,6 +57,14 @@ export default function WorkoutBuilder() {
       setRows(items.map(r => ({ ...r, weight: weightOf(r), cardio: !!r.exercise_id && cats.get(r.exercise_id) === 'cardio' })))
     })()
   }, [id])
+
+  const cwId = sp.get('cw')
+  useEffect(() => {
+    if (!cwId || profile?.role === 'coach') return
+    supabase.from('client_workouts').select('date,status').eq('id', cwId).maybeSingle().then(({ data }) => {
+      if (data) { setCwDate(data.date as string); setCwSaved(data.date as string); setCwDone(data.status === 'done') }
+    })
+  }, [cwId, profile?.role])
 
   if (w === undefined) return <Skeleton n={3} />
   if (!w) return <div className="card"><Empty icon="train" title="Workout not found"><Link to={back}>Back</Link></Empty></div>
@@ -119,10 +131,21 @@ export default function WorkoutBuilder() {
       const { error } = await supabase.from('workout_items').upsert(payload)
       if (error) { setBusy(false); setMsg(error.message); return false }
     }
+    const cwNow = sp.get('cw')
+    let landing = back
+    if (cwNow && !coach && cwDate && cwDate !== cwSaved) {
+      const moved = await supabase.from('client_workouts').update({ date: cwDate }).eq('id', cwNow)
+      if (moved.error) { setBusy(false); setMsg('Could not change the date. ' + moved.error.message); return false }
+      setCwSaved(cwDate)
+      // Return to the week that now holds the workout.
+      const [path, query = ''] = back.split('?')
+      const params = new URLSearchParams(query)
+      if (params.has('date')) { params.set('date', cwDate); landing = path + '?' + params.toString() }
+    }
     const savedRows = w!.format === 'standard' ? normaliseSetRests(rows) : rows
     setRemoved([]); setRows(savedRows.map(r => ({ ...r, isNew: false }))); setDirty(false); setBusy(false); setMsg('Saved')
     const cw = sp.get('cw')
-    if (cw && !coach) nav(`/workout/${cw}?returnTo=${encodeURIComponent(back)}`)
+    if (cw && !coach) nav(`/workout/${cw}?returnTo=${encodeURIComponent(landing)}`)
     return true
   }
   async function saveAndSchedule() { if (!dirty || (await save())) setSched(true) }
@@ -150,6 +173,8 @@ export default function WorkoutBuilder() {
       <fieldset disabled={!editable} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
         <div className="card stack">
           <label className="field">Name<input value={w.name} onChange={e => upd({ name: e.target.value })} /></label>
+          {cwId && !coach && cwDate && <label className="field">Date<input type="date" aria-label="Workout date" value={cwDate} disabled={cwDone} onChange={e => { setCwDate(e.target.value); setDirty(true) }} />
+            <span className="mute small">{cwDone ? 'This workout is done, so its date is fixed.' : 'The day you plan to do it. Pick a day next week to plan ahead.'}</span></label>}
           <label className="field">Description<textarea aria-label="Description" rows={2} value={w.description} onChange={e => upd({ description: e.target.value })} placeholder="What is this session for?" /></label>
           <div className="inline-inputs">
             <label className="field">Format
