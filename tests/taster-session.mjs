@@ -71,6 +71,7 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
 
   await coach.page.getByRole('tab', { name: 'Overview', exact: true }).click()
   await coach.page.getByText('Lose 5 kg while improving strength', { exact: true }).waitFor()
+  await coach.page.getByText('Shellfish allergy.', { exact: true }).first().waitFor()
   ok(await coach.page.getByText('Shellfish allergy.', { exact: true }).count() === 1, 'taster: coach client overview shows important health details')
   await shot(coach.page, 'coach-taster-overview')
   await coach.page.goto(BASE + '/dashboard', { waitUntil: 'networkidle' })
