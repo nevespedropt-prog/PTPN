@@ -248,7 +248,10 @@ export default function WorkoutPlayer() {
     <>
       <div className="row between" style={{ marginBottom: 6 }}>
         <button className="icon" onClick={() => returnTo ? nav(returnTo, { replace: true }) : nav(-1)} aria-label="Back"><Icon name="back" size={18} /></button>
-        <span className="mute small">{readOnly ? (cw.status === 'done' ? `Completed ${niceDate(cw.date)}` : 'Read only') : saved === 'saving' ? 'Saving...' : saved === 'saved' ? 'Saved' : ' '}</span>
+        <span className="row" style={{ gap: 10 }}>
+          {!readOnly && w.created_by === profile?.id && <Link className="btn soft sm" to={`/build/${w.id}?cw=${cw.id}&returnTo=${encodeURIComponent(returnTo)}`}>Edit workout</Link>}
+          <span className="mute small">{readOnly ? (cw.status === 'done' ? `Completed ${niceDate(cw.date)}` : 'Read only') : saved === 'saving' ? 'Saving...' : saved === 'saved' ? 'Saved' : ' '}</span>
+        </span>
       </div>
       <div className="page-head" style={{ marginTop: 0 }}>
         <div>
