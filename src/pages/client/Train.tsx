@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
-import { addDays, localDate, longDay, niceDate, relDay, weekOf, DAY_NAMES } from '../../lib/dates'
+import { localDate, longDay, niceDate, relDay, weekOf, DAY_NAMES } from '../../lib/dates'
 import { FORMAT_LABEL, setsDone, volumeKg } from '../../lib/training'
 import type { ClientWorkout, Workout } from '../../types'
 import { Empty, PageHead, Seg, Sheet, Skeleton } from '../../components/ui'
@@ -109,13 +109,14 @@ export default function Train() {
   const days = weekOf(sel)
   const byDate = (d: string) => (cws ?? []).filter(c => c.date === d)
   const selected = byDate(sel)
-  const upcoming = (cws ?? []).filter(c => c.date > today && c.status === 'scheduled').slice(0, 5)
+  const thisWeek = days.includes(today)
+  const upcoming = (cws ?? []).filter(c => days.includes(c.date) && c.date > today && c.status === 'scheduled')
   const history = (cws ?? []).filter(c => c.status === 'done').sort((a, b) => b.date.localeCompare(a.date))
   const name = (c: ClientWorkout) => workouts[c.workout_id]?.name ?? 'Workout'
 
   return (
     <>
-      <PageHead eyebrow="Training" title="Your plan" sub={`${history.length} workouts completed`}>
+      <PageHead eyebrow="Training" title="Your plan" sub={`${history.length} workouts completed. Past weeks are in History.`}>
         <button className="soft sm" onClick={buildOwn} disabled={busy || removing}><Icon name="plus" size={16} />Build my own</button>
       </PageHead>
       {buildError && <p className="err" role="alert">{buildError}</p>}
@@ -126,9 +127,8 @@ export default function Train() {
       {cws && tab === 'plan' && (
         <>
           <div className="row between" style={{ marginBottom: 10 }}>
-            <button className="icon" onClick={() => setSel(addDays(sel, -7))} aria-label="Previous week"><Icon name="back" size={18} /></button>
-            <b>{niceDate(days[0])} to {niceDate(days[6])}</b>
-            <button className="icon" onClick={() => setSel(addDays(sel, 7))} aria-label="Next week"><Icon name="chev" size={18} /></button>
+            <b>{thisWeek ? 'This week' : 'Week'}: {niceDate(days[0])} to {niceDate(days[6])}</b>
+            {!thisWeek && <button className="soft sm" onClick={() => setSel(today)}>Back to this week</button>}
           </div>
           <div className="week-strip">
             {days.map((d, i) => {
@@ -164,7 +164,7 @@ export default function Train() {
           })}
 
           {upcoming.length > 0 && <>
-            <h2 style={{ marginTop: 24 }}>Coming up</h2>
+            <h2 style={{ marginTop: 24 }}>{thisWeek ? 'Coming up this week' : 'Scheduled this week'}</h2>
             <div className="card tight">
               <div className="list">
                 {upcoming.map(c => (

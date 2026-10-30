@@ -153,7 +153,7 @@ export default function Progress({ clientId, readOnly = false }: { clientId: str
         <Metrics clientId={clientId} coach={readOnly} />
       </>}
       {tab === 'photos' && <Photos clientId={clientId} canUpload={!readOnly} />}
-      {tab === 'workouts' && <MonthlyReport key={clientId} clientId={clientId} coach={readOnly} onPhotos={() => setTab('photos')} />}
+      {tab === 'workouts' && <MonthlyReport key={clientId} clientId={clientId} coach={readOnly} />}
     </>
   )
 }
