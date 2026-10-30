@@ -350,3 +350,16 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - Fixed corrupted separator characters (U+FFFD) in 9 source files and the dashboard star rating.
 - The client Home "Back" test no longer races the `/` to `/home` redirect.
 - Tests at the end of this work: 289 database checks, 513 browser checks.
+
+## 2026-10-30 client menu, session booking, workout editing, minimised boxes, weekly box, Workouts tab (PRs #79 to #84, migrate_v27)
+
+- Client menus no longer have "Book a session". Sessions are arranged with the coach. The `/book` route and `src/pages/Book.tsx` are removed. The Home next-session card is plain text, not a link.
+- Coach books clients into sessions on the Sessions page (`src/pages/CoachSlots.tsx`): open slots have a client picker and Add client, booked slots have Remove client. Archived clients are not listed. New policy "bookings coach insert" (`migrate_v27_coach_books_clients.sql`, applied live). `bookings.session_id` is unique, so one client per session.
+- Still open: the older policy "bookings insert own" lets a client create a booking through the API. The screens no longer offer it.
+- Clients can edit their own workouts after leaving the builder. "Edit workout" shows next to Remove in Train (selected day and Coming up) and on the workout screen, for personal workouts that are not done. It opens `/build/:workoutId?cw=:clientWorkoutId&returnTo=...`.
+- Every minimisable box starts minimised, on both sides: client weekly check-in, Account health screening, first-week checklist, coach weekly check-in, coach PAR-Q in the taster tab. Use `<details className="card collapsible-card">` with no `open` attribute.
+- Workout builder "Add set line": an exercise can have several rows with their own reps and weight (for example 15, 12, 10). Rows are ordinary `workout_items` rows for the same exercise, so no migration was needed. The extra rows show "(another line)".
+- Client Home has one "Your week" box (`aria-label="Your week"`). Only workouts still to do get their own card. Finished workouts this week are lines in the box, which is empty again each Monday. Lines link to `/workout/:id?returnTo=%2F`.
+- Progress has a Workouts tab after Photos (`src/components/WorkoutHistory.tsx`, coach sees it too). Summary card, then one minimised box per month. Each line shows day, format, minutes, sets, stars and an Own or Coach plan badge. It reads the latest 300 finished workouts.
+- Tests at the end of this work: 294 database checks, 549 browser checks. New browser modules: session-assign, set-lines, home-week, workout-history.
+- Open items for the user: switch on leaked-password protection in the Supabase dashboard; upload the replacement `mygym-client-meal-plan` skill in claude.ai; optionally test the website enquiry email after the pg_net move. Open items for the code: close "bookings insert own"; `client_packages.notes` and `payments.note` are readable by the client who owns the row.
