@@ -17,7 +17,7 @@ export async function workoutDateChecks({ open, sql, IDS, BASE, shot, clean, ok 
     await date.fill(nextWeek)
     await page.getByRole('button', { name: 'Save workout', exact: true }).click()
     await page.waitForURL(/\/workout\//)
-    ok(String((await sql('select date from client_workouts where id=$1', [session]))[0].date).slice(0, 10) === nextWeek, 'workout date: saving moves the workout to the chosen day')
+    ok((await sql('select date::text as d from client_workouts where id=$1', [session]))[0].d === nextWeek, 'workout date: saving moves the workout to the chosen day')
     ok(decodeURIComponent(new URL(page.url()).searchParams.get('returnTo') ?? '').includes('date=' + nextWeek), 'workout date: Back returns to the week that now holds the workout')
     await page.goto(BASE + '/train?tab=plan', { waitUntil: 'networkidle' })
     await page.getByText('Date test workout').waitFor({ state: 'detached', timeout: 3000 }).catch(() => {})

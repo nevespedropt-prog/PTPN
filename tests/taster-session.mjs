@@ -72,7 +72,12 @@ export async function tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, o
   await coach.page.getByRole('tab', { name: 'Overview', exact: true }).click()
   await coach.page.getByText('Lose 5 kg while improving strength', { exact: true }).waitFor()
   await coach.page.getByText('Shellfish allergy.', { exact: true }).first().waitFor()
-  ok(await coach.page.getByText('Shellfish allergy.', { exact: true }).count() >= 1, 'taster: coach client overview shows important health details')
+  let shellfishShown = false
+  for (let attempt = 0; attempt < 10 && !shellfishShown; attempt++) {
+    shellfishShown = await coach.page.getByText('Shellfish allergy.', { exact: true }).count() >= 1
+    if (!shellfishShown) await coach.page.waitForTimeout(300)
+  }
+  ok(shellfishShown, 'taster: coach client overview shows important health details')
   await shot(coach.page, 'coach-taster-overview')
   await coach.page.goto(BASE + '/dashboard', { waitUntil: 'networkidle' })
   ok(await coach.page.getByRole('region', { name: 'Client health alerts' }).getByText('Shellfish allergy.', { exact: false }).count() === 1, 'taster: coach dashboard surfaces client health alerts')
