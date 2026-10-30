@@ -100,7 +100,7 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
   }
 
   const status = !loading && checkin ? <span className={'badge ' + (review ? 'green' : 'amber')} style={{ justifySelf: 'start' }}>{review ? 'Reviewed by coach' : 'Awaiting coach review'}</span> : null
-  return <details className="card collapsible-card" role="region" aria-label="Weekly check-in" open={coach ? undefined : true}>
+  return <details className="card collapsible-card" role="region" aria-label="Weekly check-in">
     <summary><span>{coach ? <span className="eyebrow">Client review</span> : <span className="eyebrow">This week</span>}<b>Weekly check-in</b>{!coach && status}</span></summary>
     <p className="mute small">Monday to Sunday. Sunday is the suggested check-in day; you can submit any day.</p>
     <label className="field"><b>Review week</b><select value={week} disabled={busy} onChange={e => setWeek(e.target.value)}>

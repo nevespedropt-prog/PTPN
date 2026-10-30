@@ -103,7 +103,7 @@ export default function ClientOnboarding({ clientId, coach = false }: { clientId
             <span><b>Food preferences:</b> {row.food_preferences || 'None shared'}</span>
           </div>
           {!coach && <p className="mute small" style={{ margin: 0 }}>Your coach can review these answers. Your training plan and nutrition targets are set separately.</p>}
-          {coach ? <p className="mute small" style={{ margin: 0 }}>First-week checklist: {completed}/3 completed by the client.</p> : <details open={completed < 3}>
+          {coach ? <p className="mute small" style={{ margin: 0 }}>First-week checklist: {completed}/3 completed by the client.</p> : <details>
             <summary style={{ cursor: 'pointer', padding: '12px 0', minHeight: 44 }}>Your first week · {completed}/3 complete</summary>
             <p className="mute small">Explore each page, then tick it off when you feel ready. If your plan is not available yet, ask your coach in Chat.</p>
             <div className="stack">
