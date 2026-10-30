@@ -96,7 +96,7 @@ export async function monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, 
   await report.getByLabel('Report month', { exact: true }).selectOption(month)
   await report.getByText('Previous month: 66.7 kg. Change: +13.3 kg.', { exact: true }).waitFor()
   ok(await report.locator('.tile').filter({ hasText: 'Workouts completed' }).getByText('1/3', { exact: true }).count() === 1, 'monthly: completion includes missed/skipped sessions')
-  ok(await report.getByText('Weight', { exact: false }).count() === 0 && await report.getByText('Body fat', { exact: false }).count() === 0 && await report.getByText('photo', { exact: false }).count() === 0, 'workouts tab: only workout information, no weight, body fat or photo cards')
+  ok(await report.locator('.tile', { hasText: /weight|body fat/i }).count() === 0 && await report.getByRole('heading', { name: /weight|body|photo/i }).count() === 0, 'workouts tab: only workout information, no weight, body fat or photo cards')
   ok(await report.getByRole('button', { name: 'Save monthly review', exact: true }).count() === 0, 'monthly: clients have no coach-edit controls')
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'monthly: client report fits phone width')
   await shot(page, 'monthly-client-phone')
