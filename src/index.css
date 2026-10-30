@@ -596,3 +596,14 @@ button.empty-goal { width: 100%; display: flex; align-items: center; justify-con
 .ack-box:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .ack-box:disabled { opacity: .5; cursor: progress; }
 .ack-note { margin: 4px 0 0; }
+
+/* Workouts per month bars on the Progress Workouts tab */
+.bars { display: flex; align-items: stretch; gap: 8px; height: 130px; }
+.bars .bar { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; background: transparent; border: 1px solid var(--line); border-radius: var(--radius-sm); color: var(--mute); cursor: pointer; font: inherit; }
+.bars .bar .track { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.bars .bar .fill { display: block; width: 60%; min-height: 3px; border-radius: 6px 6px 2px 2px; background: var(--gold-dark); opacity: .55; }
+.bars .bar .n { font-family: var(--display); font-weight: 700; font-size: .95rem; color: var(--ink-2); }
+.bars .bar .m { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+.bars .bar.on { border-color: var(--gold); background: var(--gold-soft); }
+.bars .bar.on .fill { background: var(--gold); opacity: 1; }
+.bars .bar.on .m { color: var(--gold); font-weight: 700; }
