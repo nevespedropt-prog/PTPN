@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
-import { localDate, longDay, relDay, weekOf, timeAgo } from '../../lib/dates'
+import { DAY_NAMES, localDate, longDay, relDay, weekOf, timeAgo } from '../../lib/dates'
 import { firstName, greeting } from '../../lib/util'
 import { sum } from '../../lib/nutrition'
 import { FORMAT_LABEL } from '../../lib/training'
@@ -63,9 +63,12 @@ export default function Home() {
 
   const week = weekOf(today)
   const todays = cws.filter(c => c.date === today)
+  const todaysToDo = todays.filter(c => c.status !== 'done')
   const upcoming = cws.find(c => c.date > today && c.status === 'scheduled')
   const thisWeek = cws.filter(c => c.date >= week[0] && c.date <= week[6])
   const doneWeek = thisWeek.filter(c => c.status === 'done').length
+  // One box for everything finished this week. It starts empty again each Monday because it only reads this week.
+  const doneThisWeek = thisWeek.filter(c => c.status === 'done').sort((a, b) => a.date.localeCompare(b.date) || (a.completed_at ?? '').localeCompare(b.completed_at ?? ''))
   const eaten = sum(logs)
 
   return (
@@ -79,25 +82,24 @@ export default function Home() {
         <Link to="/taster-session" className="link" style={{ display: 'inline-block', marginTop: 12 }}>View my taster session </Link>
       </div>}
 
-      {todays.length > 0 ? todays.map(cw => {
+      {todaysToDo.length > 0 ? todaysToDo.map(cw => {
         const w = workouts[cw.workout_id]
-        const done = cw.status === 'done'
         return (
           <div key={cw.id} className="card hero">
             <div className="row between" style={{ marginBottom: 6 }}>
-              <span className={'badge ' + (done ? 'green' : 'red')}>{done ? 'Completed' : "Today's workout"}</span>
+              <span className="badge red">Today's workout</span>
               {w && <span className="badge">{FORMAT_LABEL[w.format]}</span>}
             </div>
             <h2 style={{ fontSize: '1.5rem', margin: '6px 0 4px' }}>{w?.name ?? 'Workout'}</h2>
             <p className="mute" style={{ margin: '0 0 14px' }}>
               {itemCounts[cw.workout_id] ?? 0} exercises{w?.duration_min ? ` · about ${w.duration_min} min` : ''}
             </p>
-            <Link to={`/workout/${cw.id}?returnTo=%2F`} className={'btn block' + (done ? ' soft' : '')} style={{ minHeight: 50 }}>
-              <Icon name={done ? 'check' : 'play'} size={18} />{done ? 'View workout' : 'Start workout'}
+            <Link to={`/workout/${cw.id}?returnTo=%2F`} className="btn block" style={{ minHeight: 50 }}>
+              <Icon name="play" size={18} />Start workout
             </Link>
           </div>
         )
-      }) : (
+      }) : todays.length === 0 && (
         <div className="card hero">
           <span className="badge">Rest day</span>
           <h2 style={{ fontSize: '1.4rem', margin: '10px 0 4px' }}>Recover and refuel</h2>
@@ -106,6 +108,24 @@ export default function Home() {
           </p>
         </div>
       )}
+
+      {doneThisWeek.length > 0 && <section className="card" aria-label="Your week">
+        <div className="row between" style={{ marginBottom: 6 }}>
+          <span className="badge green">Your week</span>
+          <span className="mute small">{doneThisWeek.length} workout{doneThisWeek.length === 1 ? '' : 's'} done</span>
+        </div>
+        {todays.length > 0 && todaysToDo.length === 0 && <p className="mute small" style={{ margin: '0 0 6px' }}>Today's training is done. Well done.</p>}
+        <div className="list">
+          {doneThisWeek.map(cw => {
+            const w = workouts[cw.workout_id]
+            return <Link key={cw.id} to={`/workout/${cw.id}?returnTo=%2F`} className="item">
+              <span className="avatar" style={{ width: 36, height: 36, background: 'var(--green-soft)', color: 'var(--green)' }}><Icon name="check" size={16} /></span>
+              <span className="grow"><span className="title">{w?.name ?? 'Workout'}</span><br /><span className="meta">{DAY_NAMES[(new Date(cw.date + 'T12:00:00').getDay() + 6) % 7]}{w ? ` · ${FORMAT_LABEL[w.format]}` : ''}{cw.rating ? ` · ${'\u2605'.repeat(cw.rating)}` : ''}</span></span>
+              <Icon name="chev" />
+            </Link>
+          })}
+        </div>
+      </section>}
 
       <div className="grid g3" style={{ marginBottom: 12 }}>
         <Tile label="This week" value={`${doneWeek}/${thisWeek.length}`} foot="workouts done" />
