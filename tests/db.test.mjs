@@ -89,12 +89,22 @@ async function as(who, sql, params = []) {
 const count = async (who, sql) => { const r = await as(who, sql); return r.error ? `ERR ${r.error}` : r.rows.length }
 
 // library counts
-ok(await count(A, 'select id from exercises') === 225, 'client reads exercise library')
+ok(await count(A, 'select id from exercises') === 627, 'client reads exercise library')
 ok(await count(A, 'select id from workouts') === 16, 'client sees 16 built-in workouts')
 ok(await count(A, 'select id from recipes') === 105, 'client reads recipes')
 ok(await count(A, 'select id from foods') === 139, 'client reads foods')
 ok(await count(A, 'select id from programs') === 6, 'client reads programs')
 ok(await count(null, 'select id from exercises') === 0, 'anon reads nothing')
+ok(await count(A, "select id from exercises where name in ('Sled push','Sled push n pull','Burpee','Mountain climber') and category = 'cardio'") === 0, 'library: sled, burpee and mountain climber are never cardio')
+ok(await count(A, "select id from exercises where equipment = 'Sled' and category = 'cardio'") === 0, 'library: no sled exercise is filed as cardio')
+ok(await count(A, "select lower(name) from exercises where created_by is null group by lower(name) having count(*) > 1") === 0, 'library: no duplicate exercise names')
+for (const [muscle, min] of [['Chest', 40], ['Back', 40], ['Shoulders', 40], ['Biceps', 25], ['Triceps', 25], ['Quads', 50], ['Hamstrings', 30], ['Glutes', 30], ['Calves', 20], ['Core', 80]]) {
+  ok(await count(A, `select id from exercises where muscle = '${muscle}'`) >= min, `library: ${muscle} has at least ${min} exercises`)
+}
+ok(await count(A, "select id from exercises where equipment = 'Bodyweight'") >= 90, 'library: plenty of bodyweight exercises for clients without equipment')
+ok(await count(A, "select id from exercises where category = 'plyometric'") >= 40, 'library: plyometric exercises included')
+ok(await count(A, "select id from exercises where equipment = 'Sled'") >= 10, 'library: sled exercises included')
+
 ok((await as(A, `insert into exercises (name, created_by) values ('X', '${A}')`)).error, 'client cannot add exercise')
 ok(!(await as(C, `insert into exercises (name, created_by) values ('Coach move', '${C}')`)).error, 'coach adds exercise')
 ok((await as(C, `delete from exercises where created_by is null returning id`)).rows?.length === 0, 'coach cannot delete built-in exercises')
