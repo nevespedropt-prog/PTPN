@@ -554,12 +554,26 @@ create table public.resources (
   url text not null check (url ~* '^https?://'),
   category text not null default '',
   description text not null default '',
+  thumbnail_path text,
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
 alter table public.resources enable row level security;
 create policy "resources read" on public.resources for select using (auth.uid() is not null);
 create policy "resources coach write" on public.resources for all using (public.is_coach()) with check (public.is_coach());
+
+-- Thumbnails for the Workout videos page (public bucket, only the coach writes).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('video-thumbnails', 'video-thumbnails', true, 2097152, array['image/jpeg','image/png','image/webp'])
+on conflict (id) do nothing;
+create policy "video thumbnails read" on storage.objects for select to authenticated
+  using (bucket_id = 'video-thumbnails');
+create policy "video thumbnails coach upload" on storage.objects for insert to authenticated
+  with check (bucket_id = 'video-thumbnails' and (select public.is_coach()));
+create policy "video thumbnails coach update" on storage.objects for update to authenticated
+  using (bucket_id = 'video-thumbnails' and (select public.is_coach()));
+create policy "video thumbnails coach delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'video-thumbnails' and (select public.is_coach()));
 
 -- live chat updates
 alter publication supabase_realtime add table public.messages;

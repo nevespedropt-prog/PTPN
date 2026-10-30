@@ -87,7 +87,7 @@ export interface ProgressPhoto { id: string; client_id: string; path: string; po
 export interface Post { id: string; author_id: string; body: string; pinned: boolean; publish_at: string; created_at: string }
 export interface Challenge { id: string; name: string; description: string; unit: string; goal: number | null; start_date: string; end_date: string }
 export interface ChallengeEntry { id: string; challenge_id: string; client_id: string; date: string; value: number }
-export interface Resource { id: string; title: string; url: string; category: string; description: string }
+export interface Resource { id: string; title: string; url: string; category: string; description: string; thumbnail_path?: string | null }
 
 export interface ClientHealth {
   client_id: string; allergies: string; health_conditions: string; medications: string; emergency_contact: string
