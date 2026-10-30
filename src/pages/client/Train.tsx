@@ -100,6 +100,9 @@ export default function Train() {
     } catch { setRemoveError('Could not remove this workout. Please check your connection and try again.') }
     finally { setRemoving(false) }
   }
+  // Your own workouts stay editable until they are done, wherever you left the builder.
+  const editButton = (c: ClientWorkout) => canRemove(c) && <Link className="btn soft sm" aria-label={`Edit ${workouts[c.workout_id]?.name ?? 'workout'}`}
+    to={`/build/${c.workout_id}?cw=${c.id}&returnTo=${encodeURIComponent(returnTo)}`}>Edit workout</Link>
   const removeButton = (c: ClientWorkout) => canRemove(c) && <button className="soft sm" disabled={busy || removing}
     aria-label={`Remove ${workouts[c.workout_id]?.name ?? 'workout'} from schedule`} onClick={() => askRemove(c)}>Remove workout</button>
 
@@ -155,7 +158,7 @@ export default function Train() {
                 </span>
                 <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' ? '' : 'red')}>{c.status === 'done' ? 'Done' : c.status === 'skipped' ? 'Skipped' : 'Start'}</span>
               </Link>
-              {canRemove(c) && <div style={{ marginTop: 10 }}>{removeButton(c)}</div>}
+              {canRemove(c) && <div className="row" style={{ marginTop: 10, gap: 8, flexWrap: 'wrap' }}>{editButton(c)}{removeButton(c)}</div>}
               </div>
             )
           })}
@@ -167,7 +170,7 @@ export default function Train() {
                 {upcoming.map(c => (
                   <div key={c.id} className="item">
                     <Link to={`/workout/${c.id}?returnTo=${encodeURIComponent(returnTo)}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{name(c)}</span><br /><span className="meta">{relDay(c.date)}</span></Link>
-                    {canRemove(c) ? removeButton(c) : <Icon name="chev" />}
+                    {canRemove(c) ? <span className="row" style={{ gap: 8 }}>{editButton(c)}{removeButton(c)}</span> : <Icon name="chev" />}
                   </div>
                 ))}
               </div>
