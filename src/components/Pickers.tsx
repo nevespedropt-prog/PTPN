@@ -3,10 +3,11 @@ import { supabase } from '../lib/supabase'
 import type { Exercise, MealType, Recipe, Workout } from '../types'
 import { Empty, MacroChips, Sheet, Skeleton } from './ui'
 import Icon from './Icon'
+import DemoLink from './DemoLink'
 import { FORMAT_LABEL } from '../lib/training'
 import { MEAL_LABEL, MEALS } from '../lib/nutrition'
 
-const MUSCLES = ['All', 'Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Glutes', 'Biceps', 'Triceps', 'Core', 'Calves', 'Full body', 'Legs', 'Cardio', 'Mobility']
+const MUSCLES = ['All', 'Chest', 'Back', 'Shoulders', 'Quads', 'Hamstrings', 'Glutes', 'Biceps', 'Triceps', 'Core', 'Calves', 'Forearms', 'Traps', 'Adductors', 'Full body', 'Legs', 'Cardio', 'Mobility']
 
 export function useExercises(open = true) {
   const [rows, setRows] = useState<Exercise[] | null>(null)
@@ -36,11 +37,14 @@ export function ExerciseList({ rows, onPick, query, setQuery, allowCustom }: {
         </button>
       )}
       <div className="list">
-        {list.slice(0, 400).map(e => (
-          <button key={e.id} className="item" type="button" onClick={() => onPick({ id: e.id, name: e.name, category: e.category })}>
-            <span className="grow"><span className="title">{e.name}</span><br /><span className="meta">{e.muscle} · {e.equipment}</span></span>
-            <Icon name="plus" />
-          </button>
+        {list.slice(0, 2000).map(e => (
+          <div key={e.id} className="exrow">
+            <button className="item" type="button" onClick={() => onPick({ id: e.id, name: e.name, category: e.category })}>
+              <span className="grow"><span className="title">{e.name}</span><br /><span className="meta">{e.muscle} · {e.equipment}</span></span>
+              <Icon name="plus" />
+            </button>
+            <DemoLink name={e.name} url={e.video_url} />
+          </div>
         ))}
       </div>
       {rows && list.length === 0 && !query && <Empty icon="search" title="No exercises in this group" />}

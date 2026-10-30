@@ -7,6 +7,7 @@ import { FORMAT_LABEL } from '../../lib/training'
 import type { Category, Exercise, Program, Workout } from '../../types'
 import { Empty, PageHead, Seg, Sheet, Skeleton } from '../../components/ui'
 import Icon from '../../components/Icon'
+import DemoLink from '../../components/DemoLink'
 import { useExercises } from '../../components/Pickers'
 import { AssignWorkout } from './Assign'
 
@@ -183,10 +184,13 @@ function Exercises() {
       {!rows && <Skeleton n={4} />}
       <div className="card tight"><div className="list">
         {list.slice(0, 2000).map(x => (
-          <button key={x.id} className="item" onClick={() => setOpen(x)}>
-            <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta">{x.muscle} · {x.equipment}</span></span>
-            <span className="badge" style={{ textTransform: 'capitalize' }}>{x.category}</span>
-          </button>
+          <div key={x.id} className="exrow">
+            <button className="item" onClick={() => setOpen(x)}>
+              <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta">{x.muscle} · {x.equipment}</span></span>
+              <span className="badge" style={{ textTransform: 'capitalize' }}>{x.category}</span>
+            </button>
+            <DemoLink name={x.name} url={x.video_url} />
+          </div>
         ))}
       </div></div>
       <Sheet open={!!open} onClose={() => setOpen(null)} title={open?.name ?? ''}>

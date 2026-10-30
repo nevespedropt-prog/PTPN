@@ -8,6 +8,7 @@ import { Empty, PageHead, Sheet, Skeleton } from '../../components/ui'
 import { useClients, useReturnTo } from '../../hooks'
 import { AssignWorkout } from './Assign'
 import Icon from '../../components/Icon'
+import DemoLink from '../../components/DemoLink'
 import { ExercisePicker } from '../../components/Pickers'
 import AlternativeEditor from '../../components/AlternativeEditor'
 import WorkoutFormatGuide from '../../components/WorkoutFormatGuide'
@@ -170,6 +171,7 @@ export default function WorkoutBuilder() {
               <b className="grow truncate">{i + 1}. {r.exercise_name}{isLine(i) && <span className="mute small"> (another line)</span>}</b>
               <button type="button" className="icon sm" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up"><Icon name="up" size={16} /></button>
               <button type="button" className="icon sm" onClick={() => move(i, 1)} disabled={i === rows.length - 1} aria-label="Move down"><Icon name="down" size={16} /></button>
+              <DemoLink name={r.exercise_name} />
               <button type="button" className="icon sm" onClick={() => drop(i)} aria-label={`Remove ${r.exercise_name}`}><Icon name="trash" size={16} /></button>
             </div>
             {w.format === 'standard' && <div className="badge" style={{ marginBottom: 8 }}>{blockBadge(i)}</div>}

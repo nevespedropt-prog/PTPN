@@ -607,3 +607,9 @@ button.empty-goal { width: 100%; display: flex; align-items: center; justify-con
 .bars .bar.on { border-color: var(--gold); background: var(--gold-soft); }
 .bars .bar.on .fill { background: var(--gold); opacity: 1; }
 .bars .bar.on .m { color: var(--gold); font-weight: 700; }
+
+/* Exercise rows with a YouTube play button beside them */
+.exrow { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); }
+.exrow:first-child { border-top: 0; }
+.exrow button.item { flex: 1; min-width: 0; width: auto; border-top: 0; }
+.exrow .demo-link { flex: none; }
