@@ -192,6 +192,14 @@ export function startServer(db, { port = 4180, dist }) {
         await serial(() => db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3::jsonb)`, [id, b.email, JSON.stringify({ full_name: b.full_name })]))
         return send(200, { id })
       }
+      if (url.pathname.startsWith('/storage/v1/object/public/') && req.method === 'GET') {
+        const [, , , , , bucket, ...rest] = url.pathname.split('/')
+        const key = bucket + '/' + decodeURIComponent(rest.join('/'))
+        const pub = (await serial(() => db.query('select public from storage.buckets where id=$1', [bucket]))).rows[0]?.public
+        if (!pub || !files.has(key)) return send(404, { message: 'Not found' })
+        res.writeHead(200, { 'content-type': fileTypes.get(key), 'cache-control': 'no-store' })
+        return res.end(files.get(key))
+      }
       if (url.pathname.startsWith('/storage/v1/object/sign/')) {
         const [, , , , , bucket, ...rest] = url.pathname.split('/')
         const name = decodeURIComponent(rest.join('/'))
