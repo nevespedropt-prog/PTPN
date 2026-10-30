@@ -11,6 +11,7 @@ import Metrics from './Metrics'
 import MaxLifts from './MaxLifts'
 import MonthlyReport from '../components/MonthlyReport'
 import ProgressStory from '../components/ProgressStory'
+import WorkoutHistory from '../components/WorkoutHistory'
 
 function Body({ clientId, readOnly }: { clientId: string; readOnly: boolean }) {
   const [rows, setRows] = useState<Measurement[]>([])
@@ -140,12 +141,12 @@ function Records({ clientId }: { clientId: string }) {
 }
 
 export default function Progress({ clientId, readOnly = false }: { clientId: string; readOnly?: boolean }) {
-  const [tab, setTab] = usePageTab('progress-' + clientId, ['body', 'strength', 'photos', 'monthly'] as const, 'body', 'progressTab')
+  const [tab, setTab] = usePageTab('progress-' + clientId, ['body', 'strength', 'photos', 'workouts', 'monthly'] as const, 'body', 'progressTab')
   return (
     <>
       {!readOnly && <PageHead eyebrow="Progress" title="Your results" />}
       <ProgressStory clientId={clientId} coach={readOnly} />
-      <Seg value={tab} onChange={setTab} options={[{ value: 'body', label: 'Body' }, { value: 'strength', label: 'Strength' }, { value: 'photos', label: 'Photos' }, { value: 'monthly', label: 'Monthly' }]} />
+      <Seg value={tab} onChange={setTab} options={[{ value: 'body', label: 'Body' }, { value: 'strength', label: 'Strength' }, { value: 'photos', label: 'Photos' }, { value: 'workouts', label: 'Workouts' }, { value: 'monthly', label: 'Monthly' }]} />
       {tab === 'body' && <Body clientId={clientId} readOnly={readOnly} />}
       {tab === 'strength' && <>
         <Records clientId={clientId} />
@@ -153,6 +154,7 @@ export default function Progress({ clientId, readOnly = false }: { clientId: str
         <Metrics clientId={clientId} coach={readOnly} />
       </>}
       {tab === 'photos' && <Photos clientId={clientId} canUpload={!readOnly} />}
+      {tab === 'workouts' && <WorkoutHistory key={clientId} clientId={clientId} coach={readOnly} />}
       {tab === 'monthly' && <MonthlyReport key={clientId} clientId={clientId} coach={readOnly} onPhotos={() => setTab('photos')} />}
     </>
   )
