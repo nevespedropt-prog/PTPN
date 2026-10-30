@@ -1188,3 +1188,9 @@ begin
     alter table public.taster_sessions drop column coach_notes;
   end if;
 end $$;
+
+-- Coach can book a client into a session (see migrate_v27_coach_books_clients.sql).
+-- Sessions are arranged with the coach, so the coach can put a client into a session.
+-- (Clients could already book themselves; that page is no longer offered in the app.)
+create policy "bookings coach insert" on public.bookings for insert to authenticated
+  with check ((select public.is_coach()));

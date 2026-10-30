@@ -284,6 +284,15 @@ ok((await as(C, `insert into coach_acknowledgements (coach_id, item_key, fingerp
 ok((await as(null, 'select * from coach_acknowledgements')).error, 'anon cannot read coach ticks')
 ok(!(await as(C, `delete from coach_acknowledgements where item_key = 'health:x'`)).error && await count(C, 'select * from coach_acknowledgements') === 1, 'coach removes a tick')
 
+// coach books clients into sessions
+const bookSession = (await db.query(`insert into sessions(starts_at,title) values(now() + interval '3 days','Booking test') returning id`)).rows[0].id
+ok((await as(B, `insert into bookings(session_id, client_id) values ('${bookSession}', '${A}')`)).error, 'a client cannot book someone else into a session')
+ok(!(await as(C, `insert into bookings(session_id, client_id) values ('${bookSession}', '${A}')`)).error, 'coach books a client into a session')
+ok((await as(C, `insert into bookings(session_id, client_id) values ('${bookSession}', '${B}')`)).error, 'a session holds one client only')
+ok(await count(A, `select * from bookings where session_id = '${bookSession}'`) === 1 && await count(B, `select * from bookings where session_id = '${bookSession}'`) === 0, 'client sees only their own booking')
+ok(!(await as(C, `delete from bookings where session_id = '${bookSession}'`)).error && await count(C, `select * from bookings where session_id = '${bookSession}'`) === 0, 'coach removes a client from a session')
+await db.exec(`delete from sessions where id = '${bookSession}'`)
+
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)
 ok((await db.query(`select count(*)::int n from client_archives where client_id = '${A}'`)).rows[0].n === 0, 'user deletion removes archive marker')

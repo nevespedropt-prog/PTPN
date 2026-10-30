@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Seg, SectionTitle } from '../components/ui'
 import { usePageTab } from '../hooks'
 import { supabase } from '../lib/supabase'
-import type { Booking, Profile, Session } from '../types'
+import type { Booking, Session } from '../types'
 
 type CalendarView = 'day' | 'week' | 'month'
 
@@ -28,6 +28,10 @@ export default function CoachSlots() {
   const [slots, setSlots] = useState<Session[]>([])
   const [bookings, setBookings] = useState<Booking[]>([])
   const [people, setPeople] = useState<Record<string, string>>({})
+  const [clients, setClients] = useState<{ id: string; full_name: string }[]>([])
+  const [pick, setPick] = useState<Record<string, string>>({})
+  const [busyId, setBusyId] = useState('')
+  const [rowErr, setRowErr] = useState('')
   const [when, setWhen] = useState('')
   const [dur, setDur] = useState(60)
   const [err, setErr] = useState('')
@@ -35,13 +39,17 @@ export default function CoachSlots() {
   const [focus, setFocus] = useState(() => startOfDay(new Date()))
 
   const load = useCallback(async () => {
-    const [s, b, p] = await Promise.all([
+    const [s, b, p, a] = await Promise.all([
       supabase.from('sessions').select('*').gte('starts_at', new Date().toISOString()).order('starts_at'),
       supabase.from('bookings').select('*'),
-      supabase.from('profiles').select('id, full_name'),
+      supabase.from('profiles').select('id, full_name, role').order('full_name'),
+      supabase.from('client_archives').select('client_id'),
     ])
     setSlots((s.data ?? []) as Session[]); setBookings((b.data ?? []) as Booking[])
-    setPeople(Object.fromEntries(((p.data ?? []) as Profile[]).map(x => [x.id, x.full_name])))
+    const profiles = (p.data ?? []) as { id: string; full_name: string; role: string }[]
+    const archived = new Set((a.data ?? []).map(x => x.client_id as string))
+    setPeople(Object.fromEntries(profiles.map(x => [x.id, x.full_name])))
+    setClients(profiles.filter(x => x.role === 'client' && !archived.has(x.id)))
   }, [])
   useEffect(() => { load() }, [load])
 
@@ -69,6 +77,22 @@ export default function CoachSlots() {
     setWhen(''); load()
   }
   async function remove(id: string) { await supabase.from('sessions').delete().eq('id', id); load() }
+  async function assign(slot: Session) {
+    const clientId = pick[slot.id]
+    if (!clientId) return
+    setBusyId(slot.id); setRowErr('')
+    const { error } = await supabase.from('bookings').insert({ session_id: slot.id, client_id: clientId })
+    setBusyId('')
+    if (error) return setRowErr('Could not add the client to this session. Someone may already be booked in. Refresh and try again.')
+    setPick(current => { const next = { ...current }; delete next[slot.id]; return next }); load()
+  }
+  async function unassign(booking: Booking) {
+    setBusyId(booking.session_id); setRowErr('')
+    const { error } = await supabase.from('bookings').delete().eq('id', booking.id)
+    setBusyId('')
+    if (error) return setRowErr('Could not remove the client from this session. Please try again.')
+    load()
+  }
   function move(direction: number) {
     setFocus(current => {
       const next = new Date(current)
@@ -139,10 +163,20 @@ export default function CoachSlots() {
             <div key={s.id} className="card session-row">
               <span><b>{fmt(s.starts_at)}</b> - {s.duration_min} min<br />
                 <span className="mute">{b ? `Booked: ${people[b.client_id] || 'client'}` : 'Open'}</span></span>
-              <button className="ghost" onClick={() => remove(s.id)}>Delete</button>
+              <span className="row" style={{ gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {b ? <button className="ghost sm" disabled={busyId === s.id} onClick={() => unassign(b)} aria-label={`Remove ${people[b.client_id] || 'client'} from ${fmt(s.starts_at)}`}>Remove client</button> : <>
+                  <select aria-label={`Client for ${fmt(s.starts_at)}`} value={pick[s.id] ?? ''} onChange={e => setPick(current => ({ ...current, [s.id]: e.target.value }))}>
+                    <option value="">Choose client</option>
+                    {clients.map(c => <option key={c.id} value={c.id}>{c.full_name || 'Unnamed'}</option>)}
+                  </select>
+                  <button className="sm" disabled={!pick[s.id] || busyId === s.id} onClick={() => assign(s)} aria-label={`Add client to ${fmt(s.starts_at)}`}>Add client</button>
+                </>}
+                <button className="ghost sm" onClick={() => remove(s.id)}>Delete</button>
+              </span>
             </div>
           )
         })}
+        {rowErr && <p className="err" role="alert">{rowErr}</p>}
         {slots.length === 0 && <p className="mute">No upcoming slots.</p>}
       </div>
     </>

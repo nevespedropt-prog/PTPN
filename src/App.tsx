@@ -19,7 +19,6 @@ import Recipes from './pages/Recipes'
 import MealPlans from './pages/MealPlans'
 import Progress from './pages/Progress'
 import { ClientChat, CoachChat } from './pages/Chat'
-import Book from './pages/Book'
 import Community from './pages/Community'
 import Resources from './pages/Resources'
 import GetApp from './pages/GetApp'
@@ -191,7 +190,6 @@ export default function App() {
           <Route path="/recipes" element={<Recipes />} />
         <Route path="/progress" element={<Progress clientId={profile.id} />} />
         <Route path="/chat" element={<ClientChat />} />
-        <Route path="/book" element={<Book />} />
         <Route path="/community" element={<Community />} />
         <Route path="/resources" element={<Resources />} />
         <Route path="/account" element={<Account />} />

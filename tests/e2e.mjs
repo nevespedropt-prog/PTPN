@@ -15,6 +15,7 @@ import { dashboardBrowserChecks } from './dashboard.mjs'
 import { notificationBrowserChecks } from './notifications.mjs'
 import { tasterSessionChecks } from './taster-session.mjs'
 import { sessionBalanceChecks } from './session-balance.mjs'
+import { sessionAssignChecks } from './session-assign.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -66,6 +67,7 @@ await dashboardBrowserChecks({ open, sql, IDS, shot, clean, ok })
 await notificationBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await sessionBalanceChecks({ open, sql, IDS, BASE, clean, ok })
+await sessionAssignChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await alternativeBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
@@ -506,7 +508,6 @@ console.log('Client flows')
   ok(await page.getByText('Protein guide').count() === 1, 'client sees resources')
   await page.goto(BASE + '/more', { waitUntil: 'networkidle' })
   await shot(page, 'client-more'); clean('more', errors)
-  await page.goto(BASE + '/book', { waitUntil: 'networkidle' }); clean('book', errors)
   await page.goto(BASE + '/more', { waitUntil: 'networkidle' })
   ok(!(await page.content()).includes('Book a session'), 'client menus no longer offer Book a session')
   await page.goto(BASE + '/account', { waitUntil: 'networkidle' }); clean('account', errors)
