@@ -2,6 +2,7 @@ export async function sessionAssignChecks({ open, sql, IDS, BASE, shot, clean, o
   console.log('Coach books a client into a session')
   const start = new Date(Date.now() + 3 * 86400000).toISOString()
   const slot = (await sql("insert into sessions(starts_at,duration_min,title) values($1,45,'Assigned PT session') returning id", [start]))[0].id
+  await sql("insert into client_health(client_id,allergies,health_conditions,consent_data,consent_health,consent_accurate,consent_version,consented_at) values($1,'None','None',true,true,true,1,now()) on conflict (client_id) do nothing", [IDS.ana])
   try {
     const coach = await open('coach', { w: 1280, h: 900 })
     await coach.page.goto(BASE + '/slots', { waitUntil: 'networkidle' })
@@ -29,5 +30,6 @@ export async function sessionAssignChecks({ open, sql, IDS, BASE, shot, clean, o
     clean('session assign coach', coach.errors); await coach.ctx.close()
   } finally {
     await sql('delete from sessions where id=$1', [slot])
+    await sql('delete from client_health where client_id=$1', [IDS.ana])
   }
 }
