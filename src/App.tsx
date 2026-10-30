@@ -178,7 +178,6 @@ export default function App() {
       ]}
       extras={[
         { to: '/community', icon: 'trophy', label: 'Community' },
-        { to: '/book', icon: 'calendar', label: 'Book a session' },
         { to: '/resources', icon: 'link', label: 'Workout videos' },
       ]}>
       <Routes>

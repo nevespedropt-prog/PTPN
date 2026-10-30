@@ -134,11 +134,10 @@ export default function Home() {
       )}
 
       {nextSession && (
-        <Link to="/book" className="card click" style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--ink)' }}>
+        <div className="card" style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--ink)' }}>
           <span className="avatar" style={{ width: 40, height: 40 }}><Icon name="calendar" size={18} /></span>
           <span className="grow"><b>{nextSession.title}</b><br /><span className="mute small">{new Date(nextSession.starts_at).toLocaleString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></span>
-          <Icon name="chev" />
-        </Link>
+        </div>
       )}
 
       <Habits today={today} />

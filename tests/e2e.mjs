@@ -505,6 +505,8 @@ console.log('Client flows')
   await page.goto(BASE + '/more', { waitUntil: 'networkidle' })
   await shot(page, 'client-more'); clean('more', errors)
   await page.goto(BASE + '/book', { waitUntil: 'networkidle' }); clean('book', errors)
+  await page.goto(BASE + '/more', { waitUntil: 'networkidle' })
+  ok(!(await page.content()).includes('Book a session'), 'client menus no longer offer Book a session')
   await page.goto(BASE + '/account', { waitUntil: 'networkidle' }); clean('account', errors)
 
   // client builds their own workout
