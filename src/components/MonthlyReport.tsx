@@ -5,13 +5,12 @@ import { supabase } from '../lib/supabase'
 import { localDate, niceDate } from '../lib/dates'
 import { monthWindow, monthlySummary, shiftMonth } from '../lib/monthly'
 import { FORMAT_LABEL, personalRecords, type PR } from '../lib/training'
-import type { ClientWorkout, Measurement, Workout, WorkoutItem } from '../types'
-import { Chart } from './Chart'
+import type { ClientWorkout, Workout, WorkoutItem } from '../types'
 import { Tile } from './ui'
 import Icon from './Icon'
 
 type Review = { client_id: string; month_start: string; feedback: string; next_focus: string }
-type ReportData = { workouts: ClientWorkout[]; measurements: Measurement[]; items: WorkoutItem[]; library: Record<string, Workout> }
+type ReportData = { workouts: ClientWorkout[]; items: WorkoutItem[]; library: Record<string, Workout> }
 const TREND_MONTHS = 6
 const shortMonth = (month: string) => new Date(month + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'short' })
 const dayOf = (date: string) => new Date(date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -19,10 +18,9 @@ const setsDone = (c: ClientWorkout) => Object.values(c.log?.items ?? {}).flat().
 const secondsOf = (c: ClientWorkout) => c.log?.timer?.elapsed_sec ?? c.log?.seconds ?? 0
 const hoursText = (minutes: number) => minutes >= 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes} min`
 const label = (month: string) => new Date(month + '-01T12:00:00').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
-const change = (points: { y: number }[]) => points.length < 2 ? null : Math.round((points[points.length - 1].y - points[0].y) * 10) / 10
 const signed = (n: number) => `${n > 0 ? '+' : ''}${n}`
 
-export default function MonthlyReport({ clientId, coach, onPhotos }: { clientId: string; coach: boolean; onPhotos: () => void }) {
+export default function MonthlyReport({ clientId, coach }: { clientId: string; coach: boolean }) {
   const { profile } = useAuth()
   const here = useLocation()
   const back = here.pathname + here.search
@@ -66,13 +64,12 @@ export default function MonthlyReport({ clientId, coach, onPhotos }: { clientId:
     ;(async () => {
       try {
         const range = monthWindow(month, today)
-        const [w, m, r] = await Promise.all([
+        const [w, r] = await Promise.all([
           supabase.from('client_workouts').select('*').eq('client_id', clientId).gte('date', range.previous).lte('date', range.end).order('date').limit(1000),
-          supabase.from('measurements').select('*').eq('client_id', clientId).gte('date', range.previous).lte('date', range.end).order('date').limit(1000),
           supabase.from('monthly_reviews').select('*').eq('client_id', clientId).eq('month_start', range.start).maybeSingle(),
         ])
-        if (w.error || m.error || r.error) throw new Error('load')
-        if ((w.data?.length ?? 0) >= 1000 || (m.data?.length ?? 0) >= 1000) throw new Error('limit')
+        if (w.error || r.error) throw new Error('load')
+        if ((w.data?.length ?? 0) >= 1000) throw new Error('limit')
         const workouts = (w.data ?? []) as ClientWorkout[]
         const ids = [...new Set(workouts.filter(w => w.status === 'done').map(w => w.workout_id))]
         let items: WorkoutItem[] = []
@@ -89,7 +86,7 @@ export default function MonthlyReport({ clientId, coach, onPhotos }: { clientId:
         }
         if (!active) return
         const reply = r.data as Review | null
-        setData({ workouts, measurements: (m.data ?? []) as Measurement[], items, library })
+        setData({ workouts, items, library })
         setReview(reply); setFeedback(reply?.feedback ?? ''); setFocus(reply?.next_focus ?? '')
       } catch { if (active) setLoadError('Could not load the complete workouts report. Please retry when connected. If this continues, contact your coach.') }
       finally { if (active) setLoading(false) }
@@ -118,7 +115,7 @@ export default function MonthlyReport({ clientId, coach, onPhotos }: { clientId:
     finally { writing.current = false; setBusy(false) }
   }
 
-  const summary = data ? monthlySummary(data.workouts, data.measurements, window.start, window.end) : null
+  const summary = data ? monthlySummary(data.workouts, [], window.start, window.end) : null
   let strength: { now: PR; previous: PR | undefined }[] = []
   if (data) {
     const items = new Map(data.items.map(i => [i.id, i]))
@@ -134,17 +131,15 @@ export default function MonthlyReport({ clientId, coach, onPhotos }: { clientId:
   const ownCount = monthDone.filter(own).length
   const bars = Array.from({ length: TREND_MONTHS }, (_, i) => shiftMonth(currentMonth, i + 1 - TREND_MONTHS))
   const peak = Math.max(1, ...bars.map(m => trend?.[m] ?? 0))
-  const lastWeight = summary?.trend.at(-1), lastFat = summary?.fat.at(-1)
-  const weightChange = summary ? change(summary.trend) : null, fatChange = summary ? change(summary.fat) : null
 
   return <section aria-label="Workouts report" className="stack" style={{ overflowWrap: 'anywhere' }}>
     <div className="card stack">
-      <span className="eyebrow">Workouts and progress</span>
+      <span className="eyebrow">Workouts</span>
       <h2 style={{ margin: 0 }}>{label(month)}{window.partial ? ' so far' : ''}</h2>
       <label className="field">Month<select aria-label="Report month" value={month} disabled={busy} onChange={e => choose(e.target.value)}>
         {months.map(m => <option key={m} value={m}>{label(m)}{m === currentMonth ? ' so far' : ''}</option>)}
       </select></label>
-      <p className="mute small" style={{ margin: 0 }}>{niceDate(window.start)} to {niceDate(window.end)}. Figures use current records for this period; your coach's review is saved separately.</p>
+      <p className="mute small" style={{ margin: 0 }}>{niceDate(window.start)} to {niceDate(window.end)}. Your coach's review is saved separately.</p>
     </div>
     {loading ? <p role="status">Loading workouts report...</p> : loadError ? <div className="card stack">
       <p className="err" role="alert">{loadError}</p><button className="soft" onClick={() => setRetry(v => v + 1)}>Retry monthly report</button>
@@ -154,8 +149,6 @@ export default function MonthlyReport({ clientId, coach, onPhotos }: { clientId:
         <Tile label="Training days" value={summary.trainingDays} foot="days with a completed workout" />
         <Tile label="Time trained" value={minutes ? hoursText(minutes) : '-'} foot={minutes ? 'from workouts with a timer' : 'No timed workouts this month'} />
         <Tile label="Sets done" value={sets || '-'} foot={sets ? 'ticked in finished workouts' : 'No sets ticked this month'} />
-        <Tile label="Weight average" value={lastWeight?.y ?? '-'} unit={lastWeight ? 'kg' : ''} foot={lastWeight ? `7-day average at ${niceDate(lastWeight.x)}` : 'No weight entries this month'} />
-        <Tile label="Body fat" value={lastFat?.y ?? '-'} unit={lastFat ? '%' : ''} foot={lastFat ? `Latest daily average, ${niceDate(lastFat.x)}` : 'No body-fat entries this month'} />
       </div>
       <p className="mute small">Workouts are grouped by their scheduled date. Skipped and missed sessions remain in the total; future sessions are excluded.</p>
       <div className="card stack">
@@ -188,18 +181,6 @@ export default function MonthlyReport({ clientId, coach, onPhotos }: { clientId:
         </div>}
       </details>
       <div className="card stack">
-        <h3 style={{ margin: 0 }}>Weight trend</h3>
-        <p className="mute small" style={{ margin: 0 }}>Seven-day rolling average of recorded daily weights. Multiple entries on one day are averaged first. Missing days are not estimated.</p>
-        {summary.trend.length ? <>
-          <Chart points={summary.trend} unit="kg" />
-          <p className="small" style={{ margin: 0 }}>{summary.weights.length} days with weight entries.{weightChange != null ? ` Change between first and latest rolling average: ${signed(weightChange)} kg.` : ' More entries are needed to show change.'}</p>
-          <p className="mute small" style={{ margin: 0 }}>First: {niceDate(summary.trend[0].x)}. Latest: {niceDate(summary.trend[summary.trend.length - 1].x)}. Each average includes recorded days in its seven-day window, including the previous month where available.</p>
-        </> : <p className="mute">No weight entries this month.</p>}
-        <h3 style={{ marginBottom: 0 }}>Body measurements</h3>
-        <p className="small" style={{ margin: 0 }}>{fatChange != null ? `Body-fat change between first and latest daily average: ${signed(fatChange)} percentage points.` : lastFat ? 'One day with body-fat data. More entries are needed to show change.' : 'No body-fat entries this month.'}</p>
-        <p className="mute small" style={{ margin: 0 }}>Only weight and body-fat measurements currently recorded in PTPN are included.</p>
-      </div>
-      <div className="card stack">
         <h3 style={{ margin: 0 }}>Strength progress</h3>
         <p className="mute small" style={{ margin: 0 }}>Best estimated 1RM from completed weighted sets this month, compared with the previous calendar month. Estimates are not tested maximums.{window.partial ? ' This month is still in progress.' : ''}</p>
         {!strength.length && <p className="mute">No comparable weighted sets logged this month.</p>}
@@ -208,11 +189,6 @@ export default function MonthlyReport({ clientId, coach, onPhotos }: { clientId:
           <span className="mute small">{previous ? `Previous month: ${previous.e1rm} kg. Change: ${signed(Math.round((now.e1rm - previous.e1rm) * 10) / 10)} kg.` : 'No previous-month comparison for this exercise.'}</span>
         </div>)}
         {strength.length > 8 && <p className="mute small">Showing the eight highest estimated lifts.</p>}
-      </div>
-      <div className="card stack">
-        <h3 style={{ margin: 0 }}>Progress photos</h3>
-        <p className="mute small" style={{ margin: 0 }}>Optional photos stay private to you and your coach. Open Photos to compare the first and latest photo of the same pose across your history.</p>
-        <button className="soft" onClick={onPhotos}>View private photo comparisons</button>
       </div>
       <div className="card stack">
         <h3 style={{ margin: 0 }}>Coach review</h3>
