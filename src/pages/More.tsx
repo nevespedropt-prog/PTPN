@@ -18,7 +18,6 @@ export default function More() {
       ]
     : [
         { to: '/community', icon: 'trophy', title: 'Community', sub: 'Announcements and challenges' },
-        { to: '/book', icon: 'calendar', title: 'Book a session', sub: 'Pick a PT slot' },
         { to: '/resources', icon: 'link', title: 'Workout videos', sub: 'Videos from your coach' },
       ]
   return (
