@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../auth'
-import { localDate, longDay, niceDate, relDay, weekOf, DAY_NAMES } from '../../lib/dates'
+import { addDays, localDate, longDay, niceDate, relDay, weekOf, DAY_NAMES } from '../../lib/dates'
 import { FORMAT_LABEL, setsDone, volumeKg } from '../../lib/training'
 import type { ClientWorkout, Workout } from '../../types'
 import { Empty, PageHead, Seg, Sheet, Skeleton } from '../../components/ui'
@@ -110,13 +110,14 @@ export default function Train() {
   const byDate = (d: string) => (cws ?? []).filter(c => c.date === d)
   const selected = byDate(sel)
   const thisWeek = days.includes(today)
-  const upcoming = (cws ?? []).filter(c => days.includes(c.date) && c.date > today && c.status === 'scheduled')
+  // The other workouts of the week on screen, so nothing from other weeks is listed under the strip.
+  const otherDays = (cws ?? []).filter(c => days.includes(c.date) && c.date !== sel)
   const history = (cws ?? []).filter(c => c.status === 'done').sort((a, b) => b.date.localeCompare(a.date))
   const name = (c: ClientWorkout) => workouts[c.workout_id]?.name ?? 'Workout'
 
   return (
     <>
-      <PageHead eyebrow="Training" title="Your plan" sub={`${history.length} workouts completed. Past weeks are in History.`}>
+      <PageHead eyebrow="Training" title="Your plan" sub={`${history.length} workouts completed`}>
         <button className="soft sm" onClick={buildOwn} disabled={busy || removing}><Icon name="plus" size={16} />Build my own</button>
       </PageHead>
       {buildError && <p className="err" role="alert">{buildError}</p>}
@@ -127,9 +128,11 @@ export default function Train() {
       {cws && tab === 'plan' && (
         <>
           <div className="row between" style={{ marginBottom: 10 }}>
-            <b>{thisWeek ? 'This week' : 'Week'}: {niceDate(days[0])} to {niceDate(days[6])}</b>
-            {!thisWeek && <button className="soft sm" onClick={() => setSel(today)}>Back to this week</button>}
+            <button className="icon" onClick={() => setSel(addDays(sel, -7))} aria-label="Previous week"><Icon name="back" size={18} /></button>
+            <b>{niceDate(days[0])} to {niceDate(days[6])}</b>
+            <button className="icon" onClick={() => setSel(addDays(sel, 7))} aria-label="Next week"><Icon name="chev" size={18} /></button>
           </div>
+          {!thisWeek && <div style={{ marginBottom: 10 }}><button className="soft sm" onClick={() => setSel(today)}>Back to this week</button></div>}
           <div className="week-strip">
             {days.map((d, i) => {
               const list = byDate(d)
@@ -163,13 +166,13 @@ export default function Train() {
             )
           })}
 
-          {upcoming.length > 0 && <>
-            <h2 style={{ marginTop: 24 }}>{thisWeek ? 'Coming up this week' : 'Scheduled this week'}</h2>
+          {otherDays.length > 0 && <>
+            <h2 style={{ marginTop: 24 }}>Other days this week</h2>
             <div className="card tight">
               <div className="list">
-                {upcoming.map(c => (
+                {otherDays.map(c => (
                   <div key={c.id} className="item">
-                    <Link to={`/workout/${c.id}?returnTo=${encodeURIComponent(returnTo)}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{name(c)}</span><br /><span className="meta">{relDay(c.date)}</span></Link>
+                    <Link to={`/workout/${c.id}?returnTo=${encodeURIComponent(returnTo)}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{name(c)}</span><br /><span className="meta">{relDay(c.date)}{c.status === 'done' ? ' · Done' : c.status === 'skipped' ? ' · Skipped' : ''}</span></Link>
                     {canRemove(c) ? <span className="row" style={{ gap: 8 }}>{editButton(c)}{removeButton(c)}</span> : <Icon name="chev" />}
                   </div>
                 ))}
