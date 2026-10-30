@@ -80,7 +80,12 @@ Dark premium look: background #0b0b0d, chalk #f4f4f5, PTPN red #e11d2e, steel #8
 - Minimisable boxes: use `<details className="card collapsible-card">` with no `open` attribute so every box starts closed. Tests must open the box before reading inside it (see `openBox` in `tests/weekly-checkins.mjs`).
 - Sessions are arranged by the coach (Sessions page, `CoachSlots.tsx`). Clients have no booking page. `bookings.session_id` is unique.
 - Workout builder: "Add set line" adds another row for the same exercise (no unique constraint on `workout_items`). Clients edit their own workouts through `/build/:workoutId?cw=:id`.
-- Client Home shows one "Your week" box for finished workouts. Progress has a Workouts tab (`WorkoutHistory.tsx`) with one closed box per month.
+- Client Home shows one "Your week" box for finished workouts. Progress has four tabs (Body, Strength, Photos, Workouts); Workouts is `MonthlyReport.tsx` (month picker, tiles, six-month bars, the month's workouts in one closed box, strength, coach review) and holds nothing about weight, body fat or photos.
+- Train, Schedule shows one week at a time with arrows; clients set the date of their own workout in the builder (`?cw=`).
+- Exercise library: names are unique per built-in (case-insensitive). New batches go in `supabase/tools/more_exercises.py`, are checked against every existing name, and need a migration with `on conflict do nothing`. Sled, burpee and mountain-climber style moves are strength, never cardio. Biceps curls say "bicep" in the name. Search is `src/lib/exerciseSearch.ts` (name, muscle, equipment, type, with everyday aliases); do not filter exercises by name alone.
+- Anything that lists exercises must not cap at a few hundred rows (the library is 626) and each row gets the play button (`DemoLink`). Row buttons cannot contain links: wrap them in `.exrow`.
+- Workout videos are Instagram reels. The app cannot fetch their images; the coach sets thumbnails (bucket `video-thumbnails`, `resources.thumbnail_path`).
+- Supabase connector: SQL containing `delete` or `drop` is held for approval and times out. Split it, or give the user the SQL and the editor link.
 - New tests that touch a client page need a `client_health` consent row for the user, or ConsentGate blocks the page. Delete it afterwards.
 - Never run two e2e runs at once (both use port 4180). Set `CHROMIUM_PATH=/opt/pw-browsers/chromium`.
 - Supabase MCP: statements with `revoke`, `drop` or `grant ... delete` can raise an approval prompt that never reaches the session and times out. Send plain `create` statements, or give the user the SQL and the editor link. After a squash merge, reset the work branch to `origin/main` before the next change.

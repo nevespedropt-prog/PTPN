@@ -53,11 +53,11 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Trap bar deadlift'),'Trap bar deadlift','Quads','Trap bar','strength','Stand in the bar, brace, push the floor away.'),
 (pg_temp.sid('ex:Standing calf raise'),'Standing calf raise','Calves','Machine','strength','Full stretch at the bottom, rise high, pause.'),
 (pg_temp.sid('ex:Seated calf raise'),'Seated calf raise','Calves','Machine','strength','Knees under the pad, full range, slow tempo.'),
-(pg_temp.sid('ex:Barbell curl'),'Barbell curl','Biceps','Barbell','strength','Elbows by your sides, curl without swinging.'),
-(pg_temp.sid('ex:Dumbbell curl'),'Dumbbell curl','Biceps','Dumbbells','strength','Supinate as you curl, lower slowly.'),
-(pg_temp.sid('ex:Hammer curl'),'Hammer curl','Biceps','Dumbbells','strength','Neutral grip, curl to the shoulder, elbows fixed.'),
-(pg_temp.sid('ex:Preacher curl'),'Preacher curl','Biceps','EZ bar','strength','Arms on the pad, curl up, lower to near straight.'),
-(pg_temp.sid('ex:Cable curl'),'Cable curl','Biceps','Cable','strength','Constant tension, squeeze at the top.'),
+(pg_temp.sid('ex:Barbell bicep curl'),'Barbell bicep curl','Biceps','Barbell','strength','Elbows by your sides, curl without swinging.'),
+(pg_temp.sid('ex:Dumbbell bicep curl'),'Dumbbell bicep curl','Biceps','Dumbbells','strength','Supinate as you curl, lower slowly.'),
+(pg_temp.sid('ex:Hammer bicep curl'),'Hammer bicep curl','Biceps','Dumbbells','strength','Neutral grip, curl to the shoulder, elbows fixed.'),
+(pg_temp.sid('ex:Preacher bicep curl'),'Preacher bicep curl','Biceps','EZ bar','strength','Arms on the pad, curl up, lower to near straight.'),
+(pg_temp.sid('ex:Cable bicep curl'),'Cable bicep curl','Biceps','Cable','strength','Constant tension, squeeze at the top.'),
 (pg_temp.sid('ex:Triceps pushdown'),'Triceps pushdown','Triceps','Cable','strength','Elbows pinned, push down to full lockout.'),
 (pg_temp.sid('ex:Overhead triceps extension'),'Overhead triceps extension','Triceps','Dumbbells','strength','Weight behind the head, extend overhead, elbows forward.'),
 (pg_temp.sid('ex:Skull crusher'),'Skull crusher','Triceps','EZ bar','strength','Lower the bar toward the forehead, extend back up.'),
@@ -181,11 +181,11 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Front raise'),'Front raise','Shoulders','Dumbbells','strength','Raise the weight to shoulder height in front and lower slowly. Plate or cable also work.'),
 (pg_temp.sid('ex:Rotator cuff'),'Rotator cuff','Shoulders','Band or cable','mobility','Elbow tucked at the side, rotate the forearm out and in with light load.'),
 (pg_temp.sid('ex:Shrug'),'Shrug','Traps','Dumbbells','strength','Lift the shoulders straight up toward the ears, pause, lower slowly. Kettlebells work too.'),
-(pg_temp.sid('ex:Incline dumbbell curl'),'Incline dumbbell curl','Biceps','Dumbbells','strength','Bench at 60 degrees, arms hanging back, curl without swinging.'),
-(pg_temp.sid('ex:Rope curl'),'Rope curl','Biceps','Cable','strength','Low pulley with a rope, curl and turn the palms up at the top.'),
+(pg_temp.sid('ex:Incline dumbbell bicep curl'),'Incline dumbbell bicep curl','Biceps','Dumbbells','strength','Bench at 60 degrees, arms hanging back, curl without swinging.'),
+(pg_temp.sid('ex:Rope bicep curl'),'Rope bicep curl','Biceps','Cable','strength','Low pulley with a rope, curl and turn the palms up at the top.'),
 (pg_temp.sid('ex:Cable forearm curl'),'Cable forearm curl','Forearms','Cable','strength','Forearms resting on the thighs, curl the wrists up and down slowly.'),
-(pg_temp.sid('ex:TRX curl'),'TRX curl','Biceps','TRX','strength','Lean back holding the handles and curl the hands toward the forehead.'),
-(pg_temp.sid('ex:Inverted curl'),'Inverted curl','Biceps','Bar','strength','Overhand grip curl to hit the forearms and brachialis.'),
+(pg_temp.sid('ex:TRX bicep curl'),'TRX bicep curl','Biceps','TRX','strength','Lean back holding the handles and curl the hands toward the forehead.'),
+(pg_temp.sid('ex:Inverted bicep curl'),'Inverted bicep curl','Biceps','Bar','strength','Overhand grip curl to hit the forearms and brachialis.'),
 (pg_temp.sid('ex:Curl n press'),'Curl n press','Shoulders','Dumbbells','strength','Curl the dumbbells, then press them overhead. Seated or standing.'),
 (pg_temp.sid('ex:Clean n press'),'Clean n press','Full body','Barbell, dumbbells or kettlebell','strength','Clean the weight to the shoulders, then press overhead in one smooth movement.'),
 (pg_temp.sid('ex:Ball to leg'),'Ball to leg','Core','Medicine ball','core','Lie on your back and pass the ball between hands and feet as you crunch up. Also written ball to foot or knees.'),
@@ -299,28 +299,27 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Power bag shoulder press'),'Power bag shoulder press','Shoulders','Power bag','strength','Clean the bag to the shoulder and press it overhead, switch sides each set.'),
 (pg_temp.sid('ex:Slam ball overhead press'),'Slam ball overhead press','Shoulders','Slam ball','strength','Hold the ball at the chest and press it overhead, keep the ribs down.'),
 (pg_temp.sid('ex:Z press'),'Z press','Shoulders','Barbell','strength','Sit on the floor with legs straight and press the bar overhead without leaning back.'),
-(pg_temp.sid('ex:Concentration curl'),'Concentration curl','Biceps','Dumbbells','strength','Elbow against the inner thigh, curl up and squeeze, lower slowly.'),
-(pg_temp.sid('ex:Spider curl'),'Spider curl','Biceps','Dumbbells','strength','Chest on an incline bench, arms hanging, curl without swinging.'),
-(pg_temp.sid('ex:Zottman curl'),'Zottman curl','Biceps','Dumbbells','strength','Curl up palms-up, turn the palms down and lower slowly.'),
-(pg_temp.sid('ex:Cross-body hammer curl'),'Cross-body hammer curl','Biceps','Dumbbells','strength','Curl each dumbbell across the body toward the opposite shoulder.'),
-(pg_temp.sid('ex:Seated alternating dumbbell curl'),'Seated alternating dumbbell curl','Biceps','Dumbbells','strength','Sit tall, curl one arm at a time, rotate the palm up as you lift.'),
-(pg_temp.sid('ex:EZ bar curl'),'EZ bar curl','Biceps','Barbell','strength','Hands on the angled grips, curl with the elbows pinned to the sides.'),
-(pg_temp.sid('ex:Reverse barbell curl'),'Reverse barbell curl','Biceps','Barbell','strength','Overhand grip, curl up keeping the wrists straight to hit the forearms too.'),
-(pg_temp.sid('ex:Drag curl'),'Drag curl','Biceps','Barbell','strength','Pull the bar up the body with the elbows moving back.'),
-(pg_temp.sid('ex:Smith machine curl'),'Smith machine curl','Biceps','Smith machine','strength','Stand with the bar fixed on its track and curl without swinging.'),
-(pg_temp.sid('ex:Kettlebell curl'),'Kettlebell curl','Biceps','Kettlebell','strength','Hold the kettlebell by the horns and curl it to the chin.'),
-(pg_temp.sid('ex:Resistance band curl'),'Resistance band curl','Biceps','Band','strength','Stand on the band and curl, keeping the tension through the lower half.'),
-(pg_temp.sid('ex:Resistance band hammer curl'),'Resistance band hammer curl','Biceps','Band','strength','Neutral grip on the band handles, curl and squeeze.'),
-(pg_temp.sid('ex:High cable curl'),'High cable curl','Biceps','Cable','strength','Arms out to the sides at shoulder height, curl the handles toward the ears.'),
-(pg_temp.sid('ex:Single-arm cable curl'),'Single-arm cable curl','Biceps','Cable','strength','Curl one handle with the elbow fixed, pause at the top.'),
-(pg_temp.sid('ex:Bayesian cable curl'),'Bayesian cable curl','Biceps','Cable','strength','Face away from the stack with the arm behind you, curl for a big stretch at the bottom.'),
-(pg_temp.sid('ex:Cable hammer curl'),'Cable hammer curl','Biceps','Cable','strength','Rope attachment, curl with palms facing each other.'),
-(pg_temp.sid('ex:TRX bicep curl'),'TRX bicep curl','Biceps','TRX','strength','Lean back, palms up, curl the body toward the hands.'),
-(pg_temp.sid('ex:Incline hammer curl'),'Incline hammer curl','Biceps','Dumbbells','strength','On an incline bench with arms hanging, curl with a neutral grip.'),
+(pg_temp.sid('ex:Concentration bicep curl'),'Concentration bicep curl','Biceps','Dumbbells','strength','Elbow against the inner thigh, curl up and squeeze, lower slowly.'),
+(pg_temp.sid('ex:Spider bicep curl'),'Spider bicep curl','Biceps','Dumbbells','strength','Chest on an incline bench, arms hanging, curl without swinging.'),
+(pg_temp.sid('ex:Zottman bicep curl'),'Zottman bicep curl','Biceps','Dumbbells','strength','Curl up palms-up, turn the palms down and lower slowly.'),
+(pg_temp.sid('ex:Cross-body hammer bicep curl'),'Cross-body hammer bicep curl','Biceps','Dumbbells','strength','Curl each dumbbell across the body toward the opposite shoulder.'),
+(pg_temp.sid('ex:Seated alternating dumbbell bicep curl'),'Seated alternating dumbbell bicep curl','Biceps','Dumbbells','strength','Sit tall, curl one arm at a time, rotate the palm up as you lift.'),
+(pg_temp.sid('ex:EZ bar bicep curl'),'EZ bar bicep curl','Biceps','Barbell','strength','Hands on the angled grips, curl with the elbows pinned to the sides.'),
+(pg_temp.sid('ex:Reverse barbell bicep curl'),'Reverse barbell bicep curl','Biceps','Barbell','strength','Overhand grip, curl up keeping the wrists straight to hit the forearms too.'),
+(pg_temp.sid('ex:Drag bicep curl'),'Drag bicep curl','Biceps','Barbell','strength','Pull the bar up the body with the elbows moving back.'),
+(pg_temp.sid('ex:Smith machine bicep curl'),'Smith machine bicep curl','Biceps','Smith machine','strength','Stand with the bar fixed on its track and curl without swinging.'),
+(pg_temp.sid('ex:Kettlebell bicep curl'),'Kettlebell bicep curl','Biceps','Kettlebell','strength','Hold the kettlebell by the horns and curl it to the chin.'),
+(pg_temp.sid('ex:Resistance band bicep curl'),'Resistance band bicep curl','Biceps','Band','strength','Stand on the band and curl, keeping the tension through the lower half.'),
+(pg_temp.sid('ex:Resistance band hammer bicep curl'),'Resistance band hammer bicep curl','Biceps','Band','strength','Neutral grip on the band handles, curl and squeeze.'),
+(pg_temp.sid('ex:High cable bicep curl'),'High cable bicep curl','Biceps','Cable','strength','Arms out to the sides at shoulder height, curl the handles toward the ears.'),
+(pg_temp.sid('ex:Single-arm cable bicep curl'),'Single-arm cable bicep curl','Biceps','Cable','strength','Curl one handle with the elbow fixed, pause at the top.'),
+(pg_temp.sid('ex:Bayesian cable bicep curl'),'Bayesian cable bicep curl','Biceps','Cable','strength','Face away from the stack with the arm behind you, curl for a big stretch at the bottom.'),
+(pg_temp.sid('ex:Cable hammer bicep curl'),'Cable hammer bicep curl','Biceps','Cable','strength','Rope attachment, curl with palms facing each other.'),
+(pg_temp.sid('ex:Incline hammer bicep curl'),'Incline hammer bicep curl','Biceps','Dumbbells','strength','On an incline bench with arms hanging, curl with a neutral grip.'),
 (pg_temp.sid('ex:21s'),'21s','Biceps','Barbell','strength','Seven bottom half reps, seven top half reps, seven full reps without rest.'),
-(pg_temp.sid('ex:Towel curl'),'Towel curl','Biceps','Bodyweight','strength','Loop a towel under one foot and curl against the resistance of the leg.'),
+(pg_temp.sid('ex:Towel bicep curl'),'Towel bicep curl','Biceps','Bodyweight','strength','Loop a towel under one foot and curl against the resistance of the leg.'),
 (pg_temp.sid('ex:Chin-up hold'),'Chin-up hold','Biceps','Bodyweight','strength','Hold the top of a chin-up with the chin over the bar as long as possible.'),
-(pg_temp.sid('ex:Power bag curl'),'Power bag curl','Biceps','Power bag','strength','Hold the handles and curl the bag, keeping the elbows tight.'),
+(pg_temp.sid('ex:Power bag bicep curl'),'Power bag bicep curl','Biceps','Power bag','strength','Hold the handles and curl the bag, keeping the elbows tight.'),
 (pg_temp.sid('ex:Rope triceps pushdown'),'Rope triceps pushdown','Triceps','Cable','strength','Elbows pinned, push down and spread the rope at the bottom.'),
 (pg_temp.sid('ex:Single-arm cable pushdown'),'Single-arm cable pushdown','Triceps','Cable','strength','Reverse or standard grip, press down with the elbow fixed to the side.'),
 (pg_temp.sid('ex:Overhead cable triceps extension'),'Overhead cable triceps extension','Triceps','Cable','strength','Face away from the stack, extend the arms overhead from behind the head.'),
@@ -629,7 +628,7 @@ insert into public.exercises (id, name, muscle, equipment, category, instruction
 (pg_temp.sid('ex:Bodyweight good morning'),'Bodyweight good morning','Hamstrings','Bodyweight','strength','Hands behind head, hinge at the hips with a flat back.'),
 (pg_temp.sid('ex:Single-leg Romanian deadlift bodyweight'),'Single-leg Romanian deadlift bodyweight','Hamstrings','Bodyweight','strength','Balance on one leg, hinge and reach to the floor.'),
 (pg_temp.sid('ex:Shoulder tap push-up'),'Shoulder tap push-up','Chest','Bodyweight','strength','Push-up then tap one shoulder with the opposite hand.')
-on conflict (id) do nothing;
+on conflict do nothing;
 
 insert into public.foods (id, name, serving_label, serving_g, kcal, protein, carbs, fat) values
 (pg_temp.sid('food:Chicken breast, cooked'),'Chicken breast, cooked','100 g',100,165,31,0,3.6),
@@ -741,7 +740,7 @@ insert into public.foods (id, name, serving_label, serving_g, kcal, protein, car
 (pg_temp.sid('food:Pizza margherita'),'Pizza margherita','1 slice (100 g)',100,266,11,33,10),
 (pg_temp.sid('food:Chips / fries'),'Chips / fries','1 portion (150 g)',150,312,3.4,41,15),
 (pg_temp.sid('food:Crisps'),'Crisps','1 bag (25 g)',25,536,7,53,34)
-on conflict (id) do nothing;
+on conflict do nothing;
 
 insert into public.recipes (id, name, meal_type, description, prep_min, kcal, protein, carbs, fat, ingredients, steps, tags) values
 (pg_temp.sid('recipe:Protein overnight oats'),'Protein overnight oats','breakfast','Make it the night before and grab it in the morning.',5,540,43.2,67.4,12.7,array['60 g oats, dry','30 g whey protein powder','200 ml milk, semi-skimmed','80 g blueberries','10 g chia seeds']::text[],array['Stir oats, whey, chia and milk together in a jar.','Refrigerate overnight.','Top with blueberries before eating.']::text[],array['high protein','meal prep']::text[]),
@@ -772,7 +771,7 @@ insert into public.recipes (id, name, meal_type, description, prep_min, kcal, pr
 (pg_temp.sid('recipe:Hummus and veg sticks'),'Hummus and veg sticks','snack','Crunchy, plant-based snack.',5,163,6.6,22.7,6.2,array['60 g hummus','80 g carrot','80 g cucumber','60 g bell pepper']::text[],array['Cut veg into sticks and serve with hummus.']::text[],array['vegan','no cook']::text[]),
 (pg_temp.sid('recipe:Boiled eggs and edamame'),'Boiled eggs and edamame','snack','Savoury protein snack.',10,264,24.5,9.6,14.7,array['100 g eggs, whole','100 g edamame']::text[],array['Boil eggs for 8 minutes.','Steam edamame and season with salt.']::text[],array['high protein']::text[]),
 (pg_temp.sid('recipe:Dark chocolate and almonds'),'Dark chocolate and almonds','snack','A sweet treat that fits.',1,235,5.8,13.6,18.6,array['20 g dark chocolate 70%','20 g almonds']::text[],array['Enjoy slowly.']::text[],array['sweet']::text[])
-on conflict (id) do nothing;
+on conflict do nothing;
 
 insert into public.workouts (id, name, format, duration_min, rounds, description) values
 (pg_temp.sid('w:fb_a'),'Full body A','standard',50,null,'Beginner full-body session built on the main movement patterns.'),
@@ -791,7 +790,7 @@ insert into public.workouts (id, name, format, duration_min, rounds, description
 (pg_temp.sid('w:mobility'),'Mobility flow','standard',20,null,'Recovery-day mobility, move slowly and breathe.'),
 (pg_temp.sid('w:intervals'),'Treadmill intervals','intervals',25,null,'Warm up 5 minutes, then 8 rounds of 1 minute hard, 1 minute easy.'),
 (pg_temp.sid('w:core'),'Core finisher','standard',15,null,'Short core session to add after any workout.')
-on conflict (id) do nothing;
+on conflict do nothing;
 
 insert into public.workout_items (id, workout_id, exercise_id, exercise_name, sort, group_label, set_style, sets, reps, percent_1rm, rest_sec, notes) values
 (pg_temp.sid('wi:fb_a:0'),pg_temp.sid('w:fb_a'),pg_temp.sid('ex:Goblet squat'),'Goblet squat',0,'','single',3,'10',null,90,''),
@@ -814,8 +813,8 @@ insert into public.workout_items (id, workout_id, exercise_id, exercise_name, so
 (pg_temp.sid('wi:pull:1'),pg_temp.sid('w:pull'),pg_temp.sid('ex:Pull-up'),'Pull-up',1,'A','superset',4,'max',null,75,'Rest after A2; use a band if needed'),
 (pg_temp.sid('wi:pull:2'),pg_temp.sid('w:pull'),pg_temp.sid('ex:Barbell row'),'Barbell row',2,'B','superset',3,'8',null,0,'No rest; continue to B2'),
 (pg_temp.sid('wi:pull:3'),pg_temp.sid('w:pull'),pg_temp.sid('ex:Face pull'),'Face pull',3,'B','superset',3,'15',null,60,'Rest after B2'),
-(pg_temp.sid('wi:pull:4'),pg_temp.sid('w:pull'),pg_temp.sid('ex:Hammer curl'),'Hammer curl',4,'C','superset',3,'12',null,0,'No rest; continue to C2'),
-(pg_temp.sid('wi:pull:5'),pg_temp.sid('w:pull'),pg_temp.sid('ex:Barbell curl'),'Barbell curl',5,'C','superset',3,'10',null,75,'Rest after C2'),
+(pg_temp.sid('wi:pull:4'),pg_temp.sid('w:pull'),pg_temp.sid('ex:Hammer bicep curl'),'Hammer bicep curl',4,'C','superset',3,'12',null,0,'No rest; continue to C2'),
+(pg_temp.sid('wi:pull:5'),pg_temp.sid('w:pull'),pg_temp.sid('ex:Barbell bicep curl'),'Barbell bicep curl',5,'C','superset',3,'10',null,75,'Rest after C2'),
 (pg_temp.sid('wi:legs:0'),pg_temp.sid('w:legs'),pg_temp.sid('ex:Back squat'),'Back squat',0,'','single',4,'6',75,180,''),
 (pg_temp.sid('wi:legs:1'),pg_temp.sid('w:legs'),pg_temp.sid('ex:Romanian deadlift'),'Romanian deadlift',1,'','single',3,'8',null,120,''),
 (pg_temp.sid('wi:legs:2'),pg_temp.sid('w:legs'),pg_temp.sid('ex:Bulgarian split squat'),'Bulgarian split squat',2,'','single',3,'10 per leg',null,90,''),
@@ -867,7 +866,7 @@ insert into public.workout_items (id, workout_id, exercise_id, exercise_name, so
 (pg_temp.sid('wi:core:1'),pg_temp.sid('w:core'),pg_temp.sid('ex:Pallof press'),'Pallof press',1,'','single',3,'12 per side',null,45,''),
 (pg_temp.sid('wi:core:2'),pg_temp.sid('w:core'),pg_temp.sid('ex:Hollow hold'),'Hollow hold',2,'','single',3,'30 s',null,45,''),
 (pg_temp.sid('wi:core:3'),pg_temp.sid('w:core'),pg_temp.sid('ex:Side plank'),'Side plank',3,'','single',3,'30 s per side',null,45,'')
-on conflict (id) do nothing;
+on conflict do nothing;
 
 insert into public.programs (id, name, goal, level, weeks, description) values
 (pg_temp.sid('p:beginner'),'Beginner full body','General fitness','Beginner',4,'Three full-body sessions a week alternating A and B.'),
@@ -876,7 +875,7 @@ insert into public.programs (id, name, goal, level, weeks, description) values
 (pg_temp.sid('p:five_by_five'),'Classic 5x5','Strength','Beginner',8,'Three days a week alternating A and B with steady load increases.'),
 (pg_temp.sid('p:fat_loss'),'Fat loss conditioning','Fat loss','All levels',4,'Strength plus conditioning and a mobility day.'),
 (pg_temp.sid('p:home'),'Home training','General fitness','All levels',4,'No-equipment plan with a mobility day.')
-on conflict (id) do nothing;
+on conflict do nothing;
 
 insert into public.program_days (id, program_id, week, day, workout_id) values
 (pg_temp.sid('pd:beginner:1:1:fb_a'),pg_temp.sid('p:beginner'),1,1,pg_temp.sid('w:fb_a')),
@@ -1019,4 +1018,4 @@ insert into public.program_days (id, program_id, week, day, workout_id) values
 (pg_temp.sid('pd:home:4:3:home'),pg_temp.sid('p:home'),4,3,pg_temp.sid('w:home')),
 (pg_temp.sid('pd:home:4:5:home'),pg_temp.sid('p:home'),4,5,pg_temp.sid('w:home')),
 (pg_temp.sid('pd:home:4:7:mobility'),pg_temp.sid('p:home'),4,7,pg_temp.sid('w:mobility'))
-on conflict (id) do nothing;
+on conflict do nothing;

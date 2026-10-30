@@ -6,6 +6,7 @@ import { quickMealDbChecks } from './quick-meals.mjs'
 import { videoDbChecks } from './exercise-feedback.mjs'
 import { onboardingDbChecks } from './onboarding.mjs'
 import { monthlyUnitChecks, monthlyDbChecks } from './monthly.mjs'
+import { exerciseSearchChecks } from './exercise-search.mjs'
 import { alternativeUnitChecks, alternativeDbChecks } from './alternatives.mjs'
 
 const repo = new URL('../supabase/', import.meta.url).pathname
@@ -89,7 +90,7 @@ async function as(who, sql, params = []) {
 const count = async (who, sql) => { const r = await as(who, sql); return r.error ? `ERR ${r.error}` : r.rows.length }
 
 // library counts
-ok(await count(A, 'select id from exercises') === 627, 'client reads exercise library')
+ok(await count(A, 'select id from exercises') === 626, 'client reads exercise library')
 ok(await count(A, 'select id from workouts') === 16, 'client sees 16 built-in workouts')
 ok(await count(A, 'select id from recipes') === 105, 'client reads recipes')
 ok(await count(A, 'select id from foods') === 139, 'client reads foods')
@@ -101,6 +102,8 @@ ok((await as(C, `delete from storage.objects where bucket_id = 'video-thumbnails
 
 ok(await count(A, "select id from exercises where name in ('Sled push','Sled push n pull','Burpee','Mountain climber') and category = 'cardio'") === 0, 'library: sled, burpee and mountain climber are never cardio')
 ok(await count(A, "select id from exercises where equipment = 'Sled' and category = 'cardio'") === 0, 'library: no sled exercise is filed as cardio')
+ok(await count(A, "select id from exercises where created_by is null and muscle = 'Biceps' and name ilike '%curl%' and name not ilike '%bicep%'") === 0, 'library: every biceps curl says bicep in its name')
+ok(await count(A, "select id from exercises where created_by is null and muscle <> 'Biceps' and name ilike '%bicep%'") === 0, 'library: only biceps exercises say bicep')
 ok(await count(A, "select lower(name) from exercises where created_by is null group by lower(name) having count(*) > 1") === 0, 'library: no duplicate exercise names')
 for (const [muscle, min] of [['Chest', 40], ['Back', 40], ['Shoulders', 40], ['Biceps', 25], ['Triceps', 25], ['Quads', 50], ['Hamstrings', 30], ['Glutes', 30], ['Calves', 20], ['Core', 80]]) {
   ok(await count(A, `select id from exercises where muscle = '${muscle}'`) >= min, `library: ${muscle} has at least ${min} exercises`)
@@ -264,6 +267,7 @@ await quickMealDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 await videoDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 await onboardingDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 monthlyUnitChecks(ok)
+exerciseSearchChecks(ok)
 await monthlyDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 alternativeUnitChecks(ok)
 await alternativeDbChecks(db, { coach: C, ana: A, bo: B }, ok)

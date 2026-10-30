@@ -8,6 +8,7 @@ import type { Category, Exercise, Program, Workout } from '../../types'
 import { Empty, PageHead, Seg, Sheet, Skeleton } from '../../components/ui'
 import Icon from '../../components/Icon'
 import DemoLink from '../../components/DemoLink'
+import { searchExercises } from '../../lib/exerciseSearch'
 import { useExercises } from '../../components/Pickers'
 import { AssignWorkout } from './Assign'
 
@@ -164,7 +165,7 @@ function Exercises() {
   const [open, setOpen] = useState<Exercise | null>(null)
   const [f, setF] = useState({ name: '', muscle: '', equipment: '', category: 'strength' as Category, instructions: '', video_url: '' })
   const [err, setErr] = useState('')
-  const list = useMemo(() => (rows ?? []).filter(e => (cat === 'all' || e.category === cat) && e.name.toLowerCase().includes(q.toLowerCase())), [rows, q, cat])
+  const list = useMemo(() => searchExercises((rows ?? []).filter(e => cat === 'all' || e.category === cat), q), [rows, q, cat])
 
   async function add(e: React.FormEvent) {
     e.preventDefault(); setErr('')
