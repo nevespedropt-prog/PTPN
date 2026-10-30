@@ -5,7 +5,7 @@ Lat pulldown and so on) are not repeated. Variations are folded into the cues.""
 # name, muscle, equipment, category, cue
 NEW_EX = [
  # cardio / conditioning
- ("Sled push n pull", "Full body", "Sled", "cardio", "Push the sled down the lane, turn and pull it back on the rope. Count laps. Also written push n push or pull n pull."),
+ ("Sled push n pull", "Full body", "Sled", "strength", "Push the sled down the lane, turn and pull it back on the rope. Count laps. Also written push n push or pull n pull."),
  ("TRX push n pull", "Full body", "TRX", "strength", "Alternate a TRX press-up with a TRX row, keeping the body in one straight line."),
  ("Rope waves", "Full body", "Ropes", "cardio", "Hinge slightly and whip the ropes in fast, even waves, alternating or both arms together."),
  ("Ball slam combo", "Full body", "Medicine ball", "plyometric", "Slam the ball, then flow into a run, squat or lunge before the next rep."),

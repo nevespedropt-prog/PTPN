@@ -110,7 +110,7 @@ EX = [
  ("Assault bike","Cardio","Air bike","cardio","Push and pull with arms and legs together."),
  ("Cycling","Cardio","Bike","cardio","Steady cadence at the prescribed effort."),
  ("Jump rope","Cardio","Rope","cardio","Small hops on the balls of the feet."),
- ("Sled push","Full body","Sled","cardio","Low body angle, drive with short powerful steps."),
+ ("Sled push","Full body","Sled","strength","Low body angle, drive with short powerful steps."),
  ("Stair climber","Cardio","Machine","cardio","Upright posture, avoid leaning on the rails."),
  ("Ski erg","Cardio","Ski erg","cardio","Hinge and pull down with the arms and core."),
  ("Battle ropes","Full body","Ropes","cardio","Athletic stance, fast alternating waves."),
@@ -128,7 +128,8 @@ EX = [
 ]
 
 from mygym_exercises import NEW_EX as _MYGYM_EX  # exercises from the MyGym London sheets
-EX = EX + _MYGYM_EX
+from more_exercises import MORE_EX as _MORE_EX  # 30 Oct 2026 library expansion
+EX = EX + _MYGYM_EX + _MORE_EX
 
 # ---------- foods: name, serving_label, serving_g, kcal, protein, carbs, fat (per 100 g) ----------
 FOODS = [

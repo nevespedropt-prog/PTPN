@@ -34,7 +34,7 @@ export async function exerciseBoxChecks({ open, sql, IDS, BASE, shot, clean, ok 
     ok(await box(1).getByLabel('Weight', { exact: true }).inputValue() === '5', 'Burpee strength prescription survives reload')
     await page.getByRole('button', { name: 'Add exercise', exact: true }).click()
     await page.getByPlaceholder(/Search 100/).fill('Burpee')
-    await page.locator('.sheet .item', { hasText: 'Burpee' }).click()
+    await page.getByRole('button', { name: /^Burpee Full body/ }).click()
     const added = page.getByRole('group', { name: 'Exercise 4: Burpee', exact: true })
     ok(await added.getByLabel('Sets', { exact: true }).inputValue() === '3' && await added.getByLabel('Tempo', { exact: true }).count() === 0, 'newly picked Burpee uses strength defaults without tempo')
     ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'simplified exercise cards fit phone width')

@@ -288,9 +288,9 @@ console.log('Coach flows')
   // exercise library includes the MyGym list
   await page.goto(BASE + '/library', { waitUntil: 'networkidle' })
   await page.getByRole('tab', { name: 'Exercises' }).click()
-  await page.getByPlaceholder(/Search 225 exercises/).fill('turkish')
-  ok(await page.getByText('Turkish get-up').count() === 1, 'library has the MyGym exercises (225 in total)')
-  await page.getByPlaceholder(/Search 225 exercises/).fill('')
+  await page.getByPlaceholder(/Search 627 exercises/).fill('turkish')
+  ok(await page.getByText('Turkish get-up').count() === 1, 'library has the MyGym exercises (627 in total)')
+  await page.getByPlaceholder(/Search 627 exercises/).fill('')
 
   // meal plan library: browse, shopping list, apply to a client
   await page.goto(BASE + '/meal-plans', { waitUntil: 'networkidle' })
