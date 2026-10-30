@@ -17,6 +17,7 @@ import { tasterSessionChecks } from './taster-session.mjs'
 import { sessionBalanceChecks } from './session-balance.mjs'
 import { sessionAssignChecks } from './session-assign.mjs'
 import { setLineChecks } from './set-lines.mjs'
+import { homeWeekChecks } from './home-week.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -70,6 +71,7 @@ await tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await sessionBalanceChecks({ open, sql, IDS, BASE, clean, ok })
 await sessionAssignChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await setLineChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await homeWeekChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await alternativeBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
