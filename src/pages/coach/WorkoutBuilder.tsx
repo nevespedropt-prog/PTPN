@@ -72,6 +72,17 @@ export default function WorkoutBuilder() {
     const next = rows.filter((_, k) => k !== i)
     setRows(w.format === 'standard' ? normaliseSetRests(next) : next); setDirty(true)
   }
+  // A line continues the exercise above it (same move, own reps and weight), so 15, 12 and 10 reps can be three lines.
+  const sameMove = (a: Row, b: Row) => a.exercise_name === b.exercise_name && a.exercise_id === b.exercise_id
+  const isLine = (i: number) => i > 0 && rows[i].set_style === 'single' && rows[i - 1].set_style === 'single' && sameMove(rows[i], rows[i - 1])
+  const addLine = (i: number) => {
+    const source = rows[i]
+    let at = i
+    while (at + 1 < rows.length && rows[at + 1].set_style === 'single' && sameMove(rows[at + 1], source)) at++
+    const line: Row = { ...source, id: crypto.randomUUID(), group_label: crypto.randomUUID(), set_style: 'single', sets: 1, isNew: true }
+    const next = [...rows.slice(0, at + 1), line, ...rows.slice(at + 1)]
+    setRows(w.format === 'standard' ? normaliseSetRests(next) : next); setDirty(true)
+  }
   const add = (e: { id: string | null; name: string; category?: string }) => {
     const cardio = e.category === 'cardio'
     const style: SetStyle = w.format === 'standard' ? addStyle : 'single'
@@ -156,7 +167,7 @@ export default function WorkoutBuilder() {
         {rows.map((r, i) => (
           <div key={r.id} className="card" role="group" aria-label={`Exercise ${i + 1}: ${r.exercise_name}`}>
             <div className="row between nowrap" style={{ marginBottom: 8 }}>
-              <b className="grow truncate">{i + 1}. {r.exercise_name}</b>
+              <b className="grow truncate">{i + 1}. {r.exercise_name}{isLine(i) && <span className="mute small"> (another line)</span>}</b>
               <button type="button" className="icon sm" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Move up"><Icon name="up" size={16} /></button>
               <button type="button" className="icon sm" onClick={() => move(i, 1)} disabled={i === rows.length - 1} aria-label="Move down"><Icon name="down" size={16} /></button>
               <button type="button" className="icon sm" onClick={() => drop(i)} aria-label={`Remove ${r.exercise_name}`}><Icon name="trash" size={16} /></button>
@@ -183,6 +194,10 @@ export default function WorkoutBuilder() {
                 {!/^burpees?$/i.test(r.exercise_name.trim()) && <label className="field">Tempo<input value={r.tempo} onChange={e => updRow(i, { tempo: e.target.value })} placeholder="3-1-1" /></label>}
               </div>
             ))}
+            {!compact && !r.cardio && r.set_style === 'single' && editable && <div style={{ marginTop: 8 }}>
+              <button type="button" className="soft sm" onClick={() => addLine(i)} aria-label={`Add another set line for ${r.exercise_name}`}><Icon name="plus" size={14} />Add set line</button>
+              <span className="mute small"> Different reps or weight per set? Add a line for each.</span>
+            </div>}
             {!compact && <><input style={{ marginTop: 8 }} placeholder="Coaching notes" value={r.notes} onChange={e => updRow(i, { notes: e.target.value })} />
             {coach && <button type="button" className="soft sm" style={{ marginTop: 10 }} disabled={r.isNew || busy} onClick={() => setAlternativeItem(r)} aria-label={`Manage alternatives for ${r.exercise_name}`}>Approved alternatives</button>}
             {coach && r.isNew && <p className="mute small">Save this exercise before approving alternatives.</p>}</>}

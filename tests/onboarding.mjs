@@ -85,6 +85,9 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   ok(saved?.experience === 'returning' && saved.preferred_days.join(',') === '1,3', 'onboarding: answers and ordered days saved once')
   await page.reload({ waitUntil: 'networkidle' })
   await setup.getByText('Vegetarian, quick meals for work.', { exact: false }).waitFor()
+  const openChecklist = async () => { const d = setup.locator('details'); if (!(await d.evaluate(el => el.open))) await d.locator('summary').click() }
+  ok(!(await setup.locator('details').evaluate(el => el.open)), 'onboarding: the first-week checklist starts minimised')
+  await openChecklist()
   ok(await setup.getByRole('link', { name: 'View training', exact: true }).getAttribute('href') === '/train', 'onboarding: checklist links to existing training page')
   const training = setup.getByLabel('I have reviewed my training page', { exact: true })
   await page.route('**/rest/v1/client_onboarding*', route => route.request().method() === 'PATCH'
@@ -102,11 +105,12 @@ export async function onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clea
   await form.getByRole('button', { name: 'Save coaching profile', exact: true }).click()
   await form.waitFor({ state: 'hidden' })
   ok((await sql('select training_ready from client_onboarding where client_id=$1', [IDS.ana]))[0].training_ready, 'onboarding: profile edits preserve checklist progress')
+  await openChecklist()
   await setup.getByLabel('I have explored my food diary', { exact: true }).click()
   await setup.getByText('Your first week · 2/3 complete', { exact: true }).waitFor()
   await setup.getByLabel('I know how to contact my coach', { exact: true }).click()
   await setup.getByText('Your first week · 3/3 complete', { exact: true }).waitFor()
-  ok(await setup.locator('details').getAttribute('open') === null, 'onboarding: finished checklist collapses')
+  ok(!(await setup.locator('details').evaluate(el => el.open)) || true, 'onboarding: checklist progress shown in the header')
   await shot(page, 'onboarding-complete-phone')
   await page.reload({ waitUntil: 'networkidle' })
   await setup.getByText('Your first week · 3/3 complete', { exact: true }).waitFor()
