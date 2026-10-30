@@ -4,6 +4,7 @@ import type { Exercise, MealType, Recipe, Workout } from '../types'
 import { Empty, MacroChips, Sheet, Skeleton } from './ui'
 import Icon from './Icon'
 import DemoLink from './DemoLink'
+import { searchExercises } from '../lib/exerciseSearch'
 import { FORMAT_LABEL } from '../lib/training'
 import { MEAL_LABEL, MEALS } from '../lib/nutrition'
 
@@ -22,8 +23,7 @@ export function ExerciseList({ rows, onPick, query, setQuery, allowCustom }: {
   rows: Exercise[] | null; onPick: (e: { id: string | null; name: string; category?: string }) => void; query: string; setQuery: (s: string) => void; allowCustom?: boolean
 }) {
   const [muscle, setMuscle] = useState('All')
-  const list = useMemo(() => (rows ?? []).filter(e =>
-    (muscle === 'All' || e.muscle === muscle) && e.name.toLowerCase().includes(query.trim().toLowerCase())), [rows, muscle, query])
+  const list = useMemo(() => searchExercises((rows ?? []).filter(e => muscle === 'All' || e.muscle === muscle), query), [rows, muscle, query])
   const exact = (rows ?? []).some(e => e.name.toLowerCase() === query.trim().toLowerCase())
   return (
     <>

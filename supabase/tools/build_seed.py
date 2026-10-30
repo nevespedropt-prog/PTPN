@@ -68,11 +68,11 @@ EX = [
  ("Standing calf raise","Calves","Machine","strength","Full stretch at the bottom, rise high, pause."),
  ("Seated calf raise","Calves","Machine","strength","Knees under the pad, full range, slow tempo."),
  # arms
- ("Barbell curl","Biceps","Barbell","strength","Elbows by your sides, curl without swinging."),
- ("Dumbbell curl","Biceps","Dumbbells","strength","Supinate as you curl, lower slowly."),
- ("Hammer curl","Biceps","Dumbbells","strength","Neutral grip, curl to the shoulder, elbows fixed."),
- ("Preacher curl","Biceps","EZ bar","strength","Arms on the pad, curl up, lower to near straight."),
- ("Cable curl","Biceps","Cable","strength","Constant tension, squeeze at the top."),
+ ("Barbell bicep curl","Biceps","Barbell","strength","Elbows by your sides, curl without swinging."),
+ ("Dumbbell bicep curl","Biceps","Dumbbells","strength","Supinate as you curl, lower slowly."),
+ ("Hammer bicep curl","Biceps","Dumbbells","strength","Neutral grip, curl to the shoulder, elbows fixed."),
+ ("Preacher bicep curl","Biceps","EZ bar","strength","Arms on the pad, curl up, lower to near straight."),
+ ("Cable bicep curl","Biceps","Cable","strength","Constant tension, squeeze at the top."),
  ("Triceps pushdown","Triceps","Cable","strength","Elbows pinned, push down to full lockout."),
  ("Overhead triceps extension","Triceps","Dumbbells","strength","Weight behind the head, extend overhead, elbows forward."),
  ("Skull crusher","Triceps","EZ bar","strength","Lower the bar toward the forehead, extend back up."),
@@ -353,7 +353,7 @@ W = [
    ("Triceps pushdown","C",3,"12",None,0,"No rest; continue to C2"),("Overhead triceps extension","C",3,"12",None,75,"Rest after C2")]),
  ("pull","Pull","standard",60,None,"Back, rear delts and biceps.",[
    ("Deadlift","A",3,"5",80,0,"No rest; continue to A2"),("Pull-up","A",4,"max",None,75,"Rest after A2; use a band if needed"),("Barbell row","B",3,"8",None,0,"No rest; continue to B2"),
-   ("Face pull","B",3,"15",None,60,"Rest after B2"),("Hammer curl","C",3,"12",None,0,"No rest; continue to C2"),("Barbell curl","C",3,"10",None,75,"Rest after C2")]),
+   ("Face pull","B",3,"15",None,60,"Rest after B2"),("Hammer bicep curl","C",3,"12",None,0,"No rest; continue to C2"),("Barbell bicep curl","C",3,"10",None,75,"Rest after C2")]),
  ("legs","Legs","standard",65,None,"Quads, hamstrings, glutes and calves.",[
    ("Back squat","",4,"6",75,180,""),("Romanian deadlift","",3,"8",None,120,""),("Bulgarian split squat","",3,"10 per leg",None,90,""),
    ("Lying leg curl","",3,"12",None,60,""),("Standing calf raise","",4,"15",None,45,"")]),
@@ -411,17 +411,17 @@ if __name__ == '__main__':
     out = ["-- PTPN built-in library. Safe to re-run (deterministic ids, on conflict do nothing).",
            "create or replace function pg_temp.sid(t text) returns uuid language sql immutable as $$ select extensions.uuid_generate_v5('6f1c1e4a-8d3b-4c55-9a9e-5b1d2e7c0a11'::uuid, t) $$;", ""]
     out.append("insert into public.exercises (id, name, muscle, equipment, category, instructions) values")
-    out.append(",\n".join(f"({(uid('ex',n))},{q(n)},{q(m)},{q(eq)},{q(c)},{q(cue)})" for n,m,eq,c,cue in EX) + "\non conflict (id) do nothing;\n")
+    out.append(",\n".join(f"({(uid('ex',n))},{q(n)},{q(m)},{q(eq)},{q(c)},{q(cue)})" for n,m,eq,c,cue in EX) + "\non conflict do nothing;\n")
     out.append("insert into public.foods (id, name, serving_label, serving_g, kcal, protein, carbs, fat) values")
-    out.append(",\n".join(f"({(uid('food',n))},{q(n)},{q(sl)},{g},{k},{p},{c},{f})" for n,sl,g,k,p,c,f in FOODS) + "\non conflict (id) do nothing;\n")
+    out.append(",\n".join(f"({(uid('food',n))},{q(n)},{q(sl)},{g},{k},{p},{c},{f})" for n,sl,g,k,p,c,f in FOODS) + "\non conflict do nothing;\n")
     rows = []
     for n, meal, prep, desc, tags, ings, steps in RECIPES:
         k, p, c, f = macros(ings)
         rows.append(f"({(uid('recipe',n))},{q(n)},{q(meal)},{q(desc)},{prep},{k},{p},{c},{f},{arr([ing_label(a,b) for a,b in ings])},{arr(steps)},{arr(tags)})")
     out.append("insert into public.recipes (id, name, meal_type, description, prep_min, kcal, protein, carbs, fat, ingredients, steps, tags) values")
-    out.append(",\n".join(rows) + "\non conflict (id) do nothing;\n")
+    out.append(",\n".join(rows) + "\non conflict do nothing;\n")
     out.append("insert into public.workouts (id, name, format, duration_min, rounds, description) values")
-    out.append(",\n".join(f"({(uid('w',k))},{q(n)},{q(fm)},{d if d else 'null'},{r if r else 'null'},{q(desc)})" for k,n,fm,d,r,desc,_ in W) + "\non conflict (id) do nothing;\n")
+    out.append(",\n".join(f"({(uid('w',k))},{q(n)},{q(fm)},{d if d else 'null'},{r if r else 'null'},{q(desc)})" for k,n,fm,d,r,desc,_ in W) + "\non conflict do nothing;\n")
     items = []
     for k, n, fm, d, r, desc, its in W:
         for i, (ex, grp, sets, reps, pct, rest, notes) in enumerate(its):
@@ -429,16 +429,16 @@ if __name__ == '__main__':
             style = 'superset' if fm == 'standard' and grp else 'single'
             items.append(f"({(uid('wi',k+':'+str(i)))},{(uid('w',k))},{(uid('ex',ex))},{q(ex)},{i},{q(grp)},{q(style)},{sets if sets else 'null'},{q(reps)},{pct if pct else 'null'},{rest if rest is not None else 'null'},{q(notes)})")
     out.append("insert into public.workout_items (id, workout_id, exercise_id, exercise_name, sort, group_label, set_style, sets, reps, percent_1rm, rest_sec, notes) values")
-    out.append(",\n".join(items) + "\non conflict (id) do nothing;\n")
+    out.append(",\n".join(items) + "\non conflict do nothing;\n")
     out.append("insert into public.programs (id, name, goal, level, weeks, description) values")
-    out.append(",\n".join(f"({(uid('p',k))},{q(n)},{q(g)},{q(l)},{w},{q(desc)})" for k,n,g,l,w,desc,_ in P) + "\non conflict (id) do nothing;\n")
+    out.append(",\n".join(f"({(uid('p',k))},{q(n)},{q(g)},{q(l)},{w},{q(desc)})" for k,n,g,l,w,desc,_ in P) + "\non conflict do nothing;\n")
     days = []
     for k, n, g, l, w, desc, sched in P:
         for week, ds in sched.items():
             for day, wk in ds:
                 days.append(f"({(uid('pd',f'{k}:{week}:{day}:{wk}'))},{(uid('p',k))},{week},{day},{(uid('w',wk))})")
     out.append("insert into public.program_days (id, program_id, week, day, workout_id) values")
-    out.append(",\n".join(days) + "\non conflict (id) do nothing;\n")
+    out.append(",\n".join(days) + "\non conflict do nothing;\n")
 
     open(sys.argv[1], 'w').write("\n".join(out))
     print(f"exercises {len(EX)}, foods {len(FOODS)}, recipes {len(RECIPES)}, workouts {len(W)}, items {len(items)}, programs {len(P)}, program days {len(days)}")
