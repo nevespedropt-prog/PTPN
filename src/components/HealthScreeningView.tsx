@@ -9,7 +9,7 @@ export default function HealthScreeningView({ taster }: { taster: TasterSession 
     ['Medication', taster.parq_medication_details], ['Allergies', taster.parq_allergy_details],
   ].filter(([, text]) => text)
   const consent = (given: boolean, at: string | null) => given ? `recorded${at ? ` on ${niceDate(at.slice(0, 10))}` : ''}` : 'not recorded'
-  return <details className="card stack parq-card collapsible-card" open role="region" aria-label="Health screening and consent">
+  return <details className="card stack parq-card collapsible-card" role="region" aria-label="Health screening and consent">
     <summary><span><span className="eyebrow">Health screening</span><b>PAR-Q and your consent</b></span></summary>
     <p className="mute small" style={{ margin: 0 }}>Recorded by your coach in your taster session on {niceDate(taster.assessed_on)}. For viewing only. Tell your coach if anything has changed.</p>
     <div className="list">{PARQ_QUESTIONS.map(question => {
