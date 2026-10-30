@@ -19,6 +19,7 @@ import { sessionAssignChecks } from './session-assign.mjs'
 import { setLineChecks } from './set-lines.mjs'
 import { homeWeekChecks } from './home-week.mjs'
 import { workoutHistoryChecks } from './workout-history.mjs'
+import { trainWeekChecks } from './train-week.mjs'
 
 const OUT = new URL('./.out', import.meta.url).pathname
 const SHOTS = OUT + '/shots'
@@ -74,6 +75,7 @@ await sessionAssignChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await setLineChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await homeWeekChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await workoutHistoryChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await trainWeekChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await alternativeBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await monthlyBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await onboardingBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
