@@ -77,6 +77,13 @@ Dark premium look: background #0b0b0d, chalk #f4f4f5, PTPN red #e11d2e, steel #8
 - Health screening lives in `taster_sessions` (PAR-Q answers and two consent flags). Coach edits it in the taster tab, clients get a read-only view on Account and `/taster-session`. Coach private notes are in `taster_session_notes`.
 - `/` redirects to `/home` for clients. Tests must accept either pathname.
 - Source files must stay valid UTF-8. A previous tool corrupted the middle dot into U+FFFD; check with `grep -rn $'\xef\xbf\xbd' src`.
+- Minimisable boxes: use `<details className="card collapsible-card">` with no `open` attribute so every box starts closed. Tests must open the box before reading inside it (see `openBox` in `tests/weekly-checkins.mjs`).
+- Sessions are arranged by the coach (Sessions page, `CoachSlots.tsx`). Clients have no booking page. `bookings.session_id` is unique.
+- Workout builder: "Add set line" adds another row for the same exercise (no unique constraint on `workout_items`). Clients edit their own workouts through `/build/:workoutId?cw=:id`.
+- Client Home shows one "Your week" box for finished workouts. Progress has a Workouts tab (`WorkoutHistory.tsx`) with one closed box per month.
+- New tests that touch a client page need a `client_health` consent row for the user, or ConsentGate blocks the page. Delete it afterwards.
+- Never run two e2e runs at once (both use port 4180). Set `CHROMIUM_PATH=/opt/pw-browsers/chromium`.
+- Supabase MCP: statements with `revoke`, `drop` or `grant ... delete` can raise an approval prompt that never reaches the session and times out. Send plain `create` statements, or give the user the SQL and the editor link. After a squash merge, reset the work branch to `origin/main` before the next change.
 - Logo: rising P (three bars, tallest becomes a red P) with a custom wordmark. Regenerate all icons with `node branding/make-icons.mjs`.
 
 ## Meal plan import (build meal plans from a recipe site)
