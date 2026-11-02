@@ -4,7 +4,7 @@ Saved 1 Nov 2026 from Pedro's routine. It is sized so most of it takes minutes a
 
 Note: the routine mentions Netlify, Cloudflare, an email system and a Wix booking sync. The app repo itself is GitHub Pages + Supabase, so check the live set-up of those services when running the checks.
 
-## Weekly (about 10 minutes), Mondays 09:00
+## Weekly (about 10 minutes), Sundays 22:00
 
 - Exercise suggestions: Pedro asks Claude to review the pending suggestions into the library.
 - Check that things still work: log in to the app, make a test booking sync, send a test email or form. Bookings and emails are what members notice first.
