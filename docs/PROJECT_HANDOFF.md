@@ -376,3 +376,7 @@ Changed lib/training.ts, shared WorkoutFormatGuide.tsx, WorkoutBuilder.tsx, Work
 - Workout videos: the coach can set a thumbnail per video (Set thumbnail in the video sheet). Pictures go to the public `video-thumbnails` bucket (`migrate_v29_video_thumbnails.sql`, applied live), the path is `resources.thumbnail_path`. They are chosen by the coach because the videos are Instagram reels and Instagram images cannot be fetched by the app.
 - Test notes: never run two browser runs at once. A GitHub check can sit "queued" for ten minutes. Search tests that type a common word (Burpee) must match the exact name now that the library is large. Tests at the end of this work: 324 database checks, about 580 browser checks.
 - Open items for the user: switch on leaked-password protection in the Supabase dashboard; upload the replacement `mygym-client-meal-plan` skill in claude.ai; add the video thumbnails in the app; optionally test the website enquiry email. Open items for the code: close "bookings insert own"; `client_packages.notes` and `payments.note` are readable by the client who owns the row.
+
+## Maintenance
+
+Recurring checks (weekly, monthly, quarterly, yearly) are in `docs/MAINTENANCE_ROUTINE.md`.
