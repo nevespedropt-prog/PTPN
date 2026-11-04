@@ -18,7 +18,7 @@ export async function workoutHistoryChecks({ open, sql, IDS, BASE, shot, clean, 
     const name = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
     await page.goto(BASE + '/progress?progressTab=workouts', { waitUntil: 'networkidle' })
     const tabs = await page.getByRole('tab').allInnerTexts()
-    ok(tabs.join(',') === 'Body,Strength,Photos,Workouts', 'workouts tab: Monthly is merged into Workouts: ' + tabs.join(','))
+    ok(tabs.join(',') === 'Workouts,Strength,Body,Photos', 'workouts tab: Monthly is merged into Workouts: ' + tabs.join(','))
     const report = page.getByRole('region', { name: 'Workouts report', exact: true })
     await report.locator('.tile').first().waitFor()
     const tile = label => report.locator('.tile').filter({ hasText: label })

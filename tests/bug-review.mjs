@@ -10,6 +10,7 @@ export async function bugReviewChecks({ open, sql, IDS, BASE, shot, clean, ok })
   // Progress: failed reads, invalid values, retained drafts and safe deletion.
   await fail('**/rest/v1/measurements*', 'GET')
   await page.goto(BASE + '/progress', { waitUntil: 'networkidle' })
+  await page.getByRole('tab', { name: 'Body' }).click()
   await page.getByText('Could not load measurements. Please try again when connected.', { exact: true }).waitFor()
   ok(await page.getByText('No entries yet.', { exact: true }).count() === 0, 'review: failed measurement read is not shown as empty history')
   await page.unroute('**/rest/v1/measurements*')

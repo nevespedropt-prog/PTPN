@@ -140,12 +140,12 @@ function Records({ clientId }: { clientId: string }) {
 }
 
 export default function Progress({ clientId, readOnly = false }: { clientId: string; readOnly?: boolean }) {
-  const [tab, setTab] = usePageTab('progress-' + clientId, ['body', 'strength', 'photos', 'workouts'] as const, 'body', 'progressTab')
+  const [tab, setTab] = usePageTab('progress-' + clientId, ['workouts', 'strength', 'body', 'photos'] as const, 'workouts', 'progressTab')
   return (
     <>
       {!readOnly && <PageHead eyebrow="Progress" title="Your results" />}
       <ProgressStory clientId={clientId} coach={readOnly} />
-      <Seg value={tab} onChange={setTab} options={[{ value: 'body', label: 'Body' }, { value: 'strength', label: 'Strength' }, { value: 'photos', label: 'Photos' }, { value: 'workouts', label: 'Workouts' }]} />
+      <Seg value={tab} onChange={setTab} options={[{ value: 'workouts', label: 'Workouts' }, { value: 'strength', label: 'Strength' }, { value: 'body', label: 'Body' }, { value: 'photos', label: 'Photos' }]} />
       {tab === 'body' && <Body clientId={clientId} readOnly={readOnly} />}
       {tab === 'strength' && <>
         <Records clientId={clientId} />

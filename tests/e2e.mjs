@@ -466,7 +466,8 @@ console.log('Client flows')
   await shot(page, 'client-recipes'); clean('recipes', errors)
   await page.keyboard.press('Escape')
 
-  // progress: body, strength, photos
+  await tab(page, 'Progress')
+  await page.getByRole('tab', { name: 'Body' }).click()
   await tab(page, 'Progress')
   await page.getByPlaceholder('Weight kg').fill('82.5')
   await page.getByRole('button', { name: 'Add' }).first().click()
