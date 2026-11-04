@@ -36,6 +36,12 @@ grant usage on schema storage to authenticated; grant all on storage.objects to 
 create publication supabase_realtime;
 `)
 await db.exec(fs.readFileSync(repo + 'schema.sql', 'utf8'))
+// v32: speed-up for row-level security rules; behaviour must not change
+const policiesBefore = (await db.query('select count(*)::int as c from pg_policies')).rows[0].c
+await db.exec(fs.readFileSync(repo + 'migrate_v32_rls_initplan.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v32_rls_initplan.sql', 'utf8')) // re-runnable
+const unwrapped = (await db.query(`select count(*)::int as c from pg_policies where schemaname = 'public' and (coalesce(qual, '') ~ '(?<!SELECT )auth\\.(uid|role|jwt)\\(\\)' or coalesce(with_check, '') ~ '(?<!SELECT )auth\\.(uid|role|jwt)\\(\\)')`)).rows[0].c
+const policiesAfter = (await db.query('select count(*)::int as c from pg_policies')).rows[0].c
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8'))
@@ -43,6 +49,8 @@ await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8')) // re-runna
 await db.exec(fs.readFileSync(repo + 'seed_common_meals.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed_common_meals.sql', 'utf8')) // re-runnable
 console.log('schema + seed loaded (twice)')
+ok(unwrapped === 0, 'v32: every auth.uid()/role()/jwt() call in a public policy is wrapped in (select ...)')
+ok(policiesBefore === policiesAfter && policiesAfter > 50, 'v32: rewrite keeps every policy (' + policiesBefore + ' before, ' + policiesAfter + ' after)')
 const sq = (await db.query(`select id from public.exercises where name = 'Back squat'`)).rows[0].id
 ok(sq === '1801c6bd-da34-54f4-a8ed-a88850762e13', 'seed ids match python uuid5: ' + sq)
 const correctedCategories = Object.fromEntries((await db.query(`
