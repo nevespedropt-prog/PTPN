@@ -48,6 +48,15 @@ const fkBefore = (await db.query(fkSql)).rows[0].c
 await db.exec(fs.readFileSync(repo + 'migrate_v33_index_foreign_keys.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'migrate_v33_index_foreign_keys.sql', 'utf8')) // re-runnable
 const fkAfter = (await db.query(fkSql)).rows[0].c
+// v34: no table has two permissive policies that apply to the same action
+const dupSql = `select p.tablename, a.act from (select distinct tablename from pg_policies where schemaname = 'public') p
+  cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) a(act)
+  where (select count(*) from pg_policies x where x.schemaname = 'public' and x.tablename = p.tablename and x.permissive = 'PERMISSIVE'
+    and (x.cmd = 'ALL' or x.cmd = a.act) and (x.roles::text[] && array['public', 'authenticated'])) > 1`
+const dupBefore = (await db.query(dupSql)).rows.length
+await db.exec(fs.readFileSync(repo + 'migrate_v34_merge_permissive_policies.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v34_merge_permissive_policies.sql', 'utf8')) // re-runnable
+const dupAfter = (await db.query(dupSql)).rows
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8'))
@@ -55,6 +64,7 @@ await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8')) // re-runna
 await db.exec(fs.readFileSync(repo + 'seed_common_meals.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed_common_meals.sql', 'utf8')) // re-runnable
 console.log('schema + seed loaded (twice)')
+ok(dupBefore > 15 && dupAfter.length === 0, 'v34: no table has two permissive policies for one action (' + dupBefore + ' before, ' + dupAfter.map(r => r.tablename + ' ' + r.act).join(', ') + ' left)')
 ok(unwrapped === 0, 'v32: every auth.uid()/role()/jwt() call in a public policy is wrapped in (select ...)')
 ok(fkBefore > 0 && fkAfter === 0, 'v33: every foreign key has an index (' + fkBefore + ' were missing, ' + fkAfter + ' left)')
 ok(policiesBefore === policiesAfter && policiesAfter > 50, 'v32: rewrite keeps every policy (' + policiesBefore + ' before, ' + policiesAfter + ' after)')
