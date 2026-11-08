@@ -332,6 +332,13 @@ ok((await db.query(`select count(*)::int n from client_archives where client_id 
 const left = await db.query(`select (select count(*) from food_logs) f, (select count(*) from messages) m, (select count(*) from client_workouts) w, (select count(*) from workouts where created_by = '${A}') ow`)
 ok(Object.values(left.rows[0]).every(v => Number(v) === 0), 'deleting a user removes their data')
 
+// delete client (coach feature): no table is left holding the deleted client's id
+ok((await db.query(`select count(*)::int n from profiles where id = '${A}'`)).rows[0].n === 0, 'deleting a client login removes their profile')
+const idCols = (await db.query(`select table_name, column_name from information_schema.columns where table_schema = 'public' and column_name in ('client_id', 'user_id', 'sender_id', 'recipient_id') and table_name in (select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE')`)).rows
+let leftover = 0
+for (const { table_name, column_name } of idCols) leftover += (await db.query(`select count(*)::int n from public."${table_name}" where "${column_name}" = '${A}'`)).rows[0].n
+ok(idCols.length > 10 && leftover === 0, `deleting a client login leaves no rows behind in ${idCols.length} client-linked columns`)
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
 

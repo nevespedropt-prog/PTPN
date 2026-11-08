@@ -112,6 +112,21 @@ console.log('Coach flows')
   await page.getByRole('button', { name: 'Done' }).click()
   await shot(page, 'coach-clients'); clean('clients', errors)
 
+  // Delete a client added by mistake: needs the typed name, then removes the login and profile.
+  await page.getByText('Cara Test').first().click()
+  await page.getByRole('heading', { name: 'Cara Test' }).waitFor()
+  await page.getByRole('button', { name: 'Delete client', exact: true }).click()
+  const delBtn = page.getByRole('button', { name: 'Delete permanently', exact: true })
+  ok(await delBtn.isDisabled(), 'delete client stays disabled until the name is typed')
+  await page.getByPlaceholder('Cara Test').fill('Someone Else')
+  ok(await delBtn.isDisabled(), 'delete client stays disabled for a wrong name')
+  await page.getByPlaceholder('Cara Test').fill('cara test')
+  await delBtn.click()
+  await page.waitForURL(/\/clients$/)
+  ok((await sql(`select count(*)::int n from auth.users where email = 'cara@x.com'`))[0].n === 0, 'delete client removes the login')
+  ok((await sql(`select count(*)::int n from public.profiles where full_name = 'Cara Test'`))[0].n === 0, 'delete client removes the profile')
+  ok(await page.getByText('Cara Test').count() === 0, 'deleted client is gone from the clients list')
+
   // Archive and restore a client, including persistence and mobile layout.
   await page.setViewportSize({ width: 390, height: 844 })
   ok(await page.locator('header.top .brand-lockup').isVisible(), 'phone header shows gold brand lockup')
