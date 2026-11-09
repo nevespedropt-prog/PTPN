@@ -57,6 +57,9 @@ const dupBefore = (await db.query(dupSql)).rows.length
 await db.exec(fs.readFileSync(repo + 'migrate_v34_merge_permissive_policies.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'migrate_v34_merge_permissive_policies.sql', 'utf8')) // re-runnable
 const dupAfter = (await db.query(dupSql)).rows
+// v35: the profile update rule no longer reads its own table
+await db.exec(fs.readFileSync(repo + 'migrate_v35_fix_profile_update_rule.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v35_fix_profile_update_rule.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8'))
@@ -335,6 +338,18 @@ ok((await as(C, `insert into bookings(session_id, client_id) values ('${bookSess
 ok(await count(A, `select * from bookings where session_id = '${bookSession}'`) === 1 && await count(B, `select * from bookings where session_id = '${bookSession}'`) === 0, 'client sees only their own booking')
 ok(!(await as(C, `delete from bookings where session_id = '${bookSession}'`)).error && await count(C, `select * from bookings where session_id = '${bookSession}'`) === 0, 'coach removes a client from a session')
 await db.exec(`delete from sessions where id = '${bookSession}'`)
+
+// v35: profile updates work and stay locked down
+const upd = async (who, sql) => { const r = await as(who, sql + ' returning id'); return r.error ? 'ERR ' + r.error : r.rows.length }
+ok(await upd(A, `update profiles set full_name = 'Ana S' where id = '${A}'`) === 1, 'v35: a client can update their own profile')
+ok(String(await upd(A, `update profiles set role = 'coach' where id = '${A}'`)).startsWith('ERR'), 'v35: a client cannot make themselves a coach')
+ok(await upd(A, `update profiles set full_name = 'x' where id = '${B}'`) === 0, 'v35: a client cannot update another profile')
+ok(await upd(A, `update profiles set full_name = 'x' where id = '${C}'`) === 0, 'v35: a client cannot update the coach profile')
+ok(await upd(C, `update profiles set full_name = 'Ana Silva' where id = '${A}'`) === 1, 'v35: the coach can update a client profile')
+const anonUpd = await upd(null, `update profiles set full_name = 'x' where id = '${A}'`)
+ok(anonUpd === 0 || String(anonUpd).startsWith('ERR'), 'v35: signed-out users cannot update profiles')
+ok((await db.query(`select role from profiles where id = '${A}'`)).rows[0].role === 'client', 'v35: the client role is unchanged')
+ok((await as(null, `select public.my_role()`)).error, 'v35: signed-out users cannot call my_role()')
 
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)
