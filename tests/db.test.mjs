@@ -48,6 +48,18 @@ const fkBefore = (await db.query(fkSql)).rows[0].c
 await db.exec(fs.readFileSync(repo + 'migrate_v33_index_foreign_keys.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'migrate_v33_index_foreign_keys.sql', 'utf8')) // re-runnable
 const fkAfter = (await db.query(fkSql)).rows[0].c
+// v34: no table has two permissive policies that apply to the same action
+const dupSql = `select p.tablename, a.act from (select distinct tablename from pg_policies where schemaname = 'public') p
+  cross join (values ('SELECT'), ('INSERT'), ('UPDATE'), ('DELETE')) a(act)
+  where (select count(*) from pg_policies x where x.schemaname = 'public' and x.tablename = p.tablename and x.permissive = 'PERMISSIVE'
+    and (x.cmd = 'ALL' or x.cmd = a.act) and (x.roles::text[] && array['public', 'authenticated'])) > 1`
+const dupBefore = (await db.query(dupSql)).rows.length
+await db.exec(fs.readFileSync(repo + 'migrate_v34_merge_permissive_policies.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v34_merge_permissive_policies.sql', 'utf8')) // re-runnable
+const dupAfter = (await db.query(dupSql)).rows
+// v35: the profile update rule no longer reads its own table
+await db.exec(fs.readFileSync(repo + 'migrate_v35_fix_profile_update_rule.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v35_fix_profile_update_rule.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8'))
@@ -55,6 +67,7 @@ await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8')) // re-runna
 await db.exec(fs.readFileSync(repo + 'seed_common_meals.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed_common_meals.sql', 'utf8')) // re-runnable
 console.log('schema + seed loaded (twice)')
+ok(dupBefore > 15 && dupAfter.length === 0, 'v34: no table has two permissive policies for one action (' + dupBefore + ' before, ' + dupAfter.map(r => r.tablename + ' ' + r.act).join(', ') + ' left)')
 ok(unwrapped === 0, 'v32: every auth.uid()/role()/jwt() call in a public policy is wrapped in (select ...)')
 ok(fkBefore > 0 && fkAfter === 0, 'v33: every foreign key has an index (' + fkBefore + ' were missing, ' + fkAfter + ' left)')
 ok(policiesBefore === policiesAfter && policiesAfter > 50, 'v32: rewrite keeps every policy (' + policiesBefore + ' before, ' + policiesAfter + ' after)')
@@ -326,11 +339,30 @@ ok(await count(A, `select * from bookings where session_id = '${bookSession}'`) 
 ok(!(await as(C, `delete from bookings where session_id = '${bookSession}'`)).error && await count(C, `select * from bookings where session_id = '${bookSession}'`) === 0, 'coach removes a client from a session')
 await db.exec(`delete from sessions where id = '${bookSession}'`)
 
+// v35: profile updates work and stay locked down
+const upd = async (who, sql) => { const r = await as(who, sql + ' returning id'); return r.error ? 'ERR ' + r.error : r.rows.length }
+ok(await upd(A, `update profiles set full_name = 'Ana S' where id = '${A}'`) === 1, 'v35: a client can update their own profile')
+ok(String(await upd(A, `update profiles set role = 'coach' where id = '${A}'`)).startsWith('ERR'), 'v35: a client cannot make themselves a coach')
+ok(await upd(A, `update profiles set full_name = 'x' where id = '${B}'`) === 0, 'v35: a client cannot update another profile')
+ok(await upd(A, `update profiles set full_name = 'x' where id = '${C}'`) === 0, 'v35: a client cannot update the coach profile')
+ok(await upd(C, `update profiles set full_name = 'Ana Silva' where id = '${A}'`) === 1, 'v35: the coach can update a client profile')
+const anonUpd = await upd(null, `update profiles set full_name = 'x' where id = '${A}'`)
+ok(anonUpd === 0 || String(anonUpd).startsWith('ERR'), 'v35: signed-out users cannot update profiles')
+ok((await db.query(`select role from profiles where id = '${A}'`)).rows[0].role === 'client', 'v35: the client role is unchanged')
+ok((await as(null, `select public.my_role()`)).error, 'v35: signed-out users cannot call my_role()')
+
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)
 ok((await db.query(`select count(*)::int n from client_archives where client_id = '${A}'`)).rows[0].n === 0, 'user deletion removes archive marker')
 const left = await db.query(`select (select count(*) from food_logs) f, (select count(*) from messages) m, (select count(*) from client_workouts) w, (select count(*) from workouts where created_by = '${A}') ow`)
 ok(Object.values(left.rows[0]).every(v => Number(v) === 0), 'deleting a user removes their data')
+
+// delete client (coach feature): no table is left holding the deleted client's id
+ok((await db.query(`select count(*)::int n from profiles where id = '${A}'`)).rows[0].n === 0, 'deleting a client login removes their profile')
+const idCols = (await db.query(`select table_name, column_name from information_schema.columns where table_schema = 'public' and column_name in ('client_id', 'user_id', 'sender_id', 'recipient_id') and table_name in (select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE')`)).rows
+let leftover = 0
+for (const { table_name, column_name } of idCols) leftover += (await db.query(`select count(*)::int n from public."${table_name}" where "${column_name}" = '${A}'`)).rows[0].n
+ok(idCols.length > 10 && leftover === 0, `deleting a client login leaves no rows behind in ${idCols.length} client-linked columns`)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

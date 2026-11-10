@@ -192,6 +192,16 @@ export function startServer(db, { port = 4180, dist }) {
         await serial(() => db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3::jsonb)`, [id, b.email, JSON.stringify({ full_name: b.full_name })]))
         return send(200, { id })
       }
+      if (url.pathname.startsWith('/functions/v1/delete-client')) {
+        const isCoach = claims && (await asRole(claims, () => db.query('select public.is_coach() as c'))).rows[0].c
+        if (!isCoach) return send(403, { error: 'Only the coach can delete clients' })
+        const b = JSON.parse(raw.toString())
+        const p = (await serial(() => db.query(`select role from public.profiles where id = $1`, [b.client_id]))).rows[0]
+        if (!p) return send(404, { error: 'Client not found' })
+        if (p.role !== 'client') return send(403, { error: 'Only client accounts can be deleted' })
+        await serial(() => db.query(`delete from auth.users where id = $1`, [b.client_id]))
+        return send(200, { ok: true })
+      }
       if (url.pathname.startsWith('/storage/v1/object/public/') && req.method === 'GET') {
         const [, , , , , bucket, ...rest] = url.pathname.split('/')
         const key = bucket + '/' + decodeURIComponent(rest.join('/'))

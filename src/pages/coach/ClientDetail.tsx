@@ -342,6 +342,52 @@ function Nutrition({ id }: { id: string }) {
   )
 }
 
+function DeleteClient({ client }: { client: { id: string; full_name: string } }) {
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [typed, setTyped] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const name = (client.full_name || 'Unnamed').trim()
+  const matches = typed.trim().toLowerCase() === name.toLowerCase()
+
+  function close() { if (!busy) { setOpen(false); setTyped(''); setErr('') } }
+  async function remove(e: React.FormEvent) {
+    e.preventDefault()
+    if (!matches || busy) return
+    setErr(''); setBusy(true)
+    const { data, error } = await supabase.functions.invoke('delete-client', { body: { client_id: client.id } })
+    if (error || data?.error) {
+      let msg = data?.error ?? error?.message ?? 'Could not delete the client'
+      const res = (error as { context?: Response } | null)?.context
+      if (res && typeof res.json === 'function') msg = (await res.json().catch(() => null))?.error ?? msg
+      setBusy(false); return setErr(msg)
+    }
+    navigate('/clients', { replace: true })
+  }
+
+  return (
+    <>
+      <div className="card" style={{ marginTop: 22 }}>
+        <h3>Delete client</h3>
+        <p className="mute small">Use this for a client added by mistake or who never joined. It permanently removes their login and all their data. To keep their history, archive them from the Clients list instead.</p>
+        <button type="button" className="danger" onClick={() => setOpen(true)}>Delete client</button>
+      </div>
+      <Sheet open={open} onClose={close} title="Delete client">
+        <form className="stack" onSubmit={remove}>
+          <p>This permanently deletes <b>{name}</b>: their login, workouts, check-ins, food logs, measurements, photos, messages, bookings and balance. It cannot be undone.</p>
+          <label className="field">Type their name to confirm<input value={typed} onChange={e => setTyped(e.target.value)} placeholder={name} autoComplete="off" autoFocus /></label>
+          {err && <p className="mute small" style={{ color: 'var(--danger)' }}>{err}</p>}
+          <div className="row" style={{ marginBottom: 0 }}>
+            <button type="submit" className="danger" disabled={!matches || busy}>{busy ? 'Deleting...' : 'Delete permanently'}</button>
+            <button type="button" className="soft" onClick={close} disabled={busy}>Cancel</button>
+          </div>
+        </form>
+      </Sheet>
+    </>
+  )
+}
+
 export default function ClientDetail() {
   const { id } = useParams()
   const { clients } = useClients()
@@ -369,6 +415,7 @@ export default function ClientDetail() {
       {tab === 'nutrition' && <Nutrition id={id} />}
       {tab === 'habits' && <CoachHabits clientId={id} />}
       {tab === 'progress' && <Progress clientId={id} readOnly />}
+      <DeleteClient client={c} />
     </>
   )
 }
