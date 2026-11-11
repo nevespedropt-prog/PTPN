@@ -10,6 +10,14 @@ type Sub = { id: string; user_id: string; endpoint: string; p256dh: string; auth
 type Note = { title: string; body: string; path: string; tag: string }
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+// Only ever call real push services, whatever is stored in the table.
+const PUSH_HOST = /^https:\/\/(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.services\.mozilla\.com|[a-z0-9.-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)\//i
+const same = (a: string, b: string) => {
+  const x = new TextEncoder().encode(a), y = new TextEncoder().encode(b)
+  let d = x.length ^ y.length
+  for (let i = 0; i < Math.max(x.length, y.length); i++) d |= (x[i] ?? 0) ^ (y[i] ?? 0)
+  return d === 0
+}
 const clip = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1) + '.' : s)
 
 Deno.serve(async (req: Request) => {
@@ -17,7 +25,7 @@ Deno.serve(async (req: Request) => {
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
   const { data: cfg } = await db.from('push_config').select('*').eq('id', 1).maybeSingle()
-  if (!cfg || req.headers.get('x-push-secret') !== cfg.secret) return json({ error: 'Forbidden' }, 403)
+  if (!cfg || !same(req.headers.get('x-push-secret') ?? '', String(cfg.secret))) return json({ error: 'Forbidden' }, 403)
   webpush.setVapidDetails(cfg.subject, cfg.vapid_public, cfg.vapid_private)
   const base: string = cfg.app_url.endsWith('/') ? cfg.app_url : cfg.app_url + '/'
 
@@ -75,6 +83,7 @@ Deno.serve(async (req: Request) => {
     const { data: subs } = await db.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth').in('user_id', job.userIds)
     const payload = JSON.stringify({ title: job.note.title, body: job.note.body, url: base + job.note.path, tag: job.note.tag })
     await Promise.all(((subs ?? []) as Sub[]).map(async s => {
+      if (!PUSH_HOST.test(s.endpoint)) return
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 60 * 60 * 12 })
         sent++
