@@ -620,7 +620,8 @@ create policy "meal template items coach write" on public.meal_plan_template_ite
 create table if not exists public.push_subscriptions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
-  endpoint text not null unique,
+  endpoint text not null unique constraint push_endpoint_host_ok check (
+    endpoint ~* '^https://(fcm\.googleapis\.com|android\.googleapis\.com|updates\.push\.services\.mozilla\.com|[a-z0-9-]+\.push\.services\.mozilla\.com|[a-z0-9.-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)/[^\s]*$'),
   p256dh text not null,
   auth text not null,
   user_agent text not null default '',

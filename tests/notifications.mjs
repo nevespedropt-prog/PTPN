@@ -6,7 +6,7 @@ export async function notificationBrowserChecks({ open, sql, IDS, BASE, shot, cl
   await page.addInitScript(() => {
     const state = window.__pushTest = { live: sessionStorage.getItem('push-test-live') === '1', permission: 'granted', readError: false, subscribeError: false, unsubscribeError: false, missingRegistration: false, neverReady: false, subscribeCalls: 0, unsubscribeCalls: 0, keyLength: 0 }
     const subscription = {
-      endpoint: 'https://push.test/device-under-test',
+      endpoint: 'https://fcm.googleapis.com/fcm/send/device-under-test',
       toJSON: () => ({ endpoint: subscription.endpoint, keys: { p256dh: 'fake-device-key', auth: 'fake-device-auth' } }),
       unsubscribe: async () => {
         state.unsubscribeCalls++
@@ -37,12 +37,12 @@ export async function notificationBrowserChecks({ open, sql, IDS, BASE, shot, cl
   const set = patch => page.evaluate(p => Object.assign(window.__pushTest, p), patch)
   await on.waitFor()
   // A browser subscription belonging to another account must not be labelled on for this one.
-  await sql("insert into push_subscriptions(user_id,endpoint,p256dh,auth) values($1,'https://push.test/device-under-test','x','y')", [IDS.bo])
+  await sql("insert into push_subscriptions(user_id,endpoint,p256dh,auth) values($1,'https://fcm.googleapis.com/fcm/send/device-under-test','x','y')", [IDS.bo])
   await set({ live: true })
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
   await on.waitFor()
   ok(await active.count() === 0, 'push: browser subscription alone is not confirmation for the signed-in account')
-  await sql("delete from push_subscriptions where endpoint='https://push.test/device-under-test'")
+  await sql("delete from push_subscriptions where endpoint='https://fcm.googleapis.com/fcm/send/device-under-test'")
   await set({ live: false, subscribeError: true })
   await on.click()
   await notifications.getByText('Could not set up notifications on this device. Please retry.', { exact: true }).waitFor()
@@ -77,11 +77,11 @@ export async function notificationBrowserChecks({ open, sql, IDS, BASE, shot, cl
   await notifications.getByText('Could not turn off notifications. Please retry when connected.', { exact: true }).waitFor()
   ok(await off.isEnabled() && await active.count() === 1, 'push: failed disable remains accurately on and allows retry')
   await page.unroute('**/rest/v1/push_subscriptions*')
-  await sql("insert into push_subscriptions(user_id,endpoint,p256dh,auth) values($1,'https://push.test/other-device','x','y')", [IDS.ana])
+  await sql("insert into push_subscriptions(user_id,endpoint,p256dh,auth) values($1,'https://fcm.googleapis.com/fcm/send/other-device','x','y')", [IDS.ana])
   await set({ unsubscribeError: true })
   await off.click(); await on.waitFor()
-  ok(await active.count() === 0 && (await sql("select * from push_subscriptions where endpoint='https://push.test/device-under-test'")).length === 0, 'push: server removal confirms off even if browser cleanup fails')
-  ok((await sql("select * from push_subscriptions where endpoint='https://push.test/other-device'")).length === 1, 'push: disabling this device preserves another device')
+  ok(await active.count() === 0 && (await sql("select * from push_subscriptions where endpoint='https://fcm.googleapis.com/fcm/send/device-under-test'")).length === 0, 'push: server removal confirms off even if browser cleanup fails')
+  ok((await sql("select * from push_subscriptions where endpoint='https://fcm.googleapis.com/fcm/send/other-device'")).length === 1, 'push: disabling this device preserves another device')
   await set({ unsubscribeError: false, live: false, readError: true })
   await page.evaluate(() => { sessionStorage.removeItem('push-test-live'); document.dispatchEvent(new Event('visibilitychange')) })
   await notifications.getByRole('button', { name: 'Retry notification settings', exact: true }).waitFor()

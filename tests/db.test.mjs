@@ -60,6 +60,9 @@ const dupAfter = (await db.query(dupSql)).rows
 // v35: the profile update rule no longer reads its own table
 await db.exec(fs.readFileSync(repo + 'migrate_v35_fix_profile_update_rule.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'migrate_v35_fix_profile_update_rule.sql', 'utf8')) // re-runnable
+// v36: push endpoints must be real push services
+await db.exec(fs.readFileSync(repo + 'migrate_v36_push_endpoint_check.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v36_push_endpoint_check.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8'))
@@ -238,15 +241,15 @@ ok(await count(A, `select 1 from meal_plan_template_items i left join recipes r 
 
 // push notifications: subscriptions are private, server settings are unreadable
 await db.exec(`insert into push_config (vapid_public, vapid_private, secret, app_url) values ('PUB', 'PRIV', 'SECRET', 'https://x.test/app/')`)
-ok(!(await as(A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ('${A}', 'https://push.test/a', 'k', 'a')`)).error, 'client saves own push subscription')
-ok((await as(A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ('${B}', 'https://push.test/b', 'k', 'a')`)).error, "client cannot save a subscription for someone else")
+ok(!(await as(A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ('${A}', 'https://fcm.googleapis.com/fcm/send/a', 'k', 'a')`)).error, 'client saves own push subscription')
+ok((await as(A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ('${B}', 'https://fcm.googleapis.com/fcm/send/b', 'k', 'a')`)).error, "client cannot save a subscription for someone else")
 ok(await count(B, `select id from push_subscriptions`) === 0, 'other client cannot see Ana subscription')
 ok(await count(C, `select id from push_subscriptions`) === 0, 'coach cannot read client subscriptions directly either')
 ok((await as(A, `select * from push_config`)).error, 'client cannot read push settings')
 ok((await as(C, `select * from push_config`)).error, 'coach cannot read push settings')
 ok((await as(A, `select public.push_public_key() k`)).rows?.[0]?.k === 'PUB', 'signed-in user can fetch the public push key')
 ok((await as(null, `select public.push_public_key() k`)).error, 'anon cannot call push_public_key')
-ok((await as(A, `delete from push_subscriptions where endpoint = 'https://push.test/a' returning id`)).rows?.length === 1, 'client removes own subscription')
+ok((await as(A, `delete from push_subscriptions where endpoint = 'https://fcm.googleapis.com/fcm/send/a' returning id`)).rows?.length === 1, 'client removes own subscription')
 ok((await as(C, `update posts set pushed_at = now()`)).error === undefined, 'coach can mark posts pushed')
 const reminderSession = (await db.query(`insert into sessions(starts_at,title) values(now() + interval '7 hours 59 minutes','PT session') returning id`)).rows[0].id
 const laterSession = (await db.query(`insert into sessions(starts_at,title) values(now() + interval '9 hours','Later session') returning id`)).rows[0].id
@@ -350,6 +353,16 @@ const anonUpd = await upd(null, `update profiles set full_name = 'x' where id = 
 ok(anonUpd === 0 || String(anonUpd).startsWith('ERR'), 'v35: signed-out users cannot update profiles')
 ok((await db.query(`select role from profiles where id = '${A}'`)).rows[0].role === 'client', 'v35: the client role is unchanged')
 ok((await as(null, `select public.my_role()`)).error, 'v35: signed-out users cannot call my_role()')
+
+// v36: a client can only save real push-service addresses
+const push = ep => as(A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ('${A}', '${ep}', 'k', 'a')`)
+ok(!(await push('https://fcm.googleapis.com/fcm/send/abc')).error, 'v36: a Chrome push address is accepted')
+ok(!(await push('https://web.push.apple.com/QAbc')).error, 'v36: an Apple push address is accepted')
+ok(!(await push('https://updates.push.services.mozilla.com/wpush/v2/abc')).error, 'v36: a Firefox push address is accepted')
+ok((await push('https://evil.example.com/x')).error, 'v36: an arbitrary address is refused')
+ok((await push('http://fcm.googleapis.com/x')).error, 'v36: plain http is refused')
+ok((await push('https://fcm.googleapis.com@evil.example.com/x')).error, 'v36: a host-spoofing address is refused')
+ok((await push('https://169.254.169.254/latest')).error, 'v36: an internal address is refused')
 
 // deleting a client cascades everything
 await db.exec(`delete from auth.users where id = '${A}'`)

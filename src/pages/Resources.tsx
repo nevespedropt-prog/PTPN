@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { safeUrl } from '../lib/util'
 import { useAuth } from '../auth'
 import type { Resource } from '../types'
 import { Empty, PageHead, Sheet, Skeleton } from '../components/ui'
@@ -47,7 +48,7 @@ function VideoGrid({ videos, coach, onRemove, onRename, onThumb, onClearThumb, t
             <span className="meta">{at! + 1} of {videos.length}</span>
             <button className="ghost" disabled={at === videos.length - 1} onClick={() => setAt(at! + 1)}>Next</button>
           </div>
-          <a className="meta" href={cur.url} target="_blank" rel="noopener noreferrer">Open in Instagram</a>
+          <a className="meta" href={safeUrl(cur.url) || undefined} target="_blank" rel="noopener noreferrer">Open in Instagram</a>
           {coach && <div className="stack">
             <div className="row">
               <button className="soft sm" disabled={thumbBusy} onClick={() => picker.current?.click()}><Icon name="upload" size={16} />{thumbBusy ? 'Saving...' : cur.thumbnail_path ? 'Change thumbnail' : 'Set thumbnail'}</button>
@@ -79,7 +80,8 @@ export default function Resources() {
 
   async function add(e: React.FormEvent) {
     e.preventDefault(); setErr('')
-    const url = /^https?:\/\//i.test(f.url) ? f.url : 'https://' + f.url
+    const url = safeUrl(/^https?:\/\//i.test(f.url.trim()) ? f.url : 'https://' + f.url.trim())
+    if (!url) return setErr('Enter a valid web link.')
     const { error } = await supabase.from('resources').insert({ ...f, url, created_by: profile!.id })
     if (error) return setErr(error.message)
     setF({ title: '', url: '', category: '', description: '' }); setAdding(false); load()
@@ -134,9 +136,9 @@ export default function Resources() {
       {links.length > 0 && <div className="card tight"><div className="list">
         {links.map(r => (
           <div key={r.id} className="item">
-            <a href={r.url} target="_blank" rel="noopener noreferrer" className="grow" style={{ color: 'var(--ink)' }}>
+            <a href={safeUrl(r.url) || undefined} target="_blank" rel="noopener noreferrer" className="grow" style={{ color: 'var(--ink)' }}>
               <span className="title">{r.title}</span> {r.category && <span className="badge">{r.category}</span>}<br />
-              <span className="meta">{r.description || new URL(r.url).hostname}</span>
+              <span className="meta">{r.description || (() => { try { return new URL(r.url).hostname } catch { return r.url } })()}</span>
             </a>
             <Icon name="link" size={16} />
             {coach && <button className="link" onClick={() => remove(r.id)}>Remove</button>}

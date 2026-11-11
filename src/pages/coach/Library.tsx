@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { safeUrl, demoUrl } from '../../lib/util'
 import { useAuth } from '../../auth'
 import { useClients, usePageTab } from '../../hooks'
 import { FORMAT_LABEL } from '../../lib/training'
@@ -169,7 +170,8 @@ function Exercises() {
 
   async function add(e: React.FormEvent) {
     e.preventDefault(); setErr('')
-    const { error } = await supabase.from('exercises').insert({ ...f, name: f.name.trim(), created_by: profile!.id })
+    if (f.video_url.trim() && !safeUrl(f.video_url)) return setErr('The demo video link must start with http:// or https://')
+    const { error } = await supabase.from('exercises').insert({ ...f, video_url: f.video_url.trim() ? safeUrl(f.video_url) : '', name: f.name.trim(), created_by: profile!.id })
     if (error) return setErr(error.message)
     setAdding(false); setF({ name: '', muscle: '', equipment: '', category: 'strength', instructions: '', video_url: '' }); reload()
   }
@@ -198,7 +200,7 @@ function Exercises() {
         {open && <div className="stack">
           <div className="row" style={{ marginBottom: 0 }}><span className="badge red">{open.muscle}</span><span className="badge">{open.equipment}</span><span className="badge" style={{ textTransform: 'capitalize' }}>{open.category}</span></div>
           <p style={{ margin: 0 }}>{open.instructions || 'No instructions yet.'}</p>
-          <a className="btn soft" href={open.video_url || `https://www.youtube.com/results?search_query=${encodeURIComponent(open.name + ' exercise form')}`} target="_blank" rel="noopener noreferrer"><Icon name="play" size={16} />Watch a demo</a>
+          <a className="btn soft" href={demoUrl(open.name, open.video_url)} target="_blank" rel="noopener noreferrer"><Icon name="play" size={16} />Watch a demo</a>
           {open.created_by && <button className="danger" onClick={() => remove(open)}>Delete exercise</button>}
         </div>}
       </Sheet>

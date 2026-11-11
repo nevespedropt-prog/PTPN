@@ -19,5 +19,10 @@ export const pct = (a: number, b: number) => (b > 0 ? Math.min(100, Math.round((
 
 export const fmtSeconds = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`
 
+// Only web links are ever opened; anything else (javascript:, data:) is dropped.
+export const safeUrl = (url?: string | null) => {
+  try { const u = new URL((url ?? '').trim()); return u.protocol === 'https:' || u.protocol === 'http:' ? u.href : '' } catch { return '' }
+}
+
 export const demoUrl = (name: string, url?: string) =>
-  url || `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' exercise form')}`
+  safeUrl(url) || `https://www.youtube.com/results?search_query=${encodeURIComponent(name + ' exercise form')}`
