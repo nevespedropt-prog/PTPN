@@ -206,6 +206,7 @@ export async function tabMemoryChecks({ open, sql, IDS, BASE, ok, clean }) {
     await page.getByRole('button', { name: 'Save workout', exact: true }).click()
     await page.waitForURL(/\/workout\//)
     await page.getByRole('heading', { name: 'Client navigation test edited', exact: true }).waitFor()
+    await page.getByRole('link', { name: 'Edit workout', exact: true }).first().waitFor()
     ok(await page.getByRole('link', { name: 'Edit workout', exact: true }).count() === 1, 'a personal workout offers Edit workout in the player and can be renamed')
     await page.getByRole('button', { name: 'Back', exact: true }).click()
     await page.getByRole('tab', { name: 'Schedule', exact: true, selected: true }).waitFor()

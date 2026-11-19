@@ -18,6 +18,7 @@ import Progress from '../Progress'
 import { AssignProgram, AssignWorkout } from './Assign'
 import TasterSessionForm from '../../components/TasterSession'
 import SessionBalance from '../../components/SessionBalance'
+import ClientSessions from '../../components/ClientSessions'
 
 type Tab = 'overview' | 'taster' | 'training' | 'nutrition' | 'habits' | 'progress'
 
@@ -73,6 +74,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
         <Tile label="Avg calories" value={kcal ?? '-'} foot="logged days, last 7" />
         <SessionBalance clientId={id} coach />
       </div>
+      <ClientSessions clientId={id} />
       <ClientOnboarding key={`onboarding-${id}`} clientId={id} coach />
       {health !== undefined && (
         <div className={'card tight' + ((health && (flagged(health.allergies) || flagged(health.health_conditions))) || tasterAlerts.length ? ' consent-card' : '')}>

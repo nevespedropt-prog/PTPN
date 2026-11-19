@@ -621,3 +621,15 @@ button.empty-goal { width: 100%; display: flex; align-items: center; justify-con
 .video-tile:has(.video-thumb) > svg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 38px; height: 38px; padding: 10px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: var(--gold-light); box-sizing: content-box; }
 .video-tile:has(.video-thumb) .video-title { position: relative; z-index: 1; margin: -12px; padding: 28px 12px 10px; background: linear-gradient(transparent, rgba(0, 0, 0, .82)); text-align: left; }
 .video-tile:has(.video-thumb) .video-num { z-index: 1; background: rgba(0, 0, 0, .55); border-radius: 8px; padding: 2px 7px; opacity: 1; }
+
+/* Exercise library: gold muscle tag, equipment and muscle tiles */
+.badge.gold { background: var(--gold-soft); color: var(--gold-light); }
+.eq-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+@media (min-width: 640px) { .eq-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.eq-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 64px; padding: 12px 14px; text-align: left; border-radius: 16px; background: linear-gradient(150deg, rgba(215,185,120,.05), transparent 70%), var(--card); border: 1px solid var(--line); color: var(--ink); }
+.eq-tile:hover { filter: none; border-color: rgba(215,185,120,.45); }
+.eq-tile .name { font-weight: 600; }
+.eq-tile .count { font-size: .78rem; color: var(--mute); }
+.eq-label { font-size: .7rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); margin: 4px 0 8px; }
+.ex-group { display: flex; align-items: center; justify-content: space-between; margin: 16px 2px 6px; font-weight: 700; color: var(--gold-light); }
+.ex-group .meta { font-weight: 500; }

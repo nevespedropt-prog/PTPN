@@ -9,7 +9,9 @@ import type { Category, Exercise, Program, Workout } from '../../types'
 import { Empty, PageHead, Seg, Sheet, Skeleton } from '../../components/ui'
 import Icon from '../../components/Icon'
 import DemoLink from '../../components/DemoLink'
-import { searchExercises } from '../../lib/exerciseSearch'
+import { EQUIPMENT_TILES, MACHINE_KINDS, equipmentGroups, groupByMuscle, machineKinds, searchExercises } from '../../lib/exerciseSearch'
+import type { EquipmentTile, MachineKind } from '../../lib/exerciseSearch'
+import { DidYouMean, MuscleTag } from '../../components/ExerciseBits'
 import { useExercises } from '../../components/Pickers'
 import { AssignWorkout } from './Assign'
 
@@ -156,17 +158,34 @@ function Exercises() {
   const q = search.get('exerciseQ') ?? ''
   const requestedCat = search.get('category')
   const cat: Category | 'all' = requestedCat && CATS.includes(requestedCat as Category) ? requestedCat as Category : 'all'
-  const updateFilters = (patch: { q?: string; cat?: Category | 'all' }) => setSearch(previous => {
+  const equip = EQUIPMENT_TILES.find(t => t === search.get('equip')) ?? null
+  const muscleParam = search.get('muscle')
+  const kind = MACHINE_KINDS.find(k => k === search.get('kind')) ?? null
+  const muscles = useMemo(() => [...new Set((rows ?? []).map(r => r.muscle))].sort(), [rows])
+  const muscle = muscleParam && muscles.includes(muscleParam) ? muscleParam : null
+  // Typing replaces the history entry; picking equipment or a muscle adds one, so Back returns to the previous view.
+  const updateFilters = (patch: { q?: string; cat?: Category | 'all'; equip?: EquipmentTile | null; muscle?: string | null; kind?: MachineKind | null }) => setSearch(previous => {
     const next = new URLSearchParams(previous)
     if (patch.q !== undefined) { if (patch.q) next.set('exerciseQ', patch.q); else next.delete('exerciseQ') }
     if (patch.cat !== undefined) { if (patch.cat === 'all') next.delete('category'); else next.set('category', patch.cat) }
+    if (patch.equip !== undefined) { if (patch.equip) next.set('equip', patch.equip); else next.delete('equip'); if (patch.equip !== 'Machines') next.delete('kind') }
+    if (patch.muscle !== undefined) { if (patch.muscle) next.set('muscle', patch.muscle); else next.delete('muscle') }
+    if (patch.kind !== undefined) { if (patch.kind) next.set('kind', patch.kind); else next.delete('kind') }
     return next
-  }, { replace: true })
+  }, { replace: patch.q !== undefined || patch.cat !== undefined })
   const [adding, setAdding] = useState(false)
   const [open, setOpen] = useState<Exercise | null>(null)
   const [f, setF] = useState({ name: '', muscle: '', equipment: '', category: 'strength' as Category, instructions: '', video_url: '' })
   const [err, setErr] = useState('')
-  const list = useMemo(() => searchExercises((rows ?? []).filter(e => cat === 'all' || e.category === cat), q), [rows, q, cat])
+  const inCat = useMemo(() => (rows ?? []).filter(e => cat === 'all' || e.category === cat), [rows, cat])
+  const matches = (e: Exercise, skip?: 'equip' | 'muscle') =>
+    (skip === 'equip' || !equip || (equipmentGroups(e.equipment).includes(equip) && (equip !== 'Machines' || !kind || machineKinds(e.equipment).includes(kind)))) &&
+    (skip === 'muscle' || !muscle || e.muscle === muscle)
+  const list = useMemo(() => searchExercises(inCat.filter(e => matches(e)), q), [inCat, q, equip, muscle, kind]) // eslint-disable-line react-hooks/exhaustive-deps
+  const equipCount = (t: EquipmentTile) => inCat.filter(e => matches(e, 'equip') && equipmentGroups(e.equipment).includes(t)).length
+  const muscleCount = (m: string) => inCat.filter(e => matches(e, 'muscle') && e.muscle === m).length
+  const browsing = !q && !equip && !muscle
+  const groups = q && !muscle ? groupByMuscle(list) : []
 
   async function add(e: React.FormEvent) {
     e.preventDefault(); setErr('')
@@ -177,6 +196,21 @@ function Exercises() {
   }
   async function remove(x: Exercise) { if (confirm(`Delete "${x.name}"?`)) { await supabase.from('exercises').delete().eq('id', x.id); setOpen(null); reload() } }
 
+  const row = (x: Exercise) => (
+    <div key={x.id} className="exrow">
+      <button className="item" onClick={() => setOpen(x)}>
+        <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta"><MuscleTag muscle={x.muscle} /> {x.equipment}</span></span>
+        <span className="badge" style={{ textTransform: 'capitalize' }}>{x.category}</span>
+      </button>
+      <DemoLink name={x.name} url={x.video_url} />
+    </div>
+  )
+  const tile = (label: string, count: number, onClick: () => void) => (
+    <button key={label} className="eq-tile" onClick={onClick} disabled={count === 0} style={count === 0 ? { opacity: .45 } : undefined}>
+      <span className="name">{label}</span><span className="count">{count} exercise{count === 1 ? '' : 's'}</span>
+    </button>
+  )
+
   return (
     <>
       <div className="row nowrap"><input placeholder={`Search ${rows?.length ?? ''} exercises`} value={q} onChange={e => updateFilters({ q: e.target.value })} /><button className="sm" style={{ flex: 'none' }} onClick={() => setAdding(true)}><Icon name="plus" size={16} />Custom</button></div>
@@ -185,20 +219,38 @@ function Exercises() {
         {CATS.map(c => <button key={c} className={'chip' + (cat === c ? ' on' : '')} onClick={() => updateFilters({ cat: c })} style={{ textTransform: 'capitalize' }}>{c}</button>)}
       </div>
       {!rows && <Skeleton n={4} />}
-      <div className="card tight"><div className="list">
-        {list.slice(0, 2000).map(x => (
-          <div key={x.id} className="exrow">
-            <button className="item" onClick={() => setOpen(x)}>
-              <span className="grow"><span className="title">{x.name}</span> {x.created_by && <span className="badge violet">Custom</span>}<br /><span className="meta">{x.muscle} · {x.equipment}</span></span>
-              <span className="badge" style={{ textTransform: 'capitalize' }}>{x.category}</span>
-            </button>
-            <DemoLink name={x.name} url={x.video_url} />
-          </div>
-        ))}
-      </div></div>
+      {rows && browsing && <>
+        <div className="eq-label">Equipment</div>
+        <div className="eq-grid">{EQUIPMENT_TILES.map(t => tile(t, equipCount(t), () => updateFilters({ equip: t })))}</div>
+        <div className="eq-label">Muscle group</div>
+        <div className="eq-grid">{muscles.map(m => tile(m, muscleCount(m), () => updateFilters({ muscle: m })))}</div>
+      </>}
+      {rows && !browsing && <>
+        {(equip || muscle) && <div className="row nowrap" style={{ alignItems: 'center', marginBottom: 8 }}>
+          <button className="btn icon" aria-label="Back to all exercises" onClick={() => updateFilters({ equip: null, muscle: null })}><Icon name="back" size={18} /></button>
+          <span className="title grow">{[equip, muscle].filter(Boolean).join(' · ')}</span><span className="meta">{list.length}</span>
+        </div>}
+        <div className="chips" aria-label="Equipment">
+          <button className={'chip' + (!equip ? ' on' : '')} onClick={() => updateFilters({ equip: null })}>Any equipment</button>
+          {EQUIPMENT_TILES.filter(t => equipCount(t) > 0).map(t => <button key={t} className={'chip' + (equip === t ? ' on' : '')} onClick={() => updateFilters({ equip: t })}>{t} {equipCount(t)}</button>)}
+        </div>
+        {equip === 'Machines' && <div className="chips" aria-label="Machine type">
+          <button className={'chip' + (!kind ? ' on' : '')} onClick={() => updateFilters({ kind: null })}>All machines</button>
+          {MACHINE_KINDS.map(k => <button key={k} className={'chip' + (kind === k ? ' on' : '')} onClick={() => updateFilters({ kind: k })}>{k === 'Machine' ? 'Gym machines' : k === 'Cable' ? 'Cables' : 'Smith machine'}</button>)}
+        </div>}
+        <div className="chips" aria-label="Muscle group">
+          <button className={'chip' + (!muscle ? ' on' : '')} onClick={() => updateFilters({ muscle: null })}>Any muscle</button>
+          {muscles.filter(m => muscleCount(m) > 0).map(m => <button key={m} className={'chip' + (muscle === m ? ' on' : '')} onClick={() => updateFilters({ muscle: m })}>{m} {muscleCount(m)}</button>)}
+        </div>
+        {list.length === 0 && q && <DidYouMean rows={inCat} query={q} onPick={name => updateFilters({ q: name, equip: null, muscle: null })} />}
+        {list.length === 0 && !q && <Empty icon="search" title="No exercises here yet" />}
+        {list.length > 0 && groups.length > 1
+          ? groups.map(g => <div key={g.muscle}><div className="ex-group"><span>{g.muscle}</span><span className="meta">{g.rows.length}</span></div><div className="card tight"><div className="list">{g.rows.map(row)}</div></div></div>)
+          : list.length > 0 && <div className="card tight"><div className="list">{list.slice(0, 2000).map(row)}</div></div>}
+      </>}
       <Sheet open={!!open} onClose={() => setOpen(null)} title={open?.name ?? ''}>
         {open && <div className="stack">
-          <div className="row" style={{ marginBottom: 0 }}><span className="badge red">{open.muscle}</span><span className="badge">{open.equipment}</span><span className="badge" style={{ textTransform: 'capitalize' }}>{open.category}</span></div>
+          <div className="row" style={{ marginBottom: 0 }}><MuscleTag muscle={open.muscle} /><span className="badge">{open.equipment}</span><span className="badge" style={{ textTransform: 'capitalize' }}>{open.category}</span></div>
           <p style={{ margin: 0 }}>{open.instructions || 'No instructions yet.'}</p>
           <a className="btn soft" href={demoUrl(open.name, open.video_url)} target="_blank" rel="noopener noreferrer"><Icon name="play" size={16} />Watch a demo</a>
           {open.created_by && <button className="danger" onClick={() => remove(open)}>Delete exercise</button>}
