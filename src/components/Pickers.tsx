@@ -4,7 +4,9 @@ import type { Exercise, MealType, Recipe, Workout } from '../types'
 import { Empty, MacroChips, Sheet, Skeleton } from './ui'
 import Icon from './Icon'
 import DemoLink from './DemoLink'
-import { searchExercises } from '../lib/exerciseSearch'
+import { EQUIPMENT_TILES, equipmentGroups, searchExercises } from '../lib/exerciseSearch'
+import type { EquipmentTile } from '../lib/exerciseSearch'
+import { DidYouMean, MuscleTag } from './ExerciseBits'
 import { FORMAT_LABEL } from '../lib/training'
 import { MEAL_LABEL, MEALS } from '../lib/nutrition'
 
@@ -23,12 +25,14 @@ export function ExerciseList({ rows, onPick, query, setQuery, allowCustom }: {
   rows: Exercise[] | null; onPick: (e: { id: string | null; name: string; category?: string }) => void; query: string; setQuery: (s: string) => void; allowCustom?: boolean
 }) {
   const [muscle, setMuscle] = useState('All')
-  const list = useMemo(() => searchExercises((rows ?? []).filter(e => muscle === 'All' || e.muscle === muscle), query), [rows, muscle, query])
+  const [equip, setEquip] = useState<EquipmentTile | 'All'>('All')
+  const list = useMemo(() => searchExercises((rows ?? []).filter(e => (muscle === 'All' || e.muscle === muscle) && (equip === 'All' || equipmentGroups(e.equipment).includes(equip))), query), [rows, muscle, equip, query])
   const exact = (rows ?? []).some(e => e.name.toLowerCase() === query.trim().toLowerCase())
   return (
     <>
       <input autoFocus placeholder="Search 100+ exercises" value={query} onChange={e => setQuery(e.target.value)} style={{ marginBottom: 10 }} />
-      <div className="chips">{MUSCLES.map(m => <button key={m} type="button" className={'chip' + (muscle === m ? ' on' : '')} onClick={() => setMuscle(m)}>{m}</button>)}</div>
+      <div className="chips" aria-label="Equipment">{(['All', ...EQUIPMENT_TILES] as const).map(t => <button key={t} type="button" className={'chip' + (equip === t ? ' on' : '')} onClick={() => setEquip(t)}>{t === 'All' ? 'Any equipment' : t}</button>)}</div>
+      <div className="chips" aria-label="Muscle group">{MUSCLES.map(m => <button key={m} type="button" className={'chip' + (muscle === m ? ' on' : '')} onClick={() => setMuscle(m)}>{m}</button>)}</div>
       {!rows && <Skeleton n={4} />}
       {allowCustom && query.trim() && !exact && (
         <button className="item" type="button" onClick={() => onPick({ id: null, name: query.trim() })}>
@@ -40,13 +44,14 @@ export function ExerciseList({ rows, onPick, query, setQuery, allowCustom }: {
         {list.slice(0, 2000).map(e => (
           <div key={e.id} className="exrow">
             <button className="item" type="button" onClick={() => onPick({ id: e.id, name: e.name, category: e.category })}>
-              <span className="grow"><span className="title">{e.name}</span><br /><span className="meta">{e.muscle} · {e.equipment}</span></span>
+              <span className="grow"><span className="title">{e.name}</span><br /><span className="meta"><MuscleTag muscle={e.muscle} /> {e.equipment}</span></span>
               <Icon name="plus" />
             </button>
             <DemoLink name={e.name} url={e.video_url} />
           </div>
         ))}
       </div>
+      {rows && list.length === 0 && query.trim() && <DidYouMean rows={rows} query={query} onPick={setQuery} />}
       {rows && list.length === 0 && !query && <Empty icon="search" title="No exercises in this group" />}
     </>
   )

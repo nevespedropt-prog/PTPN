@@ -63,6 +63,9 @@ await db.exec(fs.readFileSync(repo + 'migrate_v35_fix_profile_update_rule.sql', 
 // v36: push endpoints must be real push services
 await db.exec(fs.readFileSync(repo + 'migrate_v36_push_endpoint_check.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'migrate_v36_push_endpoint_check.sql', 'utf8')) // re-runnable
+// v37: standard gym machines for every muscle, curls name their muscle (applied on top of the seed, as on the live database)
+await db.exec(fs.readFileSync(repo + 'migrate_v37_machine_exercises.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v37_machine_exercises.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8'))
@@ -121,7 +124,7 @@ async function as(who, sql, params = []) {
 const count = async (who, sql) => { const r = await as(who, sql); return r.error ? `ERR ${r.error}` : r.rows.length }
 
 // library counts
-ok(await count(A, 'select id from exercises') === 626, 'client reads exercise library')
+ok(await count(A, 'select id from exercises') === 677, 'client reads exercise library')
 ok(await count(A, 'select id from workouts') === 16, 'client sees 16 built-in workouts')
 ok(await count(A, 'select id from recipes') === 105, 'client reads recipes')
 ok(await count(A, 'select id from foods') === 139, 'client reads foods')
@@ -353,6 +356,16 @@ const anonUpd = await upd(null, `update profiles set full_name = 'x' where id = 
 ok(anonUpd === 0 || String(anonUpd).startsWith('ERR'), 'v35: signed-out users cannot update profiles')
 ok((await db.query(`select role from profiles where id = '${A}'`)).rows[0].role === 'client', 'v35: the client role is unchanged')
 ok((await as(null, `select public.my_role()`)).error, 'v35: signed-out users cannot call my_role()')
+
+// v37: at least five machine exercises for each body part, and every curl names its muscle
+const machineCounts = (await db.query(`select muscle, count(*)::int as n from exercises where created_by is null and (equipment ilike '%machine%' or equipment = 'Cable') and muscle in ('Chest','Back','Shoulders','Biceps','Triceps','Forearms','Quads','Hamstrings','Glutes','Calves','Adductors','Core','Traps') group by 1`)).rows
+ok(machineCounts.length === 13 && machineCounts.every(r => r.n >= 5), 'v37: every body part has at least five machine exercises (' + machineCounts.filter(r => r.n < 5).map(r => r.muscle + ' ' + r.n).join(', ') + ')')
+const trueMachines = (await db.query(`select muscle, count(*)::int as n from exercises where created_by is null and equipment = 'Machine' and muscle in ('Chest','Back','Shoulders','Quads','Hamstrings','Glutes','Calves') group by 1`)).rows
+ok(trueMachines.length === 7 && trueMachines.every(r => r.n >= 5), 'v37: the big muscle groups have at least five standard gym machines each (' + trueMachines.filter(r => r.n < 5).map(r => r.muscle + ' ' + r.n).join(', ') + ')')
+ok((await db.query(`select count(*)::int as n from exercises where created_by is null and name in ('Pec deck','Hip abduction machine','Seated row machine','Machine shoulder press')`)).rows[0].n === 4, 'v37: the standard machine names exist (Pec deck, Seated row machine, Machine shoulder press, Hip abduction machine)')
+const vagueCurls = (await db.query(`select name, muscle from exercises where created_by is null and name ilike '%curl%' and name !~* '(bicep|hamstring|wrist|forearm|press|lunge)'`)).rows
+ok(vagueCurls.length === 0, 'v37: every curl names its muscle (' + vagueCurls.map(r => r.name).join(', ') + ')')
+ok((await db.query(`select count(*)::int as n from exercises where lower(name) in ('lying leg curl','seated leg curl')`)).rows[0].n === 0, 'v37: the leg curls are now hamstring curls')
 
 // v36: a client can only save real push-service addresses
 const push = ep => as(A, `insert into push_subscriptions (user_id, endpoint, p256dh, auth) values ('${A}', '${ep}', 'k', 'a')`)
