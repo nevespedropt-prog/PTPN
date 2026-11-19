@@ -8,6 +8,7 @@ import { onboardingDbChecks } from './onboarding.mjs'
 import { monthlyUnitChecks, monthlyDbChecks } from './monthly.mjs'
 import { exerciseSearchChecks } from './exercise-search.mjs'
 import { alternativeUnitChecks, alternativeDbChecks } from './alternatives.mjs'
+import { clientSessionDbChecks } from './client-sessions.mjs'
 
 const repo = new URL('../supabase/', import.meta.url).pathname
 const db = new PGlite({ extensions: { uuid_ossp } })
@@ -66,6 +67,9 @@ await db.exec(fs.readFileSync(repo + 'migrate_v36_push_endpoint_check.sql', 'utf
 // v37: standard gym machines for every muscle, curls name their muscle (applied on top of the seed, as on the live database)
 await db.exec(fs.readFileSync(repo + 'migrate_v37_machine_exercises.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'migrate_v37_machine_exercises.sql', 'utf8')) // re-runnable
+// v38: moving a session re-arms its reminder (already in schema.sql; the file must also be safe to run again)
+await db.exec(fs.readFileSync(repo + 'migrate_v38_move_session_reminder.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v38_move_session_reminder.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8'))
@@ -305,6 +309,7 @@ exerciseSearchChecks(ok)
 await monthlyDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 alternativeUnitChecks(ok)
 await alternativeDbChecks(db, { coach: C, ana: A, bo: B }, ok)
+await clientSessionDbChecks({ db, ok, as, IDS: { coach: C, ana: A } })
 
 // website backend: money and enquiry data stay private
 await db.exec(`insert into client_packages (client_id, package_name, sessions_total, total_gbp) values ('${A}','Express',10,500);

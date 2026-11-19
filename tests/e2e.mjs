@@ -16,6 +16,7 @@ import { notificationBrowserChecks } from './notifications.mjs'
 import { tasterSessionChecks } from './taster-session.mjs'
 import { sessionBalanceChecks } from './session-balance.mjs'
 import { sessionAssignChecks } from './session-assign.mjs'
+import { clientSessionBrowserChecks } from './client-sessions.mjs'
 import { setLineChecks } from './set-lines.mjs'
 import { homeWeekChecks } from './home-week.mjs'
 import { workoutHistoryChecks } from './workout-history.mjs'
@@ -74,6 +75,7 @@ await notificationBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await tasterSessionChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await sessionBalanceChecks({ open, sql, IDS, BASE, clean, ok })
 await sessionAssignChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await clientSessionBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await setLineChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await homeWeekChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await workoutHistoryChecks({ open, sql, IDS, BASE, shot, clean, ok })
