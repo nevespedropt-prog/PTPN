@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useClients, usePageTab } from '../../hooks'
 import { useAuth } from '../../auth'
-import { addDays, DAY_NAMES, localDate, niceDate, relDay, weekOf } from '../../lib/dates'
+import { addDays, DAY_NAMES, daysBetween, localDate, niceDate, relDay, startOfWeek, weekOf } from '../../lib/dates'
 import { MEAL_LABEL, MEALS, forServings, generateWeek, suggestTargets, sum } from '../../lib/nutrition'
 import { setsDone } from '../../lib/training'
 import { parqAlerts } from '../../lib/parq'
@@ -142,6 +142,15 @@ function Training({ id }: { id: string }) {
   const [eStatus, setEStatus] = useState<ClientWorkout['status']>('scheduled')
   const [eWorkout, setEWorkout] = useState<{ id: string; name: string } | null>(null)
   const [swap, setSwap] = useState(false)
+  // Repeat: copy sessions the client already has onto new dates.
+  const [rep, setRep] = useState(false)
+  const [repSel, setRepSel] = useState<string[]>([])
+  const [repStart, setRepStart] = useState('')
+  const [repCycles, setRepCycles] = useState(1)
+  const [repBusy, setRepBusy] = useState(false)
+  const [repMsg, setRepMsg] = useState('')
+  const [oneDate, setOneDate] = useState('')
+  const [oneWeeks, setOneWeeks] = useState(1)
   const [eBusy, setEBusy] = useState(false)
   const [eErr, setEErr] = useState('')
   const today = localDate()
@@ -189,7 +198,7 @@ function Training({ id }: { id: string }) {
     finally { removeBusy.current = false; setRemoving(false) }
   }
   function startEdit(c: ClientWorkout) {
-    setEdit(c); setEDate(c.date); setEStatus(c.status); setEWorkout({ id: c.workout_id, name: names[c.workout_id] ?? 'Workout' }); setEErr('')
+    setEdit(c); setOneDate(addDays(c.date < today ? today : c.date, 7)); setOneWeeks(1); setEDate(c.date); setEStatus(c.status); setEWorkout({ id: c.workout_id, name: names[c.workout_id] ?? 'Workout' }); setEErr('')
   }
   async function saveEdit(e: React.FormEvent) {
     e.preventDefault()
@@ -204,6 +213,45 @@ function Training({ id }: { id: string }) {
     if (error) return setEErr(/exercise choices cannot change template/i.test(error.message) ? 'This session has a swapped exercise, so its workout cannot be changed. Remove it and assign the new workout instead.' : 'Could not save the changes. Please try again.')
     if (!data?.length) return setEErr('This session is no longer available. Refresh the page.')
     setEdit(null); load()
+  }
+  /** What a repeat would create: the chosen sessions keep their spacing, starting on repStart, once per cycle (each cycle a whole number of weeks long). */
+  function repeatPlan(sel: ClientWorkout[], start: string, cycles: number) {
+    if (!sel.length || !start) return []
+    const sorted = [...sel].sort((a, b) => a.date.localeCompare(b.date))
+    const first = sorted[0].date
+    const span = Math.max(1, Math.ceil((daysBetween(first, sorted[sorted.length - 1].date) + 1) / 7)) * 7
+    return Array.from({ length: cycles }, (_, k) => sorted.map(c => ({ workout_id: c.workout_id, date: addDays(start, daysBetween(first, c.date) + k * span) }))).flat()
+  }
+  function openRepeat() {
+    const from = addDays(today, -14)
+    setRepSel(cws.filter(c => c.date >= from && c.date <= today).map(c => c.id))
+    setRepStart(addDays(startOfWeek(today), 7)); setRepCycles(1); setRepMsg(''); setRep(true)
+  }
+  async function insertCopies(rows: { workout_id: string; date: string }[]) {
+    // Skip a workout that is already scheduled on that date, so repeating twice never doubles a day.
+    const have = new Set(cws.map(c => c.workout_id + '|' + c.date))
+    const fresh = rows.filter(r => !have.has(r.workout_id + '|' + r.date))
+    if (!fresh.length) return { added: 0, skipped: rows.length }
+    const { error } = await supabase.from('client_workouts').insert(fresh.map(r => ({ client_id: id, workout_id: r.workout_id, date: r.date })))
+    if (error) return { error: 'Could not add the sessions. Please try again.' }
+    return { added: fresh.length, skipped: rows.length - fresh.length }
+  }
+  async function saveRepeat() {
+    const plan = repeatPlan(cws.filter(c => repSel.includes(c.id)), repStart, repCycles)
+    if (!plan.length) return setRepMsg('Choose at least one session and a start date.')
+    setRepBusy(true); setRepMsg('')
+    const r = await insertCopies(plan)
+    setRepBusy(false)
+    if ('error' in r && r.error) return setRepMsg(r.error)
+    setCal(plan[0].date); setRep(false); load()
+  }
+  async function repeatOne() {
+    if (!edit || !oneDate) return setEErr('Choose the date to repeat it on.')
+    setEBusy(true); setEErr('')
+    const r = await insertCopies(Array.from({ length: oneWeeks }, (_, i) => ({ workout_id: eWorkout?.id ?? edit.workout_id, date: addDays(oneDate, i * 7) })))
+    setEBusy(false)
+    if ('error' in r && r.error) return setEErr(r.error)
+    setCal(oneDate); setEdit(null); load()
   }
   async function choose(p: Program) {
     const { data } = await supabase.from('program_days').select('*').eq('program_id', p.id)
@@ -230,6 +278,7 @@ function Training({ id }: { id: string }) {
     <>
       <div className="row">
         <button onClick={() => setPick(true)}><Icon name="plus" size={16} />Assign workout</button>
+        <button className="soft" onClick={openRepeat} disabled={cws.length === 0}><Icon name="copy" size={16} />Repeat sessions</button>
         <button className="soft" onClick={custom} disabled={creating}><Icon name="edit" size={16} />{creating ? 'Creating...' : 'Custom workout'}</button>
         <button className="soft" onClick={() => setProgList(true)}><Icon name="library" size={16} />Assign programme</button>
       </div>
@@ -272,7 +321,48 @@ function Training({ id }: { id: string }) {
           {edit.status !== 'done' && eStatus === 'done' && <span className="mute small">No sets are logged for this session. It will count as done.</span>}
           {edit.status === 'done' && eStatus !== 'done' && <span className="mute small">The sets the client logged are kept.</span>}
           <button disabled={eBusy}>{eBusy ? 'Saving...' : 'Save changes'}</button>{eErr && <span className="err" role="alert">{eErr}</span>}
+          <details>
+            <summary className="mute small" style={{ cursor: 'pointer' }}>Repeat this session</summary>
+            <div className="stack" style={{ marginTop: 8 }}>
+              <label className="field">Repeat on<input type="date" value={oneDate} onChange={e => setOneDate(e.target.value)} aria-label="Repeat on date" /></label>
+              <label className="field">How many times
+                <select value={oneWeeks} onChange={e => setOneWeeks(Number(e.target.value))} aria-label="Repeat how many times">
+                  <option value={1}>Just that date</option>
+                  {[2, 3, 4, 6, 8, 12].map(n => <option key={n} value={n}>{n} weeks, same weekday</option>)}
+                </select>
+              </label>
+              <button type="button" className="soft" disabled={eBusy} onClick={repeatOne}>Add repeats</button>
+            </div>
+          </details>
         </form>}
+      </Sheet>
+      <Sheet open={rep} onClose={() => { if (!repBusy) setRep(false) }} title="Repeat sessions">
+        <div className="stack">
+          <p className="mute small" style={{ margin: 0 }}>Tick the sessions to repeat. They keep the same spacing, starting on the date you choose.</p>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="soft sm" onClick={() => setRepSel(cws.filter(c => c.date >= addDays(today, -14) && c.date <= today).map(c => c.id))}>Last 2 weeks</button>
+            <button type="button" className="soft sm" onClick={() => setRepSel(cws.filter(c => c.date >= addDays(today, -28) && c.date <= today).map(c => c.id))}>Last 4 weeks</button>
+            <button type="button" className="soft sm" onClick={() => setRepSel([])}>Clear</button>
+          </div>
+          <div className="list" style={{ maxHeight: 260, overflowY: 'auto' }}>
+            {cws.filter(c => c.date >= addDays(today, -56) && c.date <= addDays(today, 56)).map(c => (
+              <label key={c.id} className="item" style={{ cursor: 'pointer' }}>
+                <input type="checkbox" checked={repSel.includes(c.id)} onChange={e => setRepSel(e.target.checked ? [...repSel, c.id] : repSel.filter(x => x !== c.id))} aria-label={`Repeat ${names[c.workout_id] ?? 'workout'} from ${niceDate(c.date)}`} />
+                <span className="grow"><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{niceDate(c.date)} · {sessionLabel(c, today)}</span></span>
+              </label>
+            ))}
+            {cws.filter(c => c.date >= addDays(today, -56) && c.date <= addDays(today, 56)).length === 0 && <Empty icon="calendar" title="No sessions in the last two months" />}
+          </div>
+          <label className="field">First repeated session goes on<input type="date" value={repStart} onChange={e => setRepStart(e.target.value)} /></label>
+          <label className="field">Repeat the block
+            <select value={repCycles} onChange={e => setRepCycles(Number(e.target.value))}>
+              {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n === 1 ? 'Once' : `${n} times in a row`}</option>)}
+            </select>
+          </label>
+          {(() => { const plan = repeatPlan(cws.filter(c => repSel.includes(c.id)), repStart, repCycles); return plan.length ? <span className="mute small">{plan.length} session{plan.length === 1 ? '' : 's'} will be added, {niceDate(plan[0].date)} to {niceDate(plan[plan.length - 1].date)}.</span> : null })()}
+          <button disabled={repBusy || repSel.length === 0 || !repStart} onClick={saveRepeat}>{repBusy ? 'Adding...' : 'Add to schedule'}</button>
+          {repMsg && <span className="err" role="alert">{repMsg}</span>}
+        </div>
       </Sheet>
       <WorkoutPicker open={swap} onClose={() => setSwap(false)} onPick={w => { setEWorkout({ id: w.id, name: w.name }); setSwap(false) }} />
 
