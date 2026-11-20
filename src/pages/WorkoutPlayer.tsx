@@ -383,7 +383,7 @@ export default function WorkoutPlayer() {
       {!readOnly && cw.status === 'scheduled' && (
         <div className="row" style={{ marginTop: 6 }}>
           <button className="grow" disabled={locked} style={{ minHeight: 52 }} onClick={() => setFinishing(true)}><Icon name="check" size={18} />Finish workout</button>
-          <button className="ghost" disabled={locked} onClick={() => { if (confirm('Mark this workout as skipped?')) finish('skipped') }}>Skip</button>
+          {w?.created_by === cw.client_id && <button className="ghost" disabled={locked} onClick={() => { if (confirm('Mark this workout as skipped?')) finish('skipped') }}>Skip</button>}
         </div>
       )}
 
