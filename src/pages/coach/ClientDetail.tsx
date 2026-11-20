@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useClients, usePageTab } from '../../hooks'
 import { useAuth } from '../../auth'
-import { addDays, DAY_NAMES, localDate, niceDate, relDay } from '../../lib/dates'
+import { addDays, DAY_NAMES, localDate, niceDate, relDay, weekOf } from '../../lib/dates'
 import { MEAL_LABEL, MEALS, forServings, generateWeek, suggestTargets, sum } from '../../lib/nutrition'
 import { setsDone } from '../../lib/training'
 import { parqAlerts } from '../../lib/parq'
@@ -21,6 +21,9 @@ import SessionBalance from '../../components/SessionBalance'
 import ClientSessions from '../../components/ClientSessions'
 
 type Tab = 'overview' | 'taster' | 'training' | 'nutrition' | 'habits' | 'progress'
+
+/** What the coach sees for a workout session: unfinished sessions in the past read as Missed. */
+const sessionLabel = (c: Pick<ClientWorkout, 'status' | 'date'>, today: string) => c.status === 'skipped' || (c.status === 'scheduled' && c.date < today) ? 'Missed' : c.status === 'done' ? 'Done' : 'Scheduled'
 
 const flagged = (v?: string) => !!v && v.trim() !== '' && v.trim().toLowerCase() !== 'none'
 
@@ -106,7 +109,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
           {cws.filter(c => c.date <= addDays(today, 3)).slice(0, 8).map(c => (
             <Link key={c.id} to={`/workout/${c.id}`} className="item">
               <span className="grow"><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)}{c.status === 'done' ? ` · ${setsDone(c)} sets` : ''}</span></span>
-              <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' || c.date < today ? 'amber' : 'blue')}>{c.status === 'scheduled' && c.date < today ? 'Missed' : c.status}</span>
+              <span className={'badge ' + (c.status === 'done' ? 'green' : sessionLabel(c, today) === 'Missed' ? 'amber' : 'blue')}>{sessionLabel(c, today)}</span>
             </Link>
           ))}
         </div>
@@ -132,10 +135,19 @@ function Training({ id }: { id: string }) {
   const [removing, setRemoving] = useState(false)
   const [removeError, setRemoveError] = useState('')
   const removeBusy = useRef(false)
+  const [allHistory, setAllHistory] = useState(false)
+  const [cal, setCal] = useState(localDate())
+  const [edit, setEdit] = useState<ClientWorkout | null>(null)
+  const [eDate, setEDate] = useState('')
+  const [eStatus, setEStatus] = useState<ClientWorkout['status']>('scheduled')
+  const [eWorkout, setEWorkout] = useState<{ id: string; name: string } | null>(null)
+  const [swap, setSwap] = useState(false)
+  const [eBusy, setEBusy] = useState(false)
+  const [eErr, setEErr] = useState('')
   const today = localDate()
 
   const load = useCallback(async () => {
-    const { data } = await supabase.from('client_workouts').select('*').eq('client_id', id).gte('date', addDays(today, -14)).order('date')
+    const { data } = await supabase.from('client_workouts').select('*').eq('client_id', id).order('date').limit(1000)
     const list = (data ?? []) as ClientWorkout[]
     setCws(list)
     const ids = [...new Set(list.map(x => x.workout_id))]
@@ -143,7 +155,7 @@ function Training({ id }: { id: string }) {
       const { data: w } = await supabase.from('workouts').select('id, name').in('id', ids)
       setNames(Object.fromEntries(((w ?? []) as Workout[]).map(x => [x.id, x.name])))
     }
-  }, [id, today])
+  }, [id])
   useEffect(() => { load() }, [load])
   useEffect(() => { supabase.from('programs').select('*').order('name').then(({ data }) => setPrograms((data ?? []) as Program[])) }, [])
 
@@ -176,17 +188,41 @@ function Training({ id }: { id: string }) {
     } catch { setRemoveError('Could not remove this workout. Please check your connection and try again.') }
     finally { removeBusy.current = false; setRemoving(false) }
   }
+  function startEdit(c: ClientWorkout) {
+    setEdit(c); setEDate(c.date); setEStatus(c.status); setEWorkout({ id: c.workout_id, name: names[c.workout_id] ?? 'Workout' }); setEErr('')
+  }
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!edit || !eWorkout) return
+    if (!eDate) return setEErr('Choose a date.')
+    setEBusy(true); setEErr('')
+    const patch: Partial<ClientWorkout> = { date: eDate, status: eStatus, workout_id: eWorkout.id }
+    // Done sessions keep their original finish time; a session the coach marks done gets noon on its day.
+    patch.completed_at = eStatus === 'done' ? (edit.completed_at ?? new Date(eDate + 'T12:00:00').toISOString()) : null
+    const { data, error } = await supabase.from('client_workouts').update(patch).eq('id', edit.id).eq('client_id', id).select('id')
+    setEBusy(false)
+    if (error) return setEErr(/exercise choices cannot change template/i.test(error.message) ? 'This session has a swapped exercise, so its workout cannot be changed. Remove it and assign the new workout instead.' : 'Could not save the changes. Please try again.')
+    if (!data?.length) return setEErr('This session is no longer available. Refresh the page.')
+    setEdit(null); load()
+  }
   async function choose(p: Program) {
     const { data } = await supabase.from('program_days').select('*').eq('program_id', p.id)
     setProgList(false); setProg({ p, days: (data ?? []) as ProgramDay[] })
   }
 
   const upcoming = cws.filter(c => c.date >= today)
-  const past = cws.filter(c => c.date < today).reverse()
+  const past = cws.filter(c => c.date < today && (allHistory || c.date >= addDays(today, -14))).reverse()
+  const calDays = weekOf(cal)
+  const chip = (c: ClientWorkout) => (
+    <button key={c.id} type="button" className={'cal-chip ' + (c.status === 'done' ? 'done' : sessionLabel(c, today) === 'Missed' ? 'missed' : 'planned')} onClick={() => startEdit(c)} aria-label={`Open ${names[c.workout_id] ?? 'workout'} on ${niceDate(c.date)}`}>
+      <b>{names[c.workout_id] ?? 'Workout'}</b><small>{sessionLabel(c, today)}</small>
+    </button>
+  )
   const row = (c: ClientWorkout) => (
     <div key={c.id} className="item">
-      <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)} · {niceDate(c.date)}</span></Link>
-      <span className={'badge ' + (c.status === 'done' ? 'green' : c.status === 'skipped' ? 'amber' : c.date < today ? 'amber' : 'blue')}>{c.status === 'scheduled' && c.date < today ? 'Missed' : c.status}</span>
+      <Link to={`/workout/${c.id}`} className="grow" style={{ color: 'var(--ink)' }}><span className="title">{names[c.workout_id] ?? 'Workout'}</span><br /><span className="meta">{relDay(c.date)} · {niceDate(c.date)}{c.status === 'done' ? ` · ${setsDone(c)} sets logged` : ''}</span></Link>
+      <span className={'badge ' + (c.status === 'done' ? 'green' : sessionLabel(c, today) === 'Missed' ? 'amber' : 'blue')}>{sessionLabel(c, today)}</span>
+      <button className="link" onClick={() => startEdit(c)} aria-label={`Edit ${names[c.workout_id] ?? 'workout'} on ${niceDate(c.date)}`}>Edit</button>
       {c.status !== 'done' && <button className="link" disabled={removing} onClick={() => { setRemoveError(''); setRemoveTarget(c) }} aria-label="Remove from schedule">Remove</button>}
     </div>
   )
@@ -197,9 +233,48 @@ function Training({ id }: { id: string }) {
         <button className="soft" onClick={custom} disabled={creating}><Icon name="edit" size={16} />{creating ? 'Creating...' : 'Custom workout'}</button>
         <button className="soft" onClick={() => setProgList(true)}><Icon name="library" size={16} />Assign programme</button>
       </div>
-      <div className="section-title"><h2>Upcoming</h2></div>
+      <section className="card" aria-label="Workout calendar">
+        <div className="row between" style={{ marginBottom: 10 }}>
+          <button className="icon" onClick={() => setCal(addDays(cal, -7))} aria-label="Previous week"><Icon name="back" size={18} /></button>
+          <b>{niceDate(calDays[0])} to {niceDate(calDays[6])}</b>
+          <button className="icon" onClick={() => setCal(addDays(cal, 7))} aria-label="Next week"><Icon name="chev" size={18} /></button>
+        </div>
+        {!calDays.includes(today) && <div style={{ marginBottom: 10 }}><button className="soft sm" onClick={() => setCal(today)}>Back to this week</button></div>}
+        <div className="cal-week">
+          {calDays.map((d, i) => {
+            const day = cws.filter(c => c.date === d)
+            return <div key={d} className={'cal-day' + (d === today ? ' today' : '')}>
+              <div className="cal-head"><small>{DAY_NAMES[i]}</small><b>{Number(d.slice(8))}</b></div>
+              {day.map(chip)}
+              {day.length === 0 && <span className="mute small">Rest</span>}
+            </div>
+          })}
+        </div>
+        <div className="calendar-legend"><span><i className="booked" />Done</span><span><i className="open" />Planned</span><span><i className="missed" />Missed</span></div>
+      </section>
+      <div className="section-title"><h2>Upcoming</h2><span className="mute small">{upcoming.length} scheduled</span></div>
       <div className="card tight">{upcoming.length === 0 && <Empty icon="calendar" title="Nothing scheduled" />}<div className="list">{upcoming.map(row)}</div></div>
-      {past.length > 0 && <><div className="section-title"><h2>Past two weeks</h2></div><div className="card tight"><div className="list">{past.map(row)}</div></div></>}
+      <div className="section-title"><h2>{allHistory ? 'All past sessions' : 'Past two weeks'}</h2><button className="link red" onClick={() => setAllHistory(v => !v)}>{allHistory ? 'Show last two weeks' : 'Show earlier'}</button></div>
+      <div className="card tight">{past.length === 0 && <Empty icon="calendar" title="No past sessions" />}<div className="list">{past.map(row)}</div></div>
+      <ClientSessions clientId={id} />
+
+      <Sheet open={!!edit} onClose={() => { if (!eBusy) setEdit(null) }} title="Edit session">
+        {edit && eWorkout && <form className="stack" onSubmit={saveEdit}>
+          <div className="item" style={{ cursor: 'default' }}><span className="grow"><span className="title">{eWorkout.name}</span></span><button type="button" className="ghost sm" onClick={() => setSwap(true)}>Change workout</button></div>
+          <label className="field">Date<input type="date" value={eDate} onChange={e => setEDate(e.target.value)} required /></label>
+          <label className="field">Status
+            <select value={eStatus} onChange={e => setEStatus(e.target.value as ClientWorkout['status'])}>
+              <option value="done">Done</option>
+              <option value="skipped">Missed</option>
+              <option value="scheduled">Scheduled (not done yet)</option>
+            </select>
+          </label>
+          {edit.status !== 'done' && eStatus === 'done' && <span className="mute small">No sets are logged for this session. It will count as done.</span>}
+          {edit.status === 'done' && eStatus !== 'done' && <span className="mute small">The sets the client logged are kept.</span>}
+          <button disabled={eBusy}>{eBusy ? 'Saving...' : 'Save changes'}</button>{eErr && <span className="err" role="alert">{eErr}</span>}
+        </form>}
+      </Sheet>
+      <WorkoutPicker open={swap} onClose={() => setSwap(false)} onPick={w => { setEWorkout({ id: w.id, name: w.name }); setSwap(false) }} />
 
       <Sheet open={!!removeTarget} onClose={() => { if (!removeBusy.current) setRemoveTarget(null) }} title="Remove workout">
         {removeTarget && <div className="stack">
