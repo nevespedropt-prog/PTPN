@@ -21,6 +21,7 @@ import { trainingEditChecks } from './training-edit.mjs'
 import { coachEditLogsBrowserChecks } from './coach-edit-logs.mjs'
 import { coachEditHabitsBrowserChecks } from './coach-edit-habits.mjs'
 import { coachEditProgressBrowserChecks } from './coach-edit-progress.mjs'
+import { challengeIdeasBrowserChecks } from './challenge-ideas.mjs'
 import { setLineChecks } from './set-lines.mjs'
 import { homeWeekChecks } from './home-week.mjs'
 import { workoutHistoryChecks } from './workout-history.mjs'
@@ -84,6 +85,7 @@ await trainingEditChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await coachEditLogsBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await coachEditHabitsBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await coachEditProgressBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await challengeIdeasBrowserChecks({ open, sql, IDS, BASE, shot, ok })
 await setLineChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await homeWeekChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await workoutHistoryChecks({ open, sql, IDS, BASE, shot, clean, ok })

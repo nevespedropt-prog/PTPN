@@ -7,6 +7,7 @@ import { pct } from '../lib/util'
 import type { Challenge, Post } from '../types'
 import { Avatar, Empty, PageHead, Seg, Sheet, Skeleton } from '../components/ui'
 import Icon from '../components/Icon'
+import { CHALLENGE_IDEAS, type ChallengeIdea } from '../lib/challengeIdeas'
 
 function Feed() {
   const { profile } = useAuth()
@@ -111,6 +112,8 @@ function ChallengeSheet({ c, onClose }: { c: Challenge; onClose: () => void }) {
         </form>
       )}
       {!coach && <p className="small" style={{ margin: 0 }}>Your total: <b>{mine.toLocaleString()} {c.unit}</b>{c.goal ? ` (${pct(mine, Number(c.goal))}% of goal)` : ''}</p>}
+      {!coach && c.goal && <div className="bar" aria-hidden="true"><i style={{ width: Math.min(100, pct(mine, Number(c.goal))) + '%' }} /></div>}
+      {!coach && c.goal && mine >= Number(c.goal) && <p className="badge red" style={{ margin: 0, alignSelf: 'flex-start' }}>Challenge complete</p>}
       {err && <span className="err">{err}</span>}
       <h3>Leaderboard</h3>
       {!board && <Skeleton n={2} />}
@@ -135,6 +138,7 @@ function Challenges() {
   const [rows, setRows] = useState<Challenge[] | null>(null)
   const [open, setOpen] = useState<Challenge | null>(null)
   const [adding, setAdding] = useState(false)
+  const [ideas, setIdeas] = useState(false)
   const [f, setF] = useState({ name: '', description: '', unit: '', goal: '', start_date: localDate(), end_date: addDays(localDate(), 14) })
   const [err, setErr] = useState('')
 
@@ -150,12 +154,21 @@ function Challenges() {
     if (error) return setErr(error.message)
     setAdding(false); load()
   }
+  async function startIdea(i: ChallengeIdea) {
+    setErr('')
+    const { error } = await supabase.from('challenges').insert({ name: i.name, description: i.description, unit: i.unit, goal: i.goal, start_date: localDate(), end_date: addDays(localDate(), i.days), created_by: profile!.id })
+    if (error) return setErr(error.message)
+    setIdeas(false); load()
+  }
   const today = localDate()
   const status = (c: Challenge) => (c.end_date < today ? 'Ended' : c.start_date > today ? 'Upcoming' : `${daysBetween(today, c.end_date)} days left`)
 
   return (
     <>
-      {coach && <button className="soft block" style={{ marginBottom: 12 }} onClick={() => setAdding(true)}><Icon name="plus" size={18} />New challenge</button>}
+      {coach && <div className="row nowrap" style={{ marginBottom: 12 }}>
+        <button className="soft block" onClick={() => setAdding(true)}><Icon name="plus" size={18} />New challenge</button>
+        <button className="soft block" onClick={() => { setErr(''); setIdeas(true) }}><Icon name="trophy" size={18} />Challenge ideas</button>
+      </div>}
       {!rows && <Skeleton n={2} />}
       {rows && rows.length === 0 && <div className="card"><Empty icon="trophy" title="No challenges yet">{coach ? 'Create one to get your clients competing.' : 'Challenges from your coach will show up here.'}</Empty></div>}
       <div className="g-auto">
@@ -168,6 +181,19 @@ function Challenges() {
         ))}
       </div>
       <Sheet open={!!open} onClose={() => { setOpen(null); load() }} title={open?.name ?? ''}>{open && <ChallengeSheet c={open} onClose={() => { setOpen(null); load() }} />}</Sheet>
+      <Sheet open={ideas} onClose={() => setIdeas(false)} title="Challenge ideas">
+        <div className="stack">
+          <p className="mute small" style={{ margin: 0 }}>Tap Start and it goes live for your clients today. Clients log a little at a time and see a Challenge complete badge when they reach the goal.</p>
+          {err && <span className="err" role="alert">{err}</span>}
+          {CHALLENGE_IDEAS.map(i => (
+            <div key={i.name} className="card tight">
+              <div className="row between"><b>{i.name}</b><span className="badge">{i.level}</span></div>
+              <p className="mute small" style={{ margin: '4px 0' }}>{i.description}</p>
+              <div className="row between"><span className="small">{i.goal.toLocaleString()} {i.unit} in {i.days} days</span><button className="soft" onClick={() => startIdea(i)}>Start {i.name}</button></div>
+            </div>
+          ))}
+        </div>
+      </Sheet>
       <Sheet open={adding} onClose={() => setAdding(false)} title="New challenge">
         <form className="stack" onSubmit={create}>
           <input placeholder="Name, e.g. October steps" value={f.name} onChange={e => setF({ ...f, name: e.target.value })} required />
