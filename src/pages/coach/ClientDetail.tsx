@@ -318,6 +318,7 @@ function Training({ id }: { id: string }) {
               <option value="scheduled">Scheduled (not done yet)</option>
             </select>
           </label>
+          <Link className="btn soft" to={`/workout/${edit.id}?returnTo=${encodeURIComponent(`/clients/${id}?tab=training`)}`}>Edit sets, reps and weights</Link>
           {edit.status !== 'done' && eStatus === 'done' && <span className="mute small">No sets are logged for this session. It will count as done.</span>}
           {edit.status === 'done' && eStatus !== 'done' && <span className="mute small">The sets the client logged are kept.</span>}
           <button disabled={eBusy}>{eBusy ? 'Saving...' : 'Save changes'}</button>{eErr && <span className="err" role="alert">{eErr}</span>}

@@ -70,7 +70,9 @@ export default function WorkoutPlayer() {
   const [finishBusy, setFinishBusy] = useState(false)
   const [saveError, setSaveError] = useState('')
 
-  const readOnly = profile?.role === 'coach' || cw?.status !== 'scheduled'
+  // The coach can correct the numbers of any session, past or present. A client can only fill in an unfinished one.
+  const isCoach = profile?.role === 'coach'
+  const readOnly = !isCoach && cw?.status !== 'scheduled'
   const locked = readOnly || switchBusy || finishBusy || uncertainChoice
 
   useEffect(() => {
@@ -133,7 +135,9 @@ export default function WorkoutPlayer() {
     setSaved('saving'); setSaveError('')
     const task = saveQueue.current.then(async () => {
       try {
-        const result = await supabase.from('client_workouts').update({ log: next }).eq('id', cw.id).eq('status', 'scheduled').select('id')
+        let q = supabase.from('client_workouts').update({ log: next }).eq('id', cw.id)
+        if (!isCoach) q = q.eq('status', 'scheduled')
+        const result = await q.select('id')
         if (result.error || !result.data?.length) throw new Error('save')
         if (version === saveVersion.current) setSaved('saved')
         return true
@@ -144,7 +148,7 @@ export default function WorkoutPlayer() {
     })
     saveQueue.current = task
     return task
-  }, [cw, readOnly])
+  }, [cw, readOnly, isCoach])
 
   function change(next: WorkoutLog) {
     if (readOnly || changingExercise.current || finishingWrite.current || uncertainChoice) return
@@ -178,8 +182,19 @@ export default function WorkoutPlayer() {
     const sets = [...(log.items?.[itemId] ?? [])]
     sets[idx] = { ...sets[idx], ...patch }
     change({ ...log, items: { ...log.items, [itemId]: sets } })
-    if (patch.done && restSec && restSec > 0) setRest({ end: Date.now() + restSec * 1000, total: restSec })
+    if (patch.done && restSec && restSec > 0 && !isCoach) setRest({ end: Date.now() + restSec * 1000, total: restSec })
     if (patch.done === false) setRest(null)
+  }
+  /** Coach only: write the planned sets and reps as the client's log, so a session done without logging can be recorded. */
+  function fillFromPlan() {
+    const next: Record<string, SetLog[]> = { ...(log.items ?? {}) }
+    for (const it of items) {
+      const isC = log.exercise_choices?.[it.id]?.is_cardio ?? cardio.has(it.id)
+      if (isC || (next[it.id] ?? []).some(x => x.done || x.reps || x.kg)) continue
+      const n = it.sets && it.sets > 0 ? it.sets : 1
+      next[it.id] = Array.from({ length: n }, () => ({ reps: (it.reps ?? '').match(/\d+/)?.[0] ?? '', kg: /^\d+(\.\d+)?$/.test(it.weight ?? '') ? it.weight : '', done: true }))
+    }
+    change({ ...log, items: next })
   }
   const addSet = (it: WorkoutItem) => {
     const sets = log.items?.[it.id] ?? []
@@ -250,7 +265,7 @@ export default function WorkoutPlayer() {
         <button className="icon" onClick={() => returnTo ? nav(returnTo, { replace: true }) : nav(-1)} aria-label="Back"><Icon name="back" size={18} /></button>
         <span className="row" style={{ gap: 10 }}>
           {!readOnly && w.created_by === profile?.id && <Link className="btn soft sm" to={`/build/${w.id}?cw=${cw.id}&returnTo=${encodeURIComponent(returnTo)}`}>Edit workout</Link>}
-          <span className="mute small">{readOnly ? (cw.status === 'done' ? `Completed ${niceDate(cw.date)}` : 'Read only') : saved === 'saving' ? 'Saving...' : saved === 'saved' ? 'Saved' : ' '}</span>
+          <span className="mute small">{isCoach ? (saved === 'saving' ? 'Saving...' : saved === 'saved' ? 'Saved' : 'Coach edit') : readOnly ? (cw.status === 'done' ? `Completed ${niceDate(cw.date)}` : 'Read only') : saved === 'saving' ? 'Saving...' : saved === 'saved' ? 'Saved' : ' '}</span>
         </span>
       </div>
       <div className="page-head" style={{ marginTop: 0 }}>
@@ -259,20 +274,20 @@ export default function WorkoutPlayer() {
           <h1>{w.name}</h1>
           {w.description && <div className="sub">{w.description}</div>}
         </div>
-        {!readOnly && <div style={{ textAlign: 'right' }}>
+        {!readOnly && !isCoach && <div style={{ textAlign: 'right' }}>
           <div className="clock" aria-label="Elapsed time">{fmtSeconds(elapsed)}</div>
           <span className="mute small">{log.timer?.running ? 'Running' : timerStarted ? 'Paused' : 'Ready to start'}</span>
         </div>}
       </div>
 
-      {!readOnly && <div className="row" role="group" aria-label="Session timer controls">
+      {!readOnly && !isCoach && <div className="row" role="group" aria-label="Session timer controls">
         {!log.timer?.running && <button type="button" onClick={startSessionTimer}><Icon name="play" size={16} />{timerStarted ? 'Resume' : 'Start'}</button>}
         {log.timer?.running && <button type="button" onClick={pauseSessionTimer}>Pause</button>}
         <button type="button" className="soft" onClick={resetSessionTimer} disabled={!timerStarted && !log.timer?.running}>Reset</button>
       </div>}
 
       <WorkoutFormatGuide format={w.format} minutes={w.duration_min} rounds={w.rounds} />
-      {!readOnly && <WorkoutFormatTracker workout={w} items={performed} log={log} elapsed={elapsed} />}
+      {!readOnly && !isCoach && <WorkoutFormatTracker workout={w} items={performed} log={log} elapsed={elapsed} />}
 
       {saveError && <div className="card tight"><p className="err" role="alert">{saveError}</p><button className="soft" disabled={locked} onClick={() => void persist(log)}>Retry workout save</button></div>}
 
@@ -286,6 +301,7 @@ export default function WorkoutPlayer() {
         </div>
       )}
 
+      {isCoach && <div className="card tight row between nowrap" role="note"><span className="mute small">You can change any number here. Changes save as you type.</span>{done === 0 && <button className="soft sm" onClick={fillFromPlan}>Fill from the plan</button>}</div>}
       <div className="card">
         {groups.map((g, gi) => (
           <div key={gi} style={g.label ? { borderLeft: '3px solid var(--violet)', paddingLeft: 12, margin: '4px 0' } : undefined}>
@@ -309,7 +325,7 @@ export default function WorkoutPlayer() {
                     <a className="btn icon" href={demoUrl(it.exercise_name)} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${it.exercise_name} demo`}><Icon name="play" size={16} /></a>
                   </div>
                   {log.exercise_choices?.[it.id] && <p className="mute small">Selected alternative for this session. Original: {items.find(original => original.id === it.id)?.exercise_name ?? 'Retired exercise'}.</p>}
-                  {!readOnly && items.some(original => original.id === it.id) && <button className="soft sm" style={{ marginTop: 8 }} disabled={locked || sets.some(s => s.done)} onClick={() => { setSwitchError(''); setSwitchItem(items.find(original => original.id === it.id) ?? null) }} aria-label={`Choose alternative for ${it.exercise_name}`}>Choose alternative</button>}
+                  {!readOnly && !isCoach && items.some(original => original.id === it.id) && <button className="soft sm" style={{ marginTop: 8 }} disabled={locked || sets.some(s => s.done)} onClick={() => { setSwitchError(''); setSwitchItem(items.find(original => original.id === it.id) ?? null) }} aria-label={`Choose alternative for ${it.exercise_name}`}>Choose alternative</button>}
                   {simple ? (
                     <div className="row between nowrap" style={{ marginTop: 8 }}>
                       <span className="mute">{it.reps}</span>
@@ -380,7 +396,7 @@ export default function WorkoutPlayer() {
         </div>
       )}
 
-      {!readOnly && cw.status === 'scheduled' && (
+      {!readOnly && !isCoach && cw.status === 'scheduled' && (
         <div className="row" style={{ marginTop: 6 }}>
           <button className="grow" disabled={locked} style={{ minHeight: 52 }} onClick={() => setFinishing(true)}><Icon name="check" size={18} />Finish workout</button>
           {w?.created_by === cw.client_id && <button className="ghost" disabled={locked} onClick={() => { if (confirm('Mark this workout as skipped?')) finish('skipped') }}>Skip</button>}
