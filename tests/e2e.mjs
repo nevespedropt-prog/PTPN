@@ -19,6 +19,7 @@ import { sessionAssignChecks } from './session-assign.mjs'
 import { clientSessionBrowserChecks } from './client-sessions.mjs'
 import { trainingEditChecks } from './training-edit.mjs'
 import { coachEditLogsBrowserChecks } from './coach-edit-logs.mjs'
+import { coachEditHabitsBrowserChecks } from './coach-edit-habits.mjs'
 import { setLineChecks } from './set-lines.mjs'
 import { homeWeekChecks } from './home-week.mjs'
 import { workoutHistoryChecks } from './workout-history.mjs'
@@ -80,6 +81,7 @@ await sessionAssignChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await clientSessionBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await trainingEditChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await coachEditLogsBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
+await coachEditHabitsBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await setLineChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await homeWeekChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await workoutHistoryChecks({ open, sql, IDS, BASE, shot, clean, ok })
