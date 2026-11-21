@@ -10,6 +10,7 @@ import { exerciseSearchChecks } from './exercise-search.mjs'
 import { alternativeUnitChecks, alternativeDbChecks } from './alternatives.mjs'
 import { clientSessionDbChecks } from './client-sessions.mjs'
 import { coachOnlyEditChecks } from './coach-only-edits.mjs'
+import { coachEditLogsDbChecks } from './coach-edit-logs.mjs'
 
 const repo = new URL('../supabase/', import.meta.url).pathname
 const db = new PGlite({ extensions: { uuid_ossp } })
@@ -74,6 +75,9 @@ await db.exec(fs.readFileSync(repo + 'migrate_v38_move_session_reminder.sql', 'u
 // v39: only the coach edits assigned sessions
 await db.exec(fs.readFileSync(repo + 'migrate_v39_coach_only_session_edits.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'migrate_v39_coach_only_session_edits.sql', 'utf8')) // re-runnable
+// v40: the coach edits food logs and check-ins
+await db.exec(fs.readFileSync(repo + 'migrate_v40_coach_edits_logs.sql', 'utf8'))
+await db.exec(fs.readFileSync(repo + 'migrate_v40_coach_edits_logs.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8'))
 await db.exec(fs.readFileSync(repo + 'seed.sql', 'utf8')) // re-runnable
 await db.exec(fs.readFileSync(repo + 'seed_meal_plans.sql', 'utf8'))
@@ -315,6 +319,7 @@ alternativeUnitChecks(ok)
 await alternativeDbChecks(db, { coach: C, ana: A, bo: B }, ok)
 await clientSessionDbChecks({ db, ok, as, IDS: { coach: C, ana: A } })
 await coachOnlyEditChecks({ db, ok, as, IDS: { coach: C, ana: A } })
+await coachEditLogsDbChecks({ db, ok, as, IDS: { coach: C, ana: A, bo: B } })
 
 // website backend: money and enquiry data stay private
 await db.exec(`insert into client_packages (client_id, package_name, sessions_total, total_gbp) values ('${A}','Express',10,500);
