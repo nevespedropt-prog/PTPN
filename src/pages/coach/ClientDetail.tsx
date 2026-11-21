@@ -19,6 +19,8 @@ import { AssignProgram, AssignWorkout } from './Assign'
 import TasterSessionForm from '../../components/TasterSession'
 import SessionBalance from '../../components/SessionBalance'
 import ClientSessions from '../../components/ClientSessions'
+import CoachFoodDiary from '../../components/CoachFoodDiary'
+import CoachCheckins from '../../components/CoachCheckins'
 
 type Tab = 'overview' | 'taster' | 'training' | 'nutrition' | 'habits' | 'progress'
 
@@ -102,6 +104,7 @@ function Overview({ id, go }: { id: string; go: (t: Tab) => void }) {
       )}
       {checkin?.note && <div className="card tight"><span className="eyebrow">Latest check-in note</span><p style={{ margin: 0 }}>{checkin.note}</p></div>}
       <WeeklyCheckins key={id} clientId={id} coach />
+      <CoachCheckins key={'ci' + id} clientId={id} />
       <div className="section-title"><h2>Recent workouts</h2><button className="link red" onClick={() => go('training')}>Manage</button></div>
       <div className="card tight">
         {cws.length === 0 && <Empty icon="train" title="No workouts assigned">Open Training to schedule one.</Empty>}
@@ -506,6 +509,7 @@ function Nutrition({ id }: { id: string }) {
         </div>
         {byDate.size > 0 && Number(t.kcal) > 0 && <><hr className="sep" /><MacroBar label="Average vs target" value={sum(logs).kcal / byDate.size} target={Number(t.kcal)} color="var(--gold)" unit="kcal" /></>}
       </div>
+      <CoachFoodDiary key={id} clientId={id} />
     </>
   )
 }

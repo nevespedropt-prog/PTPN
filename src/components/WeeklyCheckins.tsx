@@ -73,14 +73,31 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
     return () => { active = false }
   }, [clientId, coach, week, retry])
 
+  function openCoachForm() {
+    setError('')
+    setDraft(checkin ? { training: checkin.training, nutrition: checkin.nutrition, biggest_win: checkin.biggest_win, difficulties: checkin.difficulties, sleep_hours: String(Number(checkin.sleep_hours)), energy: String(checkin.energy) } : blank)
+    setOpen(true)
+  }
+  async function removeCheckin() {
+    if (!checkin || !confirm('Delete this weekly check-in and its review?')) return
+    setBusy(true); setError('')
+    const { error: err } = await supabase.from('weekly_checkins').delete().eq('id', checkin.id)
+    setBusy(false)
+    if (err) return setError('Could not delete this weekly check-in. Please try again.')
+    setCheckin(null); setReview(null); setFeedback(''); setFocus(''); setOpen(false)
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(''); setBusy(true)
     try {
-      const { data, error: err } = await supabase.from('weekly_checkins').insert({
-        client_id: clientId, week_start: week, training: draft.training.trim(), nutrition: draft.nutrition.trim(),
+      const values = {
+        training: draft.training.trim(), nutrition: draft.nutrition.trim(),
         biggest_win: draft.biggest_win.trim(), difficulties: draft.difficulties.trim(),
         sleep_hours: Number(draft.sleep_hours), energy: Number(draft.energy),
-      }).select().single()
+      }
+      const { data, error: err } = coach && checkin
+        ? await supabase.from('weekly_checkins').update(values).eq('id', checkin.id).select().single()
+        : await supabase.from('weekly_checkins').insert({ client_id: clientId, week_start: week, ...values }).select().single()
       if (err) throw err
       setCheckin(data as Checkin); setOpen(false)
     } catch { setError('Could not submit your check-in. Your answers are still here. Try again when connected. If already submitted on another device, close and reload.') }
@@ -111,6 +128,7 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
       {error && !checkin && !open ? <button className="soft" onClick={() => setRetry(n => n + 1)}>Retry weekly check-in</button> : !checkin ? <>
         <p className="mute">{coach ? 'No weekly check-in submitted for this week.' : 'Share your wins, challenges and how you have been feeling.'}</p>
         {!coach && <button onClick={() => { setError(''); setOpen(true) }}>Complete weekly check-in</button>}
+        {coach && <button className="soft" onClick={openCoachForm}>Add a check-in for this week</button>}
       </> : <>
         {coach && <span className={'badge ' + (review ? 'green' : 'amber')}>{review ? 'Reviewed by coach' : 'Awaiting coach review'}</span>}
         <p className="mute small">Submitted {niceDate(localDate(new Date(checkin.submitted_at)))}</p>
@@ -121,6 +139,7 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
         </div>}
         {questions.map(([key, label]) => <div key={key}><b>{label}</b><p style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{checkin[key]}</p></div>)}
         <p>Average sleep: {Number(checkin.sleep_hours)} hours. Energy: {checkin.energy}/5.</p>
+        {coach && <button className="soft sm" onClick={openCoachForm}>Edit their answers</button>}
         {coach ? <form className="col" onSubmit={saveReview}>
           <label className="field"><b>Coach feedback</b><textarea required maxLength={2000} rows={4} value={feedback} onChange={e => { setFeedback(e.target.value); setSaved(false) }} /></label>
           <label className="field"><b>Next week's focus</b><textarea required maxLength={1000} rows={3} value={focus} onChange={e => { setFocus(e.target.value); setSaved(false) }} /></label>
@@ -133,9 +152,9 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
         </div> : <p className="mute">Your coach's feedback will appear here.</p>}
       </>}
     </>}
-    <Sheet open={open} onClose={() => { if (!busy) setOpen(false) }} title="Complete weekly check-in">
+    <Sheet open={open} onClose={() => { if (!busy) setOpen(false) }} title={coach ? (checkin ? 'Edit weekly check-in' : 'Add weekly check-in') : 'Complete weekly check-in'}>
       <form className="col" onSubmit={submit}>
-        <p className="mute small">{weekLabel(week)}. Answers are final once submitted so your coach reviews a consistent record.</p>
+        <p className="mute small">{weekLabel(week)}. {coach ? 'You can change any answer. The client sees the updated check-in.' : 'Answers are final once submitted so your coach reviews a consistent record.'}</p>
         {questions.map(([key, label]) => <label key={key} className="field"><b>{label}</b>
           <textarea required maxLength={2000} rows={3} value={draft[key]} onChange={e => setDraft(d => ({ ...d, [key]: e.target.value }))} />
         </label>)}
@@ -144,7 +163,8 @@ export default function WeeklyCheckins({ clientId, coach = false }: { clientId: 
           {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} / 5{n === 1 ? ' - Drained' : n === 5 ? ' - Full of energy' : ''}</option>)}
         </select></label>
         {error && <p className="err" role="alert">{error}</p>}
-        <button disabled={busy || questions.some(([key]) => !draft[key].trim())}>{busy ? 'Submitting...' : 'Submit weekly check-in'}</button>
+        <button disabled={busy || questions.some(([key]) => !draft[key].trim())}>{busy ? 'Saving...' : coach ? 'Save weekly check-in' : 'Submit weekly check-in'}</button>
+        {coach && checkin && <button type="button" className="danger" disabled={busy} onClick={removeCheckin}>Delete this weekly check-in</button>}
       </form>
     </Sheet>
   </details>
