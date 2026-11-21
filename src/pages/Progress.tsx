@@ -12,7 +12,7 @@ import MaxLifts from './MaxLifts'
 import MonthlyReport from '../components/MonthlyReport'
 import ProgressStory from '../components/ProgressStory'
 
-function Body({ clientId, readOnly }: { clientId: string; readOnly: boolean }) {
+function Body({ clientId, readOnly, coach = false }: { clientId: string; readOnly: boolean; coach?: boolean }) {
   const [rows, setRows] = useState<Measurement[]>([])
   const [date, setDate] = useState(() => localDate())
   const [kg, setKg] = useState('')
@@ -22,6 +22,10 @@ function Body({ clientId, readOnly }: { clientId: string; readOnly: boolean }) {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [deleting, setDeleting] = useState<Measurement | null>(null)
+  const [editing, setEditing] = useState<Measurement | null>(null)
+  const [eDate, setEDate] = useState('')
+  const [eKg, setEKg] = useState('')
+  const [eFat, setEFat] = useState('')
   const request = useRef(0)
   const writing = useRef(false)
 
@@ -52,6 +56,26 @@ function Body({ clientId, readOnly }: { clientId: string; readOnly: boolean }) {
       setRows(list => [...list, result.data as Measurement].sort((a, b) => a.date.localeCompare(b.date)))
       setKg(''); setFat(''); await load()
     } catch { setErr('Could not save this measurement. Your values are still here. Please try again when connected.') }
+    finally { writing.current = false; setBusy(false) }
+  }
+  function startEdit(r: Measurement) {
+    setErr(''); setEditing(r); setEDate(r.date); setEKg(r.weight_kg != null ? String(r.weight_kg) : ''); setEFat(r.body_fat_pct != null ? String(r.body_fat_pct) : '')
+  }
+  async function saveEdit() {
+    if (!editing || writing.current || !coach) return
+    setErr('')
+    const weight = eKg.trim() ? Number(eKg) : null
+    const bodyFat = eFat.trim() ? Number(eFat) : null
+    if (!eDate) return setErr('Choose a date.')
+    if (weight === null && bodyFat === null) return setErr('Enter weight or body fat.')
+    if (weight !== null && (!Number.isFinite(weight) || weight <= 0)) return setErr('Weight must be greater than zero.')
+    if (bodyFat !== null && (!Number.isFinite(bodyFat) || bodyFat < 0 || bodyFat > 100)) return setErr('Body fat must be between 0 and 100%.')
+    writing.current = true; setBusy(true)
+    try {
+      const result = await supabase.from('measurements').update({ date: eDate, weight_kg: weight, body_fat_pct: bodyFat }).eq('id', editing.id).eq('client_id', clientId).select('id')
+      if (result.error || !result.data?.length) throw result.error
+      setEditing(null); await load()
+    } catch { setErr('Could not save this change. Please try again when connected.') }
     finally { writing.current = false; setBusy(false) }
   }
   async function remove() {
@@ -86,18 +110,30 @@ function Body({ clientId, readOnly }: { clientId: string; readOnly: boolean }) {
           <button disabled={busy}>{busy ? 'Saving...' : 'Add'}</button>
         </form>
       )}
-      {err && !deleting && <p className="err" role="alert">{err}</p>}
+      {err && !deleting && !editing && <p className="err" role="alert">{err}</p>}
       <div className="card"><h2>Weight</h2><Chart points={w} unit="kg" /></div>
       <div className="card"><h2>Body fat</h2><Chart points={f} unit="%" /></div>
       <div className="card">
         <table><thead><tr><th>Date</th><th>kg</th><th>Fat %</th><th /></tr></thead><tbody>
           {[...rows].reverse().map(r => (
             <tr key={r.id}><td>{niceDate(r.date)}</td><td>{r.weight_kg ?? ''}</td><td>{r.body_fat_pct ?? ''}</td>
-              <td style={{ textAlign: 'right' }}>{!readOnly && <button className="link" disabled={busy} onClick={() => { setErr(''); setDeleting(r) }}>Delete</button>}</td></tr>
+              <td style={{ textAlign: 'right' }}>{!readOnly && <>
+                {coach && <button className="link" disabled={busy} onClick={() => startEdit(r)}>Edit</button>}{coach && ' '}
+                <button className="link" disabled={busy} onClick={() => { setErr(''); setDeleting(r) }}>Delete</button></>}</td></tr>
           ))}
         </tbody></table>
         {rows.length === 0 && !loading && !loadError && <p className="mute">No entries yet.</p>}
       </div>
+      <Sheet open={!!editing} onClose={() => { if (!busy) setEditing(null) }} title="Edit measurement">
+        <div className="stack">
+          <label>Date<input type="date" value={eDate} onChange={e => setEDate(e.target.value)} disabled={busy} /></label>
+          <label>Weight kg<input type="number" step="0.1" min="0.1" value={eKg} onChange={e => setEKg(e.target.value)} disabled={busy} /></label>
+          <label>Body fat %<input type="number" step="0.1" min="0" max="100" value={eFat} onChange={e => setEFat(e.target.value)} disabled={busy} /></label>
+          {err && editing && <p className="err" role="alert">{err}</p>}
+          <div className="row"><button className="soft" disabled={busy} onClick={() => setEditing(null)}>Cancel</button>
+            <button disabled={busy} onClick={saveEdit}>{busy ? 'Saving...' : 'Save'}</button></div>
+        </div>
+      </Sheet>
       <Sheet open={!!deleting} onClose={() => { if (!busy) setDeleting(null) }} title="Delete measurement">
         <div className="stack">
           <p>Delete the measurement from {deleting ? niceDate(deleting.date) : ''}? This cannot be undone.</p>
@@ -146,13 +182,13 @@ export default function Progress({ clientId, readOnly = false }: { clientId: str
       {!readOnly && <PageHead eyebrow="Progress" title="Your results" />}
       <ProgressStory clientId={clientId} coach={readOnly} />
       <Seg value={tab} onChange={setTab} options={[{ value: 'workouts', label: 'Workouts' }, { value: 'strength', label: 'Strength' }, { value: 'body', label: 'Body' }, { value: 'photos', label: 'Photos' }]} />
-      {tab === 'body' && <Body clientId={clientId} readOnly={readOnly} />}
+      {tab === 'body' && <Body clientId={clientId} readOnly={false} coach={readOnly} />}
       {tab === 'strength' && <>
         <Records clientId={clientId} />
         <MaxLifts clientId={clientId} />
         <Metrics clientId={clientId} coach={readOnly} />
       </>}
-      {tab === 'photos' && <Photos clientId={clientId} canUpload={!readOnly} />}
+      {tab === 'photos' && <Photos clientId={clientId} canUpload={!readOnly} canDelete />}
       {tab === 'workouts' && <MonthlyReport key={clientId} clientId={clientId} coach={readOnly} />}
     </>
   )

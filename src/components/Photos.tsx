@@ -9,7 +9,7 @@ import Icon from './Icon'
 type Pose = ProgressPhoto['pose']
 const POSES: Pose[] = ['front', 'side', 'back', 'other']
 
-export default function Photos({ clientId, canUpload }: { clientId: string; canUpload: boolean }) {
+export default function Photos({ clientId, canUpload, canDelete = canUpload }: { clientId: string; canUpload: boolean; canDelete?: boolean }) {
   const [rows, setRows] = useState<ProgressPhoto[]>([])
   const [urls, setUrls] = useState<Record<string, string>>({})
   const [pose, setPose] = useState<Pose>('front')
@@ -113,7 +113,7 @@ export default function Photos({ clientId, canUpload }: { clientId: string; canU
         {open && <div className="stack">
           {urls[open.path] && <img src={urls[open.path]} alt="" style={{ borderRadius: 14, width: '100%' }} />}
           {err && <p className="err" role="alert">{err}</p>}
-          {(canUpload) && <button className="danger" disabled={busy} onClick={() => remove(open)}>{busy ? 'Deleting...' : 'Delete photo'}</button>}
+          {canDelete && <button className="danger" disabled={busy} onClick={() => remove(open)}>{busy ? 'Deleting...' : 'Delete photo'}</button>}
         </div>}
       </Sheet>
       <Sheet open={compare} onClose={() => setCompare(false)} title="Before and after">
