@@ -1,15 +1,15 @@
 import { useEffect, type ReactNode } from 'react'
 import Icon, { type IconName } from './Icon'
 import { cx, hue, initials } from '../lib/util'
+import { lockScroll } from '../lib/scrollLock'
 
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+    const unlock = lockScroll()
+    return () => { document.removeEventListener('keydown', onKey); unlock() }
   }, [open, onClose])
   if (!open) return null
   return (
