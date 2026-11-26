@@ -155,6 +155,13 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
 /* chips, badges, segmented */
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
+/* With a mouse there is no swiping, so show a slim gold scrollbar under chip rows that overflow */
+@media (hover: hover) and (pointer: fine) {
+  .chips { scrollbar-width: thin; scrollbar-color: var(--gold-dark) transparent; padding-bottom: 8px; }
+  .chips::-webkit-scrollbar { display: block; height: 6px; }
+  .chips::-webkit-scrollbar-track { background: transparent; }
+  .chips::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 99px; }
+}
 .chip {
   flex: none; min-height: 34px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line-2); background: transparent;
   color: var(--ink-2); font-size: 13px; font-weight: 600; box-shadow: none; cursor: pointer;

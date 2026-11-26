@@ -1,5 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { enableChipDrag } from './lib/chipDrag'
 import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App'
@@ -9,6 +10,7 @@ import { refreshTabIcon } from './lib/branding'
 refreshTabIcon()
 window.addEventListener('pageshow', refreshTabIcon)
 
+enableChipDrag()
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter basename={import.meta.env.BASE_URL}>

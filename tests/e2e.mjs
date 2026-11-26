@@ -23,6 +23,7 @@ import { coachEditHabitsBrowserChecks } from './coach-edit-habits.mjs'
 import { coachEditProgressBrowserChecks } from './coach-edit-progress.mjs'
 import { challengeIdeasBrowserChecks } from './challenge-ideas.mjs'
 import { scrollLockChecks } from './scroll-lock.mjs'
+import { chipScrollChecks } from './chip-scroll.mjs'
 import { setLineChecks } from './set-lines.mjs'
 import { homeWeekChecks } from './home-week.mjs'
 import { workoutHistoryChecks } from './workout-history.mjs'
@@ -88,6 +89,7 @@ await coachEditHabitsBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await coachEditProgressBrowserChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await challengeIdeasBrowserChecks({ open, sql, IDS, BASE, shot, ok })
 await scrollLockChecks({ open, BASE, ok })
+await chipScrollChecks({ open, BASE, shot, ok })
 await setLineChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await homeWeekChecks({ open, sql, IDS, BASE, shot, clean, ok })
 await workoutHistoryChecks({ open, sql, IDS, BASE, shot, clean, ok })
