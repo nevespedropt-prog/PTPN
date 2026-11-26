@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { lockScroll } from './lib/scrollLock'
 import { NavLink, Navigate, Route, Routes, Link, useLocation } from 'react-router-dom'
 import { useAuth } from './auth'
 import { configured, supabase } from './lib/supabase'
@@ -53,9 +54,8 @@ function Shell({ items, extras, children }: { items: NavItem[]; extras: NavItem[
     if (!menu) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenu(false) }
     document.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
+    const unlock = lockScroll()
+    return () => { document.removeEventListener('keydown', onKey); unlock() }
   }, [menu])
 
   return (
